@@ -50,7 +50,7 @@ function mapHeartbeatToDeviceUpdate(ingestionResult) {
     },
     options: {
       upsert: true,
-      new: true,
+      returnDocument: 'after',
       setDefaultsOnInsert: true,
     },
   };
@@ -136,7 +136,7 @@ function mapOverrideResultToUpdate(ingestionResult) {
       },
     },
     options: {
-      new: true,
+      returnDocument: 'after',
     },
   };
 }
