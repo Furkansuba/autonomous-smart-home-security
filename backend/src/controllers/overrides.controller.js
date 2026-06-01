@@ -2,8 +2,10 @@ const { OverrideRequest } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
 const {
   OVERRIDE_ACTIONS,
-  OVERRIDE_RESULTS,
 } = require('../validators/contract.constants');
+const {
+  publishOverrideCommand,
+} = require('../mqtt/mqttCommandPublisher.service');
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -120,10 +122,14 @@ async function createOverride(req, res) {
       status: 'requested',
       requested_at: new Date(),
     });
+    const mqttPublish = await publishOverrideCommand(override);
     return res.status(201).json({
       created: true,
       override,
-      next_step: 'MQTT command publishing is not implemented yet.',
+      mqtt_publish: mqttPublish,
+      next_step: mqttPublish.published
+        ? 'Override command published to MQTT.'
+        : 'Override request stored. MQTT command publishing was skipped or failed.',
     });
   } catch (error) {
     return res.status(500).json({

@@ -124,6 +124,52 @@ async function startMqttClient(onMessage) {
     });
   });
 }
+function publishMqttMessage(topic, payload, options = {}) {
+  if (!client || !mqttState.connected) {
+    return Promise.resolve({
+      published: false,
+      skipped: true,
+      reason: 'mqtt_not_connected',
+      topic,
+      status: getMqttStatus(),
+    });
+  }
+  const message =
+    Buffer.isBuffer(payload) || typeof payload === 'string'
+      ? payload
+      : JSON.stringify(payload);
+  return new Promise((resolve) => {
+    client.publish(
+      topic,
+      message,
+      {
+        qos: options.qos || 0,
+        retain: options.retain || false,
+      },
+      (error) => {
+        if (error) {
+          mqttState.last_error = error.message;
+          resolve({
+            published: false,
+            skipped: false,
+            reason: 'mqtt_publish_error',
+            error: error.message,
+            topic,
+            status: getMqttStatus(),
+          });
+          return;
+        }
+        resolve({
+          published: true,
+          skipped: false,
+          topic,
+          qos: options.qos || 0,
+          retain: options.retain || false,
+        });
+      }
+    );
+  });
+}
 function stopMqttClient() {
   return new Promise((resolve) => {
     if (!client) {
@@ -152,5 +198,6 @@ module.exports = {
   buildMqttOptions,
   getMqttStatus,
   startMqttClient,
+  publishMqttMessage,
   stopMqttClient,
 };
