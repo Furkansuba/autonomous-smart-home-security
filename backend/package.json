@@ -27,7 +27,8 @@
     "mqtt:broker": "node scripts/local-mqtt-broker.js",
     "mqtt:publish:mock": "node scripts/mock-mqtt-publisher.js",
     "test:mqtt-e2e-local": "node scripts/test-mqtt-e2e-local.js",
-    "test:mqtt-command-publisher": "node scripts/test-mqtt-command-publisher.js"
+    "test:mqtt-command-publisher": "node scripts/test-mqtt-command-publisher.js",
+    "test:override-mqtt-e2e": "node scripts/test-override-mqtt-publish-e2e.js"
   },
   "keywords": [],
   "author": "",
