@@ -25,7 +25,8 @@
     "test:mqtt-client": "node scripts/test-mqtt-client-service.js",
     "test:mqtt-message-handler": "node scripts/test-mqtt-message-handler.js",
     "mqtt:broker": "node scripts/local-mqtt-broker.js",
-    "mqtt:publish:mock": "node scripts/mock-mqtt-publisher.js"
+    "mqtt:publish:mock": "node scripts/mock-mqtt-publisher.js",
+    "test:mqtt-e2e-local": "node scripts/test-mqtt-e2e-local.js"
   },
   "keywords": [],
   "author": "",
