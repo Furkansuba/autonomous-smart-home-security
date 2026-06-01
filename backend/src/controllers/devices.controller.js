@@ -1,6 +1,10 @@
 const { Device } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
 const { refreshAllDeviceStatuses } = require('../services/deviceStatus.service');
+const {
+  getPagination,
+  buildPaginatedResponse,
+} = require('../utils/pagination');
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -9,13 +13,6 @@ function sendDatabaseUnavailable(res) {
     error: 'Database is not connected.',
     database: getDatabaseStatus(),
   });
-}
-function parseLimit(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 50;
-  }
-  return Math.min(Math.floor(parsed), 100);
 }
 async function listDevices(req, res) {
   if (!isDatabaseConnected()) {
@@ -31,16 +28,23 @@ async function listDevices(req, res) {
   if (req.query.active === 'false') {
     filter.is_active = false;
   }
-  const limit = parseLimit(req.query.limit);
+  const pagination = getPagination(req.query);
   try {
-    const devices = await Device.find(filter)
-      .sort({ last_seen_at: -1, device_id: 1 })
-      .limit(limit)
-      .lean();
-    return res.status(200).json({
-      count: devices.length,
-      devices,
-    });
+    const [devices, total] = await Promise.all([
+      Device.find(filter)
+        .sort({ last_seen_at: -1, device_id: 1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      Device.countDocuments(filter),
+    ]);
+    return res.status(200).json(
+      buildPaginatedResponse('devices', devices, {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+      })
+    );
   } catch (error) {
     return res.status(500).json({
       error: 'Failed to list devices.',

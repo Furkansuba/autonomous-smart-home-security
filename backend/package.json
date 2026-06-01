@@ -30,7 +30,8 @@
     "test:mqtt-command-publisher": "node scripts/test-mqtt-command-publisher.js",
     "test:override-mqtt-e2e": "node scripts/test-override-mqtt-publish-e2e.js",
     "seed:demo": "node scripts/seed-demo-data.js",
-    "clean:demo": "node scripts/clean-demo-data.js"
+    "clean:demo": "node scripts/clean-demo-data.js",
+    "test:pagination": "node scripts/test-api-pagination.js"
   },
   "keywords": [],
   "author": "",

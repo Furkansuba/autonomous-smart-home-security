@@ -6,6 +6,10 @@ const {
 const {
   publishOverrideCommand,
 } = require('../mqtt/mqttCommandPublisher.service');
+const {
+  getPagination,
+  buildPaginatedResponse,
+} = require('../utils/pagination');
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -14,13 +18,6 @@ function sendDatabaseUnavailable(res) {
     error: 'Database is not connected.',
     database: getDatabaseStatus(),
   });
-}
-function parseLimit(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 50;
-  }
-  return Math.min(Math.floor(parsed), 100);
 }
 function buildOverrideFilter(query) {
   const filter = {};
@@ -46,16 +43,23 @@ async function listOverrides(req, res) {
     return sendDatabaseUnavailable(res);
   }
   const filter = buildOverrideFilter(req.query);
-  const limit = parseLimit(req.query.limit);
+  const pagination = getPagination(req.query);
   try {
-    const overrides = await OverrideRequest.find(filter)
-      .sort({ requested_at: -1, createdAt: -1 })
-      .limit(limit)
-      .lean();
-    return res.status(200).json({
-      count: overrides.length,
-      overrides,
-    });
+    const [overrides, total] = await Promise.all([
+      OverrideRequest.find(filter)
+        .sort({ requested_at: -1, createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      OverrideRequest.countDocuments(filter),
+    ]);
+    return res.status(200).json(
+      buildPaginatedResponse('overrides', overrides, {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+      })
+    );
   } catch (error) {
     return res.status(500).json({
       error: 'Failed to list overrides.',
