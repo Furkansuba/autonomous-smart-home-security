@@ -14,7 +14,8 @@
     "test:models": "node scripts/test-models.js",
     "test:ingestion-mapper": "node scripts/test-ingestion-mapper.js",
     "test:db": "node scripts/test-db-connection.js",
-    "test:persistence": "node scripts/test-persistence-service.js"
+    "test:persistence": "node scripts/test-persistence-service.js",
+    "test:device-status": "node scripts/test-device-status.js"
   },
   "keywords": [],
   "author": "",
