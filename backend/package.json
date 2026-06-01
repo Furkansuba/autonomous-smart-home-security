@@ -36,7 +36,8 @@
     "test:auth-api": "node scripts/test-auth-api.js",
     "test:rbac": "node scripts/test-rbac-middleware.js",
     "test:request-validation": "node scripts/test-request-validation.js",
-    "test:error-handlers": "node scripts/test-error-handlers.js"
+    "test:error-handlers": "node scripts/test-error-handlers.js",
+    "test:backend": "node scripts/run-backend-checks.js"
   },
   "keywords": [],
   "author": "",
