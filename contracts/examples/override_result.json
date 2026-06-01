@@ -1,0 +1,9 @@
+{
+  "override_id": "ovr_20260601_0001",
+  "device_id": "esp32_home_01",
+  "actuator_id": "buzzer_01",
+  "action": "buzzer_off",
+  "result": "executed",
+  "blocked_reason": null,
+  "timestamp": "2026-06-01T18:45:35Z"
+}
