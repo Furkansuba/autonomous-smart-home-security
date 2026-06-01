@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+.npm/
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Build outputs
+dist/
+build/
+coverage/
+.next/
+out/
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+# IntelliJ / Android Studio
+.idea/
+*.iml
+# VS Code
+.vscode/
+# OS files
+.DS_Store
+Thumbs.db
+# Firebase / Google secrets
+google-services.json
+firebase-adminsdk*.json
+serviceAccountKey.json
+# Mongo / local data
+*.sqlite
+*.db
+# Temporary files
+tmp/
+temp/
