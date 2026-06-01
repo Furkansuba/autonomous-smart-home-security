@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "validate:contracts": "node scripts/validate-contract-examples.js",
     "test:mqtt-router": "node scripts/test-mqtt-router.js",
-    "test:ingestion": "node scripts/test-ingestion-service.js"
+    "test:ingestion": "node scripts/test-ingestion-service.js",
+    "check:config": "node scripts/check-config.js"
   },
   "keywords": [],
   "author": "",

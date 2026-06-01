@@ -3,12 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { env } = require('./config/env');
+const { connectDatabase, getDatabaseStatus } = require('./config/database');
 const contractsRoutes = require('./routes/contracts.routes');
 const mockRoutes = require('./routes/mock.routes');
 const app = express();
-const PORT = process.env.PORT || 5000;
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.get('/health', (req, res) => {
@@ -16,6 +17,7 @@ app.get('/health', (req, res) => {
     status: 'ok',
     service: 'autonomous-smart-home-backend',
     timestamp: new Date().toISOString(),
+    database: getDatabaseStatus(),
   });
 });
 app.use('/api/contracts', contractsRoutes);
@@ -26,6 +28,14 @@ app.use((req, res) => {
     path: req.originalUrl,
   });
 });
-app.listen(PORT, () => {
-  console.log('Backend server running on port ' + PORT);
+app.listen(env.port, async () => {
+  console.log('Backend server running on port ' + env.port);
+  const databaseResult = await connectDatabase();
+  if (databaseResult.connected) {
+    console.log('MongoDB connected: ' + databaseResult.database);
+  } else if (databaseResult.skipped) {
+    console.log('MongoDB connection skipped: ' + databaseResult.reason);
+  } else {
+    console.error('MongoDB connection failed: ' + databaseResult.error);
+  }
 });
