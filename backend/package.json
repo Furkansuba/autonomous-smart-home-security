@@ -22,7 +22,8 @@
     "test:telemetry-api": "node scripts/test-telemetry-api-controller.js",
     "test:override-api": "node scripts/test-override-api-controller.js",
     "test:dashboard-api": "node scripts/test-dashboard-api-controller.js",
-    "test:mqtt-client": "node scripts/test-mqtt-client-service.js"
+    "test:mqtt-client": "node scripts/test-mqtt-client-service.js",
+    "test:mqtt-message-handler": "node scripts/test-mqtt-message-handler.js"
   },
   "keywords": [],
   "author": "",

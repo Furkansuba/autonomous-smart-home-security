@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const { env } = require('./config/env');
 const { connectDatabase, getDatabaseStatus } = require('./config/database');
+const { startMqttClient, getMqttStatus } = require('./mqtt/mqttClient.service');
+const { handleMqttMessage } = require('./mqtt/mqttMessageHandler.service');
 const contractsRoutes = require('./routes/contracts.routes');
 const mockRoutes = require('./routes/mock.routes');
 const devicesRoutes = require('./routes/devices.routes');
@@ -24,6 +26,7 @@ app.get('/health', (req, res) => {
     service: 'autonomous-smart-home-backend',
     timestamp: new Date().toISOString(),
     database: getDatabaseStatus(),
+    mqtt: getMqttStatus(),
   });
 });
 app.use('/api/contracts', contractsRoutes);
@@ -40,6 +43,25 @@ app.use((req, res) => {
     path: req.originalUrl,
   });
 });
+async function handleIncomingMqttMessage(topic, messageBuffer) {
+  try {
+    const result = await handleMqttMessage(topic, messageBuffer);
+    if (result.handled) {
+      console.log(
+        '[MQTT] handled ' +
+          topic +
+          ' as ' +
+          result.payload_type +
+          ' for ' +
+          result.device_id
+      );
+      return;
+    }
+    console.warn('[MQTT] rejected ' + topic + ': ' + result.reason);
+  } catch (error) {
+    console.error('[MQTT] unexpected handler error: ' + error.message);
+  }
+}
 app.listen(env.port, async () => {
   console.log('Backend server running on port ' + env.port);
   const databaseResult = await connectDatabase();
@@ -49,5 +71,13 @@ app.listen(env.port, async () => {
     console.log('MongoDB connection skipped: ' + databaseResult.reason);
   } else {
     console.error('MongoDB connection failed: ' + databaseResult.error);
+  }
+  const mqttResult = await startMqttClient(handleIncomingMqttMessage);
+  if (mqttResult.started) {
+    console.log('MQTT client started.');
+  } else if (mqttResult.skipped) {
+    console.log('MQTT client skipped: ' + mqttResult.reason);
+  } else {
+    console.error('MQTT client failed: ' + mqttResult.reason);
   }
 });
