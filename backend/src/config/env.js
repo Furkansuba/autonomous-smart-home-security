@@ -3,6 +3,12 @@ function toNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
+function toBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  return String(value).toLowerCase() === 'true';
+}
 function toList(value) {
   if (!value) {
     return [];
@@ -19,9 +25,15 @@ const env = {
   mongodbDnsServers: toList(process.env.MONGODB_DNS_SERVERS || ''),
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  mqttEnabled: toBoolean(process.env.MQTT_ENABLED, false),
   mqttBrokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
+  mqttClientId: process.env.MQTT_CLIENT_ID || 'smart_home_backend',
   mqttUsername: process.env.MQTT_USERNAME || '',
   mqttPassword: process.env.MQTT_PASSWORD || '',
+  mqttSubscribeTopics: toList(
+    process.env.MQTT_SUBSCRIBE_TOPICS ||
+      'home/+/heartbeat,home/+/telemetry,home/+/event,home/+/access,home/+/override/result'
+  ),
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 };
 function isMongoConfigured() {
@@ -41,7 +53,10 @@ function getSafeEnvSummary() {
     mongoConfigured: isMongoConfigured(),
     mongoDnsServers: env.mongodbDnsServers,
     jwtConfigured: Boolean(env.jwtSecret),
+    mqttEnabled: env.mqttEnabled,
     mqttBrokerUrl: env.mqttBrokerUrl,
+    mqttClientId: env.mqttClientId,
+    mqttSubscribeTopics: env.mqttSubscribeTopics,
     corsOrigin: env.corsOrigin,
   };
 }
