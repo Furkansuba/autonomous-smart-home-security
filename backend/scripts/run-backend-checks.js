@@ -26,15 +26,33 @@ const checks = [
   'test:mqtt-e2e-local',
   'test:override-mqtt-e2e',
 ];
+function getCommandAndArgs(scriptName) {
+  if (process.platform === 'win32') {
+    return {
+      command: 'cmd.exe',
+      args: ['/d', '/s', '/c', 'npm', 'run', scriptName],
+    };
+  }
+  return {
+    command: 'npm',
+    args: ['run', scriptName],
+  };
+}
 function runCheck(scriptName) {
   console.log('');
   console.log('============================================================');
   console.log('[RUN] npm run ' + scriptName);
   console.log('============================================================');
-  const result = spawnSync('npm', ['run', scriptName], {
+  const commandConfig = getCommandAndArgs(scriptName);
+  const result = spawnSync(commandConfig.command, commandConfig.args, {
     stdio: 'inherit',
-    shell: true,
   });
+  if (result.error) {
+    console.error('');
+    console.error('[ERROR] Failed to start npm run ' + scriptName);
+    console.error(result.error);
+    process.exit(1);
+  }
   if (result.status !== 0) {
     console.error('');
     console.error('[FAIL] npm run ' + scriptName);
