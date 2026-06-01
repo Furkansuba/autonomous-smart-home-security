@@ -20,7 +20,8 @@
     "test:event-api": "node scripts/test-event-api-controller.js",
     "test:access-log-api": "node scripts/test-access-log-api-controller.js",
     "test:telemetry-api": "node scripts/test-telemetry-api-controller.js",
-    "test:override-api": "node scripts/test-override-api-controller.js"
+    "test:override-api": "node scripts/test-override-api-controller.js",
+    "test:dashboard-api": "node scripts/test-dashboard-api-controller.js"
   },
   "keywords": [],
   "author": "",

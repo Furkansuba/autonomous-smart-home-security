@@ -12,6 +12,7 @@ const eventsRoutes = require('./routes/events.routes');
 const accessLogsRoutes = require('./routes/accessLogs.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const overridesRoutes = require('./routes/overrides.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin }));
@@ -32,6 +33,7 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/access-logs', accessLogsRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/overrides', overridesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
