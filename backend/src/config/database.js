@@ -1,3 +1,4 @@
+const dns = require('dns');
 const mongoose = require('mongoose');
 const { env, isMongoConfigured } = require('./env');
 const MONGOOSE_STATES = {
@@ -6,6 +7,11 @@ const MONGOOSE_STATES = {
   2: 'connecting',
   3: 'disconnecting',
 };
+function configureMongoDns() {
+  if (env.mongodbDnsServers && env.mongodbDnsServers.length > 0) {
+    dns.setServers(env.mongodbDnsServers);
+  }
+}
 async function connectDatabase() {
   if (!isMongoConfigured()) {
     return {
@@ -14,6 +20,7 @@ async function connectDatabase() {
       reason: 'MONGODB_URI is not configured.',
     };
   }
+  configureMongoDns();
   try {
     await mongoose.connect(env.mongodbUri, {
       serverSelectionTimeoutMS: 5000,
