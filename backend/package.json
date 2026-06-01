@@ -16,7 +16,8 @@
     "test:db": "node scripts/test-db-connection.js",
     "test:persistence": "node scripts/test-persistence-service.js",
     "test:device-status": "node scripts/test-device-status.js",
-    "test:device-api": "node scripts/test-device-api-controller.js"
+    "test:device-api": "node scripts/test-device-api-controller.js",
+    "test:event-api": "node scripts/test-event-api-controller.js"
   },
   "keywords": [],
   "author": "",

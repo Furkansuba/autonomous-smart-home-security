@@ -8,6 +8,7 @@ const { connectDatabase, getDatabaseStatus } = require('./config/database');
 const contractsRoutes = require('./routes/contracts.routes');
 const mockRoutes = require('./routes/mock.routes');
 const devicesRoutes = require('./routes/devices.routes');
+const eventsRoutes = require('./routes/events.routes');
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin }));
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 app.use('/api/contracts', contractsRoutes);
 app.use('/api/mock', mockRoutes);
 app.use('/api/devices', devicesRoutes);
+app.use('/api/events', eventsRoutes);
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
