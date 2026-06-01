@@ -23,13 +23,16 @@
     "test:override-api": "node scripts/test-override-api-controller.js",
     "test:dashboard-api": "node scripts/test-dashboard-api-controller.js",
     "test:mqtt-client": "node scripts/test-mqtt-client-service.js",
-    "test:mqtt-message-handler": "node scripts/test-mqtt-message-handler.js"
+    "test:mqtt-message-handler": "node scripts/test-mqtt-message-handler.js",
+    "mqtt:broker": "node scripts/local-mqtt-broker.js",
+    "mqtt:publish:mock": "node scripts/mock-mqtt-publisher.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "aedes": "^1.0.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
