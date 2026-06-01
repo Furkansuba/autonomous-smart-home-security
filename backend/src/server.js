@@ -16,6 +16,10 @@ const accessLogsRoutes = require('./routes/accessLogs.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const overridesRoutes = require('./routes/overrides.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const {
+  notFoundHandler,
+  errorHandler,
+} = require('./middleware/errorHandlers');
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin }));
@@ -39,12 +43,8 @@ app.use('/api/access-logs', accessLogsRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/overrides', overridesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    path: req.originalUrl,
-  });
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 async function handleIncomingMqttMessage(topic, messageBuffer) {
   try {
     const result = await handleMqttMessage(topic, messageBuffer);
