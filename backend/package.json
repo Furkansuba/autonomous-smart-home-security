@@ -33,7 +33,8 @@
     "clean:demo": "node scripts/clean-demo-data.js",
     "test:pagination": "node scripts/test-api-pagination.js",
     "seed:demo-admin": "node scripts/seed-demo-admin.js",
-    "test:auth-api": "node scripts/test-auth-api.js"
+    "test:auth-api": "node scripts/test-auth-api.js",
+    "test:rbac": "node scripts/test-rbac-middleware.js"
   },
   "keywords": [],
   "author": "",
