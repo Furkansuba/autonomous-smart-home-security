@@ -72,3 +72,23 @@ npm run test:dashboard-api
 3. Add centralized error handling.
 4. Add API docs for frontend developers.
 5. Start admin web frontend integration.
+## Backend Regression Runner
+A full backend regression command was added:
+cd backend
+npm run test:backend
+This command runs all major backend checks and E2E tests.
+It verifies:
+- config
+- contracts
+- request validation
+- error handling
+- auth
+- RBAC
+- MQTT
+- ingestion
+- persistence
+- REST controllers
+- dashboard
+- MQTT E2E flows
+Expected final output:
+All backend regression checks passed.
