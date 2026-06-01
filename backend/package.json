@@ -18,7 +18,8 @@
     "test:device-status": "node scripts/test-device-status.js",
     "test:device-api": "node scripts/test-device-api-controller.js",
     "test:event-api": "node scripts/test-event-api-controller.js",
-    "test:access-log-api": "node scripts/test-access-log-api-controller.js"
+    "test:access-log-api": "node scripts/test-access-log-api-controller.js",
+    "test:telemetry-api": "node scripts/test-telemetry-api-controller.js"
   },
   "keywords": [],
   "author": "",
