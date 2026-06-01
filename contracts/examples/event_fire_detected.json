@@ -1,0 +1,12 @@
+{
+  "event_id": "evt_20260601_0001",
+  "device_id": "esp32_home_01",
+  "room_id": "kitchen",
+  "event_type": "fire_detected",
+  "severity": "critical",
+  "message": "Fire detected in kitchen.",
+  "sensor_id": "flame_kitchen_01",
+  "raw_value": 1,
+  "confirmed": true,
+  "timestamp": "2026-06-01T18:45:10Z"
+}

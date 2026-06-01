@@ -1,0 +1,8 @@
+{
+  "device_id": "esp32_home_01",
+  "status": "online",
+  "firmware_version": "0.1.0",
+  "uptime_seconds": 3600,
+  "wifi_rssi": -55,
+  "timestamp": "2026-06-01T18:45:00Z"
+}

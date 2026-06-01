@@ -138,3 +138,18 @@ If gas or CO is detected:
 - do not activate pump even by manual override
 - publish critical event
 Gas/CO pump lockout is mandatory.
+## 13. Payload Example Files
+The canonical payload examples are stored under:
+- contracts/examples/heartbeat.json
+- contracts/examples/telemetry.json
+- contracts/examples/event_fire_detected.json
+- contracts/examples/access_granted.json
+- contracts/examples/override_request.json
+- contracts/examples/override_result.json
+These files are the reference payloads for firmware, backend, Android app, admin panel, and tests.
+Rules:
+- Backend must validate incoming MQTT payloads against these structures.
+- Firmware must publish messages compatible with these structures.
+- Android and admin-web must display fields from these structures without inventing new names.
+- Tests should use these examples as fixtures.
+- New payload types must be added to this contract before implementation.

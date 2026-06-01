@@ -1,0 +1,12 @@
+{
+  "device_id": "esp32_home_01",
+  "room_id": "kitchen",
+  "temperature_c": 24.6,
+  "humidity_percent": 48.2,
+  "gas_raw": 315,
+  "co_raw": 120,
+  "flame_detected": false,
+  "motion_detected": false,
+  "reed_open": false,
+  "timestamp": "2026-06-01T18:45:05Z"
+}

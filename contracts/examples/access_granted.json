@@ -1,0 +1,10 @@
+{
+  "access_id": "acc_20260601_0001",
+  "device_id": "esp32_home_01",
+  "gate_id": "main_door",
+  "user_id": "usr_resident_001",
+  "access_method": "nfc",
+  "result": "granted",
+  "card_uid_hash": "sha256:example_hash_value",
+  "timestamp": "2026-06-01T18:45:20Z"
+}
