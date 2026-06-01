@@ -1,5 +1,6 @@
 const { ingestMqttMessage } = require('../services/ingestion.service');
-function ingestMockMqttMessage(req, res) {
+const { persistAcceptedIngestion } = require('../services/persistence.service');
+async function ingestMockMqttMessage(req, res) {
   const { topic, payload } = req.body;
   if (!topic || typeof topic !== 'string') {
     return res.status(400).json({
@@ -19,7 +20,11 @@ function ingestMockMqttMessage(req, res) {
   if (!result.accepted) {
     return res.status(422).json(result);
   }
-  return res.status(200).json(result);
+  const persistence = await persistAcceptedIngestion(result);
+  return res.status(200).json({
+    ...result,
+    persistence,
+  });
 }
 module.exports = {
   ingestMockMqttMessage,
