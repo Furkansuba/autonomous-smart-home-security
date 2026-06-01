@@ -4,6 +4,7 @@ const {
   AccessLog,
   OverrideRequest,
   NotificationLog,
+  TelemetrySummary,
 } = require('../src/models');
 function assertValidModel(name, document) {
   const error = document.validateSync();
@@ -85,6 +86,22 @@ assertValidModel(
     body: 'Fire detected in kitchen.',
     severity: 'critical',
     status: 'queued',
+  })
+);
+assertValidModel(
+  'TelemetrySummary',
+  new TelemetrySummary({
+    device_id: 'esp32_home_01',
+    room_id: 'kitchen',
+    temperature_c: 24.6,
+    humidity_percent: 48.2,
+    gas_raw: 315,
+    co_raw: 120,
+    flame_detected: false,
+    motion_detected: false,
+    reed_open: false,
+    occurred_at: now,
+    received_at: now,
   })
 );
 console.log('All Mongoose model skeletons are valid.');

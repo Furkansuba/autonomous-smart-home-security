@@ -11,7 +11,8 @@
     "test:mqtt-router": "node scripts/test-mqtt-router.js",
     "test:ingestion": "node scripts/test-ingestion-service.js",
     "check:config": "node scripts/check-config.js",
-    "test:models": "node scripts/test-models.js"
+    "test:models": "node scripts/test-models.js",
+    "test:ingestion-mapper": "node scripts/test-ingestion-mapper.js"
   },
   "keywords": [],
   "author": "",
