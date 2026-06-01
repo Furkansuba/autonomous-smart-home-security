@@ -7,6 +7,7 @@ const { env } = require('./config/env');
 const { connectDatabase, getDatabaseStatus } = require('./config/database');
 const { startMqttClient, getMqttStatus } = require('./mqtt/mqttClient.service');
 const { handleMqttMessage } = require('./mqtt/mqttMessageHandler.service');
+const authRoutes = require('./routes/auth.routes');
 const contractsRoutes = require('./routes/contracts.routes');
 const mockRoutes = require('./routes/mock.routes');
 const devicesRoutes = require('./routes/devices.routes');
@@ -29,6 +30,7 @@ app.get('/health', (req, res) => {
     mqtt: getMqttStatus(),
   });
 });
+app.use('/api/auth', authRoutes);
 app.use('/api/contracts', contractsRoutes);
 app.use('/api/mock', mockRoutes);
 app.use('/api/devices', devicesRoutes);
