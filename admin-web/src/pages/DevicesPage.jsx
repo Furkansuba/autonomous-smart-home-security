@@ -48,21 +48,114 @@ function DevicesPage() {
     }
   }
 
+  const totalCount    = devices.length
+  const onlineCount   = devices.filter(d => d.status === 'online').length
+  const offlineCount  = devices.filter(d => d.status === 'offline').length
+  const degradedCount = devices.filter(d => d.status === 'degraded').length
+  const activeCount   = devices.filter(d => d.is_active).length
+
+  const firmwareVersions = [...new Set(devices.map(d => d.firmware_version).filter(Boolean))]
+
+  const latestHeartbeat = devices.reduce((latest, d) => {
+    if (!d.last_heartbeat_at) return latest
+    return !latest || d.last_heartbeat_at > latest ? d.last_heartbeat_at : latest
+  }, null)
+
+  const hasData = !loading && !error && devices.length > 0
+
   return (
     <div className="devices-page">
-      <div className="devices-toolbar">
-        <button
-          className="btn-refresh"
-          onClick={handleRefresh}
-          disabled={refreshing || loading}
-        >
-          {refreshing ? 'Refreshing…' : 'Refresh Status'}
-        </button>
-        {refreshMsg && (
-          <span className={`refresh-msg${refreshMsg.ok ? ' refresh-msg--ok' : ' refresh-msg--err'}`}>
-            {refreshMsg.text}
-          </span>
-        )}
+
+      <div className="devices-page-hdr">
+        <div className="devices-page-hdr-body">
+          <h1 className="devices-page-title">Device Fleet</h1>
+          <p className="devices-page-subtitle">Connected controllers and their operational status</p>
+        </div>
+      </div>
+
+      {hasData && (
+        <div className="devices-fleet-grid">
+          <div className="devices-fleet-card">
+            <div className="devices-fleet-card-label">Total Devices</div>
+            <div className="devices-fleet-card-value">{totalCount}</div>
+            <div className="devices-fleet-card-desc">Registered controllers</div>
+          </div>
+          <div className="devices-fleet-card devices-fleet-card--online">
+            <div className="devices-fleet-card-label">Online</div>
+            <div className="devices-fleet-card-value devices-fleet-val--online">{onlineCount}</div>
+            <div className="devices-fleet-card-desc">Reporting heartbeat</div>
+          </div>
+          <div className="devices-fleet-card devices-fleet-card--offline">
+            <div className="devices-fleet-card-label">Offline</div>
+            <div className="devices-fleet-card-value devices-fleet-val--offline">{offlineCount}</div>
+            <div className="devices-fleet-card-desc">No heartbeat detected</div>
+          </div>
+          <div className="devices-fleet-card">
+            <div className="devices-fleet-card-label">Active</div>
+            <div className="devices-fleet-card-value">{activeCount}</div>
+            <div className="devices-fleet-card-desc">Enabled for operations</div>
+          </div>
+        </div>
+      )}
+
+      {hasData && (
+        <div className="devices-health-panel">
+          <div className="devices-health-hdr">
+            <span className="devices-health-label">Controller Health Overview</span>
+          </div>
+          <div className="devices-health-body">
+            <div className="devices-health-field">
+              <div className="devices-health-field-label">Status Distribution</div>
+              <div className="devices-health-status-row">
+                <span className="devices-health-dot devices-health-dot--online" />
+                <span className="devices-health-status-text">{onlineCount} online</span>
+                {degradedCount > 0 && (
+                  <>
+                    <span className="devices-health-dot devices-health-dot--degraded" />
+                    <span className="devices-health-status-text">{degradedCount} degraded</span>
+                  </>
+                )}
+                <span className="devices-health-dot devices-health-dot--offline" />
+                <span className="devices-health-status-text">{offlineCount} offline</span>
+              </div>
+            </div>
+            <div className="devices-health-divider" />
+            <div className="devices-health-field">
+              <div className="devices-health-field-label">Last Heartbeat</div>
+              <div className="devices-health-field-value devices-health-field-value--mono">
+                {latestHeartbeat ? formatDateTime(latestHeartbeat) : '—'}
+              </div>
+            </div>
+            <div className="devices-health-divider" />
+            <div className="devices-health-field">
+              <div className="devices-health-field-label">Firmware</div>
+              <div className="devices-health-field-value">
+                {firmwareVersions.length > 0 ? firmwareVersions.join(', ') : '—'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="devices-ops-toolbar">
+        <div className="devices-ops-toolbar-body">
+          <span className="devices-ops-toolbar-label">Operations</span>
+          <span className="devices-ops-toolbar-hint">Poll the backend to recalculate heartbeat status for all registered devices</span>
+        </div>
+        <div className="devices-ops-toolbar-actions">
+          <button
+            className="btn-refresh"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh Status'}
+          </button>
+          {refreshMsg && (
+            <span className={`refresh-msg${refreshMsg.ok ? ' refresh-msg--ok' : ' refresh-msg--err'}`}>
+              {refreshMsg.text}
+            </span>
+          )}
+        </div>
       </div>
 
       {loading && <StateMessage className="devices-loading">Loading devices…</StateMessage>}
