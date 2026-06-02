@@ -4,6 +4,43 @@ import { formatDateTime } from '../utils/formatters.js'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
 
+const IconThermometer = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <line x1="8" y1="2" x2="8" y2="9" />
+    <circle cx="8" cy="11.5" r="2.5" />
+    <line x1="10" y1="4.5" x2="11.5" y2="4.5" />
+    <line x1="10" y1="6.5" x2="11.5" y2="6.5" />
+  </svg>
+)
+
+const IconDrop = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 2L4 9.5a4 4 0 008 0L8 2z" />
+  </svg>
+)
+
+const IconRadar = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="9" r="1.5" />
+    <path d="M5.5 9a2.5 2.5 0 005 0" />
+    <path d="M3 9a5 5 0 0010 0" />
+  </svg>
+)
+
+const IconFlame = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 14c-2.5 0-4.5-2-4.5-4.5 0-2 1.5-3.5 2.5-5 0 1.5.5 2.5 1.5 3 0-1.5.5-3 2-4.5-.5 2 .5 3.5 1.5 4.5.5-.5.5-1.5.5-2 1 1.5 1.5 2.5 1.5 4C13 12 11 14 8 14z" />
+  </svg>
+)
+
+const IconWarning = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3L2.5 13h11L8 3z" />
+    <line x1="8" y1="7.5" x2="8" y2="10" />
+    <circle cx="8" cy="11.5" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 function TelemetryPage() {
   const [telemetry, setTelemetry] = useState([])
   const [latest,    setLatest]    = useState(null)
@@ -31,8 +68,54 @@ function TelemetryPage() {
     return () => { cancelled = true }
   }, [])
 
+  const boolLabel    = (val) => val == null ? '—' : (val ? 'Detected' : 'Clear')
+  const boolValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
+  const boolTile     = (val) => val ? 'sensor-tile--alert' : 'sensor-tile--ok'
+
   return (
     <div className="telemetry-page">
+
+      {/* ── Page header ── */}
+      <div className="telemetry-page-hdr">
+        <div className="telemetry-page-hdr-body">
+          <h2 className="telemetry-page-title">Sensor Monitoring</h2>
+          <p className="telemetry-page-subtitle">Latest environmental and security sensor readings</p>
+        </div>
+
+        {latest && (
+          <div className="telemetry-summary-chips">
+            <span className="telemetry-chip">
+              <span className="telemetry-chip-label">Room</span>
+              <span className="telemetry-chip-value">{latest.room_id ?? '—'}</span>
+            </span>
+            <span className="telemetry-chip">
+              <span className="telemetry-chip-label">Temp</span>
+              <span className="telemetry-chip-value">
+                {latest.temperature_c != null ? `${latest.temperature_c.toFixed(1)} °C` : '—'}
+              </span>
+            </span>
+            <span className="telemetry-chip">
+              <span className="telemetry-chip-label">Humidity</span>
+              <span className="telemetry-chip-value">
+                {latest.humidity_percent != null ? `${latest.humidity_percent.toFixed(0)}%` : '—'}
+              </span>
+            </span>
+            <span className={`telemetry-chip${latest.motion_detected ? ' telemetry-chip--alert' : ''}`}>
+              <span className="telemetry-chip-label">Motion</span>
+              <span className="telemetry-chip-value">{boolLabel(latest.motion_detected)}</span>
+            </span>
+            <span className={`telemetry-chip${latest.flame_detected ? ' telemetry-chip--alert' : ''}`}>
+              <span className="telemetry-chip-label">Flame</span>
+              <span className="telemetry-chip-value">{boolLabel(latest.flame_detected)}</span>
+            </span>
+            <span className={`telemetry-chip${latest.gas_detected ? ' telemetry-chip--alert' : ''}`}>
+              <span className="telemetry-chip-label">Gas</span>
+              <span className="telemetry-chip-value">{boolLabel(latest.gas_detected)}</span>
+            </span>
+          </div>
+        )}
+      </div>
+
       {loading && <StateMessage className="telemetry-loading">Loading telemetry…</StateMessage>}
 
       {!loading && error && (
@@ -41,47 +124,134 @@ function TelemetryPage() {
 
       {!loading && !error && (
         <>
-          <div className="telemetry-latest-card">
-            <span className="telemetry-latest-label">Latest Reading</span>
+          {/* ── Featured latest reading panel ── */}
+          <div className="telemetry-reading-panel">
+            <div className="telemetry-reading-hdr">
+              <span className="telemetry-reading-label">Latest Sensor Reading</span>
+              {latest && (latest.recorded_at || latest.createdAt) && (
+                <span className="telemetry-reading-ts">
+                  {formatDateTime(latest.recorded_at ?? latest.createdAt)}
+                </span>
+              )}
+            </div>
+
             {latest ? (
-              <div className="telemetry-latest-body">
-                <span><strong>Device:</strong> {latest.device_id ?? '—'}</span>
-                <span><strong>Room:</strong> {latest.room_id ?? '—'}</span>
-                {latest.temperature_c    != null && <span><strong>Temp:</strong> {latest.temperature_c.toFixed(1)} °C</span>}
-                {latest.humidity_percent != null && <span><strong>Humidity:</strong> {latest.humidity_percent.toFixed(0)}%</span>}
-                <span><strong>Motion:</strong> {latest.motion_detected ? 'Yes' : 'No'}</span>
-                <span><strong>Flame:</strong> {latest.flame_detected ? 'Yes' : 'No'}</span>
-                <span><strong>Gas:</strong> {latest.gas_detected ? 'Yes' : 'No'}</span>
-                {(latest.recorded_at || latest.createdAt) && (
-                  <span><strong>At:</strong> {formatDateTime(latest.recorded_at ?? latest.createdAt)}</span>
-                )}
+              <div className="telemetry-reading-grid">
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Device ID</span>
+                  <span className="telemetry-reading-field-value telemetry-reading-field-value--mono">
+                    {latest.device_id ?? '—'}
+                  </span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Room</span>
+                  <span className="telemetry-reading-field-value">{latest.room_id ?? '—'}</span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Temperature</span>
+                  <span className="telemetry-reading-field-value">
+                    {latest.temperature_c != null ? `${latest.temperature_c.toFixed(1)} °C` : '—'}
+                  </span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Humidity</span>
+                  <span className="telemetry-reading-field-value">
+                    {latest.humidity_percent != null ? `${latest.humidity_percent.toFixed(0)}%` : '—'}
+                  </span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Motion</span>
+                  <span className={`telemetry-reading-field-value ${boolValClass(latest.motion_detected)}`}>
+                    {boolLabel(latest.motion_detected)}
+                  </span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Flame</span>
+                  <span className={`telemetry-reading-field-value ${boolValClass(latest.flame_detected)}`}>
+                    {boolLabel(latest.flame_detected)}
+                  </span>
+                </div>
+                <div className="telemetry-reading-field">
+                  <span className="telemetry-reading-field-label">Gas</span>
+                  <span className={`telemetry-reading-field-value ${boolValClass(latest.gas_detected)}`}>
+                    {boolLabel(latest.gas_detected)}
+                  </span>
+                </div>
               </div>
             ) : (
               <p className="telemetry-latest-empty">No recent telemetry data.</p>
             )}
           </div>
 
+          {/* ── Sensor tiles ── */}
+          {latest && (
+            <div className="dash-panel">
+              <div className="dash-panel-hdr">
+                <span className="dash-panel-title">Environmental Sensors</span>
+                <span className="dash-panel-badge">Live</span>
+              </div>
+              <div className="sensor-tile-grid">
+                <div className="sensor-tile">
+                  <div className="sensor-tile-icon"><IconThermometer /></div>
+                  <span className="sensor-tile-value">
+                    {latest.temperature_c != null ? `${latest.temperature_c.toFixed(1)}°` : '—'}
+                  </span>
+                  <span className="sensor-tile-label">Temperature</span>
+                </div>
+                <div className="sensor-tile">
+                  <div className="sensor-tile-icon"><IconDrop /></div>
+                  <span className="sensor-tile-value">
+                    {latest.humidity_percent != null ? `${latest.humidity_percent.toFixed(0)}%` : '—'}
+                  </span>
+                  <span className="sensor-tile-label">Humidity</span>
+                </div>
+                <div className={`sensor-tile ${boolTile(latest.motion_detected)}`}>
+                  <div className="sensor-tile-icon"><IconRadar /></div>
+                  <span className="sensor-tile-value">{boolLabel(latest.motion_detected)}</span>
+                  <span className="sensor-tile-label">Motion</span>
+                </div>
+                <div className={`sensor-tile ${boolTile(latest.flame_detected)}`}>
+                  <div className="sensor-tile-icon"><IconFlame /></div>
+                  <span className="sensor-tile-value">{boolLabel(latest.flame_detected)}</span>
+                  <span className="sensor-tile-label">Flame</span>
+                </div>
+                <div className={`sensor-tile ${boolTile(latest.gas_detected)}`}>
+                  <div className="sensor-tile-icon"><IconWarning /></div>
+                  <span className="sensor-tile-value">{boolLabel(latest.gas_detected)}</span>
+                  <span className="sensor-tile-label">Gas</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Records table ── */}
           {telemetry.length === 0 ? (
             <StateMessage className="telemetry-empty">No telemetry records found.</StateMessage>
           ) : (
-            <DataTable
-              wrapClassName="telemetry-table-wrap"
-              tableClassName="telemetry-table"
-              columns={['Device', 'Room', 'Temp (°C)', 'Humidity (%)', 'Motion', 'Flame', 'Gas', 'Recorded At']}
-            >
-              {telemetry.map((t) => (
-                <tr key={t._id ?? t.telemetry_id ?? `${t.device_id}-${t.recorded_at}`}>
-                  <td className="telemetry-col-id">{t.device_id ?? '—'}</td>
-                  <td>{t.room_id ?? '—'}</td>
-                  <td>{t.temperature_c    != null ? t.temperature_c.toFixed(1)    : '—'}</td>
-                  <td>{t.humidity_percent != null ? t.humidity_percent.toFixed(0) : '—'}</td>
-                  <td>{t.motion_detected != null ? (t.motion_detected ? 'Yes' : 'No') : '—'}</td>
-                  <td>{t.flame_detected  != null ? (t.flame_detected  ? 'Yes' : 'No') : '—'}</td>
-                  <td>{t.gas_detected    != null ? (t.gas_detected    ? 'Yes' : 'No') : '—'}</td>
-                  <td className="telemetry-col-ts">{formatDateTime(t.recorded_at ?? t.createdAt)}</td>
-                </tr>
-              ))}
-            </DataTable>
+            <>
+              <div className="telemetry-records-hdr">
+                <span className="telemetry-records-title">All Records</span>
+                <span className="telemetry-records-count">{telemetry.length}</span>
+              </div>
+              <DataTable
+                wrapClassName="telemetry-table-wrap"
+                tableClassName="telemetry-table"
+                columns={['Device', 'Room', 'Temp (°C)', 'Humidity (%)', 'Motion', 'Flame', 'Gas', 'Recorded At']}
+              >
+                {telemetry.map((t) => (
+                  <tr key={t._id ?? t.telemetry_id ?? `${t.device_id}-${t.recorded_at}`}>
+                    <td className="telemetry-col-id">{t.device_id ?? '—'}</td>
+                    <td>{t.room_id ?? '—'}</td>
+                    <td>{t.temperature_c    != null ? t.temperature_c.toFixed(1)    : '—'}</td>
+                    <td>{t.humidity_percent != null ? t.humidity_percent.toFixed(0) : '—'}</td>
+                    <td>{t.motion_detected != null ? (t.motion_detected ? 'Yes' : 'No') : '—'}</td>
+                    <td>{t.flame_detected  != null ? (t.flame_detected  ? 'Yes' : 'No') : '—'}</td>
+                    <td>{t.gas_detected    != null ? (t.gas_detected    ? 'Yes' : 'No') : '—'}</td>
+                    <td className="telemetry-col-ts">{formatDateTime(t.recorded_at ?? t.createdAt)}</td>
+                  </tr>
+                ))}
+              </DataTable>
+            </>
           )}
         </>
       )}

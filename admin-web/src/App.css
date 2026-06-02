@@ -1062,6 +1062,177 @@
   font-size: 12px;
 }
 
+/* ── Telemetry page header ───────────────────────────────── */
+.telemetry-page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.telemetry-page-hdr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.telemetry-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.telemetry-page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Telemetry summary chips ─────────────────────────────── */
+.telemetry-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.telemetry-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 13px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.telemetry-chip--alert {
+  background: #fff5f5;
+  border-color: #feb2b2;
+}
+
+.telemetry-chip-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  line-height: 1;
+}
+
+.telemetry-chip-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.telemetry-chip--alert .telemetry-chip-value { color: #c53030; }
+
+/* ── Telemetry featured reading panel ───────────────────── */
+.telemetry-reading-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid #2b6cb0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.telemetry-reading-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.telemetry-reading-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.telemetry-reading-ts {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-family: monospace;
+}
+
+.telemetry-reading-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px 20px;
+}
+
+@media (max-width: 800px) {
+  .telemetry-reading-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.telemetry-reading-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.telemetry-reading-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.telemetry-reading-field-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.telemetry-reading-field-value--mono {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.telemetry-val--ok    { color: #276749; }
+.telemetry-val--alert { color: #c53030; }
+
+/* ── Telemetry records section header ───────────────────── */
+.telemetry-records-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.telemetry-records-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.telemetry-records-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
 /* ── Overrides page ──────────────────────────────────────── */
 .overrides-page {
   display: flex;
@@ -1508,6 +1679,18 @@
 .theme-dark .override-status-badge--executed  { color: #6ee7b7; background: rgba(6, 78, 59, 0.30);   border-color: #065f46; }
 .theme-dark .override-status-badge--failed    { color: #fca5a5; background: rgba(127, 29, 29, 0.30); border-color: #991b1b; }
 .theme-dark .override-status-badge--blocked   { color: #fcd34d; background: rgba(120, 53, 15, 0.30); border-color: #92400e; }
+
+.theme-dark .telemetry-chip--alert {
+  background: rgba(127, 29, 29, 0.18);
+  border-color: #991b1b;
+}
+
+.theme-dark .telemetry-chip--alert .telemetry-chip-value { color: #fca5a5; }
+
+.theme-dark .telemetry-reading-panel { border-left-color: #3b82f6; }
+
+.theme-dark .telemetry-val--ok    { color: #4ade80; }
+.theme-dark .telemetry-val--alert { color: #f87171; }
 
 .theme-dark .devices-error,
 .theme-dark .events-error,
