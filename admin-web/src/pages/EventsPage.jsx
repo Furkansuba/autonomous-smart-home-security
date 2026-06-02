@@ -4,6 +4,7 @@ import { formatDateTime } from '../utils/formatters.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
+import StateMessage from '../components/ui/StateMessage.jsx'
 
 const SEVERITY_FILTERS = ['all', 'info', 'warning', 'critical']
 
@@ -41,14 +42,14 @@ function EventsPage() {
         <FilterBar options={SEVERITY_FILTERS} activeValue={severity} onChange={setSeverity} />
       </div>
 
-      {loading && <p className="events-loading">Loading events…</p>}
+      {loading && <StateMessage className="events-loading">Loading events…</StateMessage>}
 
       {!loading && error && (
-        <p className="events-error">{error}</p>
+        <StateMessage className="events-error">{error}</StateMessage>
       )}
 
       {!loading && !error && events.length === 0 && (
-        <p className="events-empty">No events found.</p>
+        <StateMessage className="events-empty">No events found.</StateMessage>
       )}
 
       {!loading && !error && events.length > 0 && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getTelemetry, getLatestTelemetry } from '../services/telemetryService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import DataTable from '../components/ui/DataTable.jsx'
+import StateMessage from '../components/ui/StateMessage.jsx'
 
 function TelemetryPage() {
   const [telemetry, setTelemetry] = useState([])
@@ -32,10 +33,10 @@ function TelemetryPage() {
 
   return (
     <div className="telemetry-page">
-      {loading && <p className="telemetry-loading">Loading telemetry…</p>}
+      {loading && <StateMessage className="telemetry-loading">Loading telemetry…</StateMessage>}
 
       {!loading && error && (
-        <p className="telemetry-error">{error}</p>
+        <StateMessage className="telemetry-error">{error}</StateMessage>
       )}
 
       {!loading && !error && (
@@ -61,7 +62,7 @@ function TelemetryPage() {
           </div>
 
           {telemetry.length === 0 ? (
-            <p className="telemetry-empty">No telemetry records found.</p>
+            <StateMessage className="telemetry-empty">No telemetry records found.</StateMessage>
           ) : (
             <DataTable
               wrapClassName="telemetry-table-wrap"

@@ -4,6 +4,7 @@ import { formatDateTime } from '../utils/formatters.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
+import StateMessage from '../components/ui/StateMessage.jsx'
 
 const RESULT_FILTERS = ['all', 'granted', 'denied']
 
@@ -41,14 +42,14 @@ function AccessLogsPage() {
         <FilterBar options={RESULT_FILTERS} activeValue={result} onChange={setResult} />
       </div>
 
-      {loading && <p className="access-logs-loading">Loading access logs…</p>}
+      {loading && <StateMessage className="access-logs-loading">Loading access logs…</StateMessage>}
 
       {!loading && error && (
-        <p className="access-logs-error">{error}</p>
+        <StateMessage className="access-logs-error">{error}</StateMessage>
       )}
 
       {!loading && !error && logs.length === 0 && (
-        <p className="access-logs-empty">No access logs found.</p>
+        <StateMessage className="access-logs-empty">No access logs found.</StateMessage>
       )}
 
       {!loading && !error && logs.length > 0 && (

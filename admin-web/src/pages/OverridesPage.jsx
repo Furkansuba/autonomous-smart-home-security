@@ -5,6 +5,7 @@ import * as authService from '../services/authService.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
+import StateMessage from '../components/ui/StateMessage.jsx'
 
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
 const OVERRIDE_ACTIONS_LIST = [
@@ -84,14 +85,14 @@ function OverridesPage() {
         <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
       </div>
 
-      {loading && <p className="overrides-loading">Loading overrides…</p>}
+      {loading && <StateMessage className="overrides-loading">Loading overrides…</StateMessage>}
 
       {!loading && error && (
-        <p className="overrides-error">{error}</p>
+        <StateMessage className="overrides-error">{error}</StateMessage>
       )}
 
       {!loading && !error && overrides.length === 0 && (
-        <p className="overrides-empty">No overrides found.</p>
+        <StateMessage className="overrides-empty">No overrides found.</StateMessage>
       )}
 
       {!loading && !error && overrides.length > 0 && (

@@ -3,6 +3,7 @@ import { getDevices, refreshDeviceStatuses } from '../services/deviceService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import Badge from '../components/ui/Badge.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
+import StateMessage from '../components/ui/StateMessage.jsx'
 
 function DevicesPage() {
   const [devices,     setDevices]     = useState([])
@@ -64,14 +65,14 @@ function DevicesPage() {
         )}
       </div>
 
-      {loading && <p className="devices-loading">Loading devices…</p>}
+      {loading && <StateMessage className="devices-loading">Loading devices…</StateMessage>}
 
       {!loading && error && (
-        <p className="devices-error">{error}</p>
+        <StateMessage className="devices-error">{error}</StateMessage>
       )}
 
       {!loading && !error && devices.length === 0 && (
-        <p className="devices-empty">No devices found.</p>
+        <StateMessage className="devices-empty">No devices found.</StateMessage>
       )}
 
       {!loading && !error && devices.length > 0 && (
