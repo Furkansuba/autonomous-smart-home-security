@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import LoginPage from './components/LoginPage.jsx'
 import * as authService from './services/authService.js'
@@ -24,7 +24,9 @@ function Sidebar({ active, onNavigate }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <span className="brand-icon">&#9632;</span>
+        <svg className="brand-icon" width="18" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" fill="#e53e3e"/>
+        </svg>
         <span className="brand-name">Smart Home Security</span>
       </div>
       <nav className="sidebar-nav">
@@ -38,7 +40,6 @@ function Sidebar({ active, onNavigate }) {
           </button>
         ))}
       </nav>
-      <div className="sidebar-footer">Admin Panel</div>
     </aside>
   )
 }
@@ -737,6 +738,66 @@ function SectionPlaceholder({ page }) {
   )
 }
 
+function AvatarMenu({ userLabel, onProfile, onLogout }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [open])
+
+  const initial = (userLabel?.[0] ?? 'A').toUpperCase()
+
+  return (
+    <div className="avatar-menu" ref={ref}>
+      <button className="avatar-btn" onClick={() => setOpen((v) => !v)} aria-label="User menu">
+        {initial}
+      </button>
+      {open && (
+        <div className="avatar-dropdown">
+          <div className="avatar-dropdown-email">{userLabel}</div>
+          <button className="avatar-dropdown-item" onClick={() => { setOpen(false); onProfile() }}>
+            Profile
+          </button>
+          <button className="avatar-dropdown-item avatar-dropdown-item--danger" onClick={() => { setOpen(false); onLogout() }}>
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProfilePage() {
+  const user = authService.getStoredUser()
+  const initial = (user?.email?.[0] ?? 'A').toUpperCase()
+  return (
+    <div className="profile-page">
+      <div className="profile-card">
+        <div className="profile-avatar-lg">{initial}</div>
+        <div className="profile-fields">
+          <div className="profile-field">
+            <span className="profile-field-label">Email</span>
+            <span className="profile-field-value">{user?.email ?? '—'}</span>
+          </div>
+          <div className="profile-field">
+            <span className="profile-field-label">Role</span>
+            <span className="profile-field-value">{user?.role ?? '—'}</span>
+          </div>
+          <div className="profile-field">
+            <span className="profile-field-label">User ID</span>
+            <span className="profile-field-value profile-field-value--mono">{user?.user_id ?? '—'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PageContent({ page }) {
   if (page === 'dashboard')   return <DashboardPage />
   if (page === 'devices')     return <DevicesPage />
@@ -744,6 +805,7 @@ function PageContent({ page }) {
   if (page === 'access-logs') return <AccessLogsPage />
   if (page === 'telemetry')   return <TelemetryPage />
   if (page === 'overrides')   return <OverridesPage />
+  if (page === 'profile')     return <ProfilePage />
   return <SectionPlaceholder page={page} />
 }
 
@@ -773,13 +835,14 @@ function App() {
       <div className="main-wrapper">
         <header className="topbar">
           <span className="topbar-title">
-            {NAV_ITEMS.find((i) => i.key === activePage)?.label}
+            {NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')}
           </span>
           <div className="topbar-right">
-            <span className="topbar-user">{userLabel}</span>
-            <button className="btn-logout" onClick={handleLogout}>
-              Logout
-            </button>
+            <AvatarMenu
+              userLabel={userLabel}
+              onProfile={() => setActivePage('profile')}
+              onLogout={handleLogout}
+            />
           </div>
         </header>
         <main className="main-content">

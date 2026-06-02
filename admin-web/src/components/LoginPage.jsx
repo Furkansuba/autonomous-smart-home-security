@@ -25,7 +25,9 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <span className="login-brand-icon">&#9632;</span>
+          <svg className="login-brand-icon" width="22" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" fill="#e53e3e"/>
+          </svg>
           <h1 className="login-title">Smart Home Security</h1>
           <p className="login-subtitle">Admin Panel</p>
         </div>
