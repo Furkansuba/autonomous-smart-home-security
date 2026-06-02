@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import LoginPage from './components/LoginPage.jsx'
+import Sidebar from './components/layout/Sidebar.jsx'
+import Topbar from './components/layout/Topbar.jsx'
 import * as authService from './services/authService.js'
 import { getDashboardSummary } from './services/dashboardService.js'
 import { getDevices, refreshDeviceStatuses } from './services/deviceService.js'
@@ -20,29 +22,6 @@ const NAV_ITEMS = [
 
 const SECTION_META = {}
 
-function Sidebar({ active, onNavigate }) {
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <svg className="brand-icon" width="18" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" fill="#e53e3e"/>
-        </svg>
-        <span className="brand-name">Smart Home Security</span>
-      </div>
-      <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.key}
-            className={`nav-item${active === item.key ? ' nav-item--active' : ''}`}
-            onClick={() => onNavigate(item.key)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-    </aside>
-  )
-}
 
 function parseTelemetry(latest) {
   if (!Array.isArray(latest) || latest.length === 0) return { primary: 'No data', secondary: '' }
@@ -824,39 +803,6 @@ function SectionPlaceholder({ page }) {
   )
 }
 
-function AvatarMenu({ userLabel, onProfile, onLogout }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    function handleOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
-  }, [open])
-
-  const initial = (userLabel?.[0] ?? 'A').toUpperCase()
-
-  return (
-    <div className="avatar-menu" ref={ref}>
-      <button className="avatar-btn" onClick={() => setOpen((v) => !v)} aria-label="User menu">
-        {initial}
-      </button>
-      {open && (
-        <div className="avatar-dropdown">
-          <div className="avatar-dropdown-email">{userLabel}</div>
-          <button className="avatar-dropdown-item" onClick={() => { setOpen(false); onProfile() }}>
-            Profile
-          </button>
-          <button className="avatar-dropdown-item avatar-dropdown-item--danger" onClick={() => { setOpen(false); onLogout() }}>
-            Sign Out
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
 
 function ProfilePage() {
   const user = authService.getStoredUser()
@@ -913,24 +859,18 @@ function App() {
   }
 
   const user = authService.getStoredUser()
-  const userLabel = user?.email ?? 'Admin'
+  const pageTitle = NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')
 
   return (
     <div className="app-shell">
-      <Sidebar active={activePage} onNavigate={setActivePage} />
+      <Sidebar navItems={NAV_ITEMS} activePage={activePage} onNavigate={setActivePage} />
       <div className="main-wrapper">
-        <header className="topbar">
-          <span className="topbar-title">
-            {NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')}
-          </span>
-          <div className="topbar-right">
-            <AvatarMenu
-              userLabel={userLabel}
-              onProfile={() => setActivePage('profile')}
-              onLogout={handleLogout}
-            />
-          </div>
-        </header>
+        <Topbar
+          title={pageTitle}
+          user={user}
+          onNavigateProfile={() => setActivePage('profile')}
+          onLogout={handleLogout}
+        />
         <main className="main-content">
           <PageContent page={activePage} />
         </main>
