@@ -856,3 +856,208 @@
   color: #718096;
   font-size: 12px;
 }
+
+/* ── Overrides page ──────────────────────────────────────── */
+.overrides-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overrides-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.overrides-loading,
+.overrides-empty {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.overrides-error {
+  font-size: 13px;
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.overrides-table-wrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.overrides-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.overrides-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #718096;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.overrides-table td {
+  padding: 11px 16px;
+  color: #2d3748;
+  border-bottom: 1px solid #f0f4f8;
+  white-space: nowrap;
+}
+
+.overrides-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.overrides-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.overrides-col-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.overrides-col-reason {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overrides-col-ts {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* override status badges */
+.override-status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.override-status-badge--requested { color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; }
+.override-status-badge--executed  { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
+.override-status-badge--failed    { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
+.override-status-badge--blocked   { color: #744210; background: #fffaf0; border: 1px solid #fbd38d; }
+
+/* ── Create Override form ────────────────────────────────── */
+.override-form-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #2b6cb0;
+  border-radius: 8px;
+  padding: 20px 24px 22px;
+  max-width: 560px;
+}
+
+.override-form-heading {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.override-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.override-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.override-form-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #718096;
+}
+
+.override-form-input,
+.override-form-select {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #2d3748;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.override-form-input:focus,
+.override-form-select:focus {
+  border-color: #90cdf4;
+}
+
+.override-form-input:disabled,
+.override-form-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.override-form-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.btn-override-submit {
+  all: unset;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2b6cb0;
+  border-radius: 5px;
+  padding: 8px 20px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-override-submit:hover:not(:disabled) {
+  background: #2c5282;
+}
+
+.btn-override-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.override-submit-msg {
+  font-size: 13px;
+}
+
+.override-submit-msg--ok  { color: #276749; }
+.override-submit-msg--err { color: #c53030; }

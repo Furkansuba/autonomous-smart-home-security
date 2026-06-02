@@ -7,6 +7,7 @@ import { getDevices, refreshDeviceStatuses } from './services/deviceService.js'
 import { getEvents } from './services/eventService.js'
 import { getAccessLogs } from './services/accessLogService.js'
 import { getTelemetry, getLatestTelemetry } from './services/telemetryService.js'
+import { getOverrides, createOverride } from './services/overrideService.js'
 
 const NAV_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard'   },
@@ -17,12 +18,7 @@ const NAV_ITEMS = [
   { key: 'overrides',   label: 'Overrides'   },
 ]
 
-const SECTION_META = {
-  overrides: {
-    heading: 'Overrides',
-    description: 'Manual override commands for pump, valve, and alarm actuators — with status, issuer, and full audit trail — will appear here.',
-  },
-}
+const SECTION_META = {}
 
 function Sidebar({ active, onNavigate }) {
   return (
@@ -520,6 +516,214 @@ function TelemetryPage() {
   )
 }
 
+const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
+const OVERRIDE_ACTIONS_LIST = [
+  'pump_on', 'pump_off',
+  'valve_open', 'valve_close',
+  'buzzer_on', 'buzzer_off',
+  'door_unlock', 'system_reset',
+]
+
+function OverrideStatusBadge({ status }) {
+  return (
+    <span className={`override-status-badge override-status-badge--${status ?? 'requested'}`}>
+      {status ?? '—'}
+    </span>
+  )
+}
+
+function OverridesPage() {
+  const [overrides,    setOverrides]    = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const [formDevice,   setFormDevice]   = useState('esp32_home_01')
+  const [formActuator, setFormActuator] = useState('buzzer_01')
+  const [formAction,   setFormAction]   = useState('buzzer_off')
+  const [formReason,   setFormReason]   = useState('Manual admin web override.')
+  const [submitting,   setSubmitting]   = useState(false)
+  const [submitMsg,    setSubmitMsg]    = useState(null)
+
+  const loadOverrides = useCallback((status) => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    const params = {}
+    if (status !== 'all') params.status = status
+    getOverrides(params)
+      .then((data) => {
+        if (!cancelled) {
+          setOverrides(Array.isArray(data?.overrides) ? data.overrides : [])
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load overrides.')
+          setLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => loadOverrides(statusFilter), [loadOverrides, statusFilter])
+
+  function handleFilterChange(f) {
+    setStatusFilter(f)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSubmitting(true)
+    setSubmitMsg(null)
+    const storedUser = authService.getStoredUser()
+    const requestedBy = storedUser?.user_id ?? 'usr_admin_001'
+    try {
+      await createOverride({
+        device_id:    formDevice.trim(),
+        actuator_id:  formActuator.trim(),
+        action:       formAction,
+        reason:       formReason.trim(),
+        requested_by: requestedBy,
+      })
+      setSubmitMsg({ ok: true, text: 'Override created successfully.' })
+      loadOverrides(statusFilter)
+    } catch (err) {
+      setSubmitMsg({ ok: false, text: err.message || 'Failed to create override.' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="overrides-page">
+      <div className="overrides-toolbar">
+        {OVERRIDE_STATUS_FILTERS.map((f) => (
+          <button
+            key={f}
+            className={`filter-btn${statusFilter === f ? ' filter-btn--active' : ''}`}
+            onClick={() => handleFilterChange(f)}
+          >
+            {f === 'all' ? 'All' : f}
+          </button>
+        ))}
+      </div>
+
+      {loading && <p className="overrides-loading">Loading overrides…</p>}
+
+      {!loading && error && (
+        <p className="overrides-error">{error}</p>
+      )}
+
+      {!loading && !error && overrides.length === 0 && (
+        <p className="overrides-empty">No overrides found.</p>
+      )}
+
+      {!loading && !error && overrides.length > 0 && (
+        <div className="overrides-table-wrap">
+          <table className="overrides-table">
+            <thead>
+              <tr>
+                <th>Override ID</th>
+                <th>Device</th>
+                <th>Requested By</th>
+                <th>Actuator</th>
+                <th>Action</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Requested At</th>
+                <th>Result At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overrides.map((o) => (
+                <tr key={o.override_id ?? o._id}>
+                  <td className="overrides-col-id">{o.override_id ?? '—'}</td>
+                  <td>{o.device_id ?? '—'}</td>
+                  <td>{o.requested_by ?? '—'}</td>
+                  <td>{o.actuator_id ?? '—'}</td>
+                  <td>{o.action ?? '—'}</td>
+                  <td className="overrides-col-reason">{o.reason ?? '—'}</td>
+                  <td><OverrideStatusBadge status={o.status} /></td>
+                  <td className="overrides-col-ts">{formatHeartbeat(o.requested_at)}</td>
+                  <td className="overrides-col-ts">{o.result_at ? formatHeartbeat(o.result_at) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="override-form-card">
+        <h3 className="override-form-heading">Create Override</h3>
+        <form className="override-form" onSubmit={handleSubmit}>
+          <div className="override-form-row">
+            <label className="override-form-label">Device ID</label>
+            <input
+              className="override-form-input"
+              type="text"
+              value={formDevice}
+              onChange={(e) => setFormDevice(e.target.value)}
+              disabled={submitting}
+              required
+            />
+          </div>
+          <div className="override-form-row">
+            <label className="override-form-label">Actuator ID</label>
+            <input
+              className="override-form-input"
+              type="text"
+              value={formActuator}
+              onChange={(e) => setFormActuator(e.target.value)}
+              disabled={submitting}
+              required
+            />
+          </div>
+          <div className="override-form-row">
+            <label className="override-form-label">Action</label>
+            <select
+              className="override-form-select"
+              value={formAction}
+              onChange={(e) => setFormAction(e.target.value)}
+              disabled={submitting}
+            >
+              {OVERRIDE_ACTIONS_LIST.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+          <div className="override-form-row">
+            <label className="override-form-label">Reason</label>
+            <input
+              className="override-form-input"
+              type="text"
+              value={formReason}
+              onChange={(e) => setFormReason(e.target.value)}
+              disabled={submitting}
+              maxLength={240}
+            />
+          </div>
+          <div className="override-form-footer">
+            <button
+              className="btn-override-submit"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting…' : 'Submit Override'}
+            </button>
+            {submitMsg && (
+              <span className={`override-submit-msg${submitMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                {submitMsg.text}
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function SectionPlaceholder({ page }) {
   const meta = SECTION_META[page]
   if (!meta) return null
@@ -539,6 +743,7 @@ function PageContent({ page }) {
   if (page === 'events')      return <EventsPage />
   if (page === 'access-logs') return <AccessLogsPage />
   if (page === 'telemetry')   return <TelemetryPage />
+  if (page === 'overrides')   return <OverridesPage />
   return <SectionPlaceholder page={page} />
 }
 
