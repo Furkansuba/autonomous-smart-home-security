@@ -650,3 +650,100 @@
 .severity-badge--info     { color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; }
 .severity-badge--warning  { color: #744210; background: #fffaf0; border: 1px solid #fbd38d; }
 .severity-badge--critical { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
+
+/* ── Access Logs page ────────────────────────────────────── */
+.access-logs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.access-logs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.access-logs-loading,
+.access-logs-empty {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.access-logs-error {
+  font-size: 13px;
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.access-logs-table-wrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.access-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.access-logs-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #718096;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.access-logs-table td {
+  padding: 11px 16px;
+  color: #2d3748;
+  border-bottom: 1px solid #f0f4f8;
+  white-space: nowrap;
+}
+
+.access-logs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.access-logs-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.access-logs-col-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.access-logs-col-ts {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* result badges */
+.result-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.result-badge--granted { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
+.result-badge--denied  { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
+.result-badge--unknown { color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; }
