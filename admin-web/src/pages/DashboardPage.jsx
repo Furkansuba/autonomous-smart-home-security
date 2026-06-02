@@ -178,8 +178,7 @@ function DashboardPage() {
       <div className="dashboard-mid">
         <div className="dash-panel">
           <div className="dash-panel-hdr">
-            <span className="dash-panel-title">Environmental Snapshot</span>
-            {rawTel?.room_id && <span className="dash-panel-badge">{rawTel.room_id}</span>}
+            <span className="dash-panel-title">Latest Sensor Snapshot</span>
           </div>
           <div className="sensor-tile-grid">
             <div className={`sensor-tile sensor-tile--${tempStatus}`}>
@@ -233,6 +232,7 @@ function DashboardPage() {
             <div className="env-snapshot-footer">
               {signalSummary && <span className="env-snapshot-signal">{signalSummary}</span>}
               {lastReading   && <span className="env-snapshot-reading">{lastReading}</span>}
+              {rawTel.room_id && <span className="env-snapshot-room">Latest room: {rawTel.room_id}</span>}
             </div>
           )}
         </div>

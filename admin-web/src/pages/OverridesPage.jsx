@@ -15,6 +15,12 @@ const OVERRIDE_ACTIONS_LIST = [
   'door_unlock', 'system_reset',
 ]
 
+const QUICK_ACTIONS = [
+  { label: 'Buzzer Off',  actuator: 'buzzer_01', action: 'buzzer_off'  },
+  { label: 'Buzzer On',   actuator: 'buzzer_01', action: 'buzzer_on'   },
+  { label: 'Door Unlock', actuator: 'door_01',   action: 'door_unlock' },
+]
+
 function OverridesPage() {
   const [overrides,    setOverrides]    = useState([])
   const [loading,      setLoading]      = useState(true)
@@ -79,8 +85,51 @@ function OverridesPage() {
     }
   }
 
+  function applyQuickAction(actuator, action) {
+    setFormActuator(actuator)
+    setFormAction(action)
+  }
+
+  const statsReady   = !loading && !error
+  const countStatus  = (s) => overrides.filter(o => o.status === s).length
+  const statPending  = statsReady ? countStatus('requested') : null
+  const statExecuted = statsReady ? countStatus('executed')  : null
+  const statFailed   = statsReady ? countStatus('failed') + countStatus('blocked') : null
+  const statTotal    = statsReady ? overrides.length : null
+
   return (
     <div className="overrides-page">
+
+      {/* Operations header */}
+      <div className="ops-header">
+        <div className="ops-header-body">
+          <h2 className="ops-header-title">Override Operations</h2>
+          <p className="ops-header-subtitle">Issue and track manual actuator commands for connected devices</p>
+        </div>
+        <div className="ops-stats-row">
+          <div className="ops-stat">
+            <span className="ops-stat-value ops-stat-value--blue">{statPending  ?? '—'}</span>
+            <span className="ops-stat-label">Pending</span>
+          </div>
+          <div className="ops-stat-divider" />
+          <div className="ops-stat">
+            <span className="ops-stat-value ops-stat-value--green">{statExecuted ?? '—'}</span>
+            <span className="ops-stat-label">Executed</span>
+          </div>
+          <div className="ops-stat-divider" />
+          <div className="ops-stat">
+            <span className="ops-stat-value ops-stat-value--red">{statFailed   ?? '—'}</span>
+            <span className="ops-stat-label">Failed / Blocked</span>
+          </div>
+          <div className="ops-stat-divider" />
+          <div className="ops-stat">
+            <span className="ops-stat-value">{statTotal    ?? '—'}</span>
+            <span className="ops-stat-label">Total Requests</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter toolbar */}
       <div className="overrides-toolbar">
         <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
       </div>
@@ -117,70 +166,101 @@ function OverridesPage() {
         </DataTable>
       )}
 
-      <div className="override-form-card">
-        <h3 className="override-form-heading">Create Override</h3>
-        <form className="override-form" onSubmit={handleSubmit}>
-          <div className="override-form-row">
-            <label className="override-form-label">Device ID</label>
-            <input
-              className="override-form-input"
-              type="text"
-              value={formDevice}
-              onChange={(e) => setFormDevice(e.target.value)}
-              disabled={submitting}
-              required
-            />
+      {/* Command panel: quick actions + form side by side */}
+      <div className="cmd-panel">
+
+        <div className="cmd-quick-section">
+          <span className="cmd-section-label">Quick Actions</span>
+          <p className="cmd-quick-hint">Select a preset to populate the command form.</p>
+          <div className="cmd-quick-grid">
+            {QUICK_ACTIONS.map((qa) => (
+              <button
+                key={qa.action}
+                type="button"
+                className="cmd-quick-btn"
+                onClick={() => applyQuickAction(qa.actuator, qa.action)}
+                disabled={submitting}
+              >
+                {qa.label}
+              </button>
+            ))}
           </div>
-          <div className="override-form-row">
-            <label className="override-form-label">Actuator ID</label>
-            <input
-              className="override-form-input"
-              type="text"
-              value={formActuator}
-              onChange={(e) => setFormActuator(e.target.value)}
-              disabled={submitting}
-              required
-            />
+        </div>
+
+        <div className="cmd-form-card">
+          <div className="cmd-form-hdr">
+            <span className="cmd-form-title">Issue Command Override</span>
+            <span className="cmd-form-badge">Manual Control</span>
           </div>
-          <div className="override-form-row">
-            <label className="override-form-label">Action</label>
-            <select
-              className="override-form-select"
-              value={formAction}
-              onChange={(e) => setFormAction(e.target.value)}
-              disabled={submitting}
-            >
-              {OVERRIDE_ACTIONS_LIST.map((a) => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-          <div className="override-form-row">
-            <label className="override-form-label">Reason</label>
-            <input
-              className="override-form-input"
-              type="text"
-              value={formReason}
-              onChange={(e) => setFormReason(e.target.value)}
-              disabled={submitting}
-              maxLength={240}
-            />
-          </div>
-          <div className="override-form-footer">
-            <button
-              className="btn-override-submit"
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting ? 'Submitting…' : 'Submit Override'}
-            </button>
-            {submitMsg && (
-              <span className={`override-submit-msg${submitMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
-                {submitMsg.text}
-              </span>
-            )}
-          </div>
-        </form>
+          <p className="cmd-form-helper">Specify the target device, actuator, action, and a reason for the audit log.</p>
+          <form className="cmd-form" onSubmit={handleSubmit}>
+            <div className="cmd-form-grid">
+              <div className="cmd-form-field">
+                <label className="cmd-form-label">Device ID</label>
+                <input
+                  className="override-form-input"
+                  type="text"
+                  value={formDevice}
+                  onChange={(e) => setFormDevice(e.target.value)}
+                  disabled={submitting}
+                  required
+                />
+              </div>
+              <div className="cmd-form-field">
+                <label className="cmd-form-label">Actuator ID</label>
+                <input
+                  className="override-form-input"
+                  type="text"
+                  value={formActuator}
+                  onChange={(e) => setFormActuator(e.target.value)}
+                  disabled={submitting}
+                  required
+                />
+              </div>
+            </div>
+            <div className="cmd-form-grid">
+              <div className="cmd-form-field">
+                <label className="cmd-form-label">Action</label>
+                <select
+                  className="override-form-select"
+                  value={formAction}
+                  onChange={(e) => setFormAction(e.target.value)}
+                  disabled={submitting}
+                >
+                  {OVERRIDE_ACTIONS_LIST.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="cmd-form-field">
+                <label className="cmd-form-label">Reason</label>
+                <input
+                  className="override-form-input"
+                  type="text"
+                  value={formReason}
+                  onChange={(e) => setFormReason(e.target.value)}
+                  disabled={submitting}
+                  maxLength={240}
+                />
+              </div>
+            </div>
+            <div className="cmd-form-footer">
+              <button
+                className="btn-override-submit"
+                type="submit"
+                disabled={submitting}
+              >
+                {submitting ? 'Submitting…' : 'Submit Override'}
+              </button>
+              {submitMsg && (
+                <span className={`override-submit-msg${submitMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                  {submitMsg.text}
+                </span>
+              )}
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
   )

@@ -1896,3 +1896,265 @@
 .theme-dark .risk-bar-fill--ok      { background: #4ade80; }
 .theme-dark .risk-bar-fill--warn    { background: #fbbf24; }
 .theme-dark .risk-bar-fill--alert   { background: #f87171; }
+
+/* ── Environmental snapshot: room label in footer ────────── */
+.env-snapshot-room {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Overrides: operations header ────────────────────────── */
+.ops-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid #2b6cb0;
+  border-radius: 10px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.ops-header-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ops-header-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.ops-header-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.ops-stats-row {
+  display: flex;
+  align-items: center;
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.ops-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 22px;
+  gap: 4px;
+}
+
+.ops-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.ops-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.ops-stat-value--blue  { color: #2b6cb0; }
+.ops-stat-value--green { color: #276749; }
+.ops-stat-value--red   { color: #c53030; }
+
+.ops-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Overrides: command panel layout ─────────────────────── */
+.cmd-panel {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .cmd-panel { grid-template-columns: 1fr; }
+}
+
+/* ── Quick actions sidebar ───────────────────────────────── */
+.cmd-quick-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.cmd-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cmd-quick-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.cmd-quick-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmd-quick-btn {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.cmd-quick-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.cmd-quick-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Command form card ───────────────────────────────────── */
+.cmd-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid #2b6cb0;
+  border-radius: 10px;
+  padding: 20px 24px 22px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.cmd-form-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cmd-form-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cmd-form-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #2b6cb0;
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.cmd-form-helper {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.cmd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cmd-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .cmd-form-grid { grid-template-columns: 1fr; }
+}
+
+.cmd-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cmd-form-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cmd-form-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* ── Dark mode: overrides ops header ─────────────────────── */
+.theme-dark .ops-header {
+  border-left-color: #3b82f6;
+}
+
+.theme-dark .ops-stat-value--blue  { color: #93c5fd; }
+.theme-dark .ops-stat-value--green { color: #4ade80; }
+.theme-dark .ops-stat-value--red   { color: #f87171; }
+
+/* ── Dark mode: command form badge ───────────────────────── */
+.theme-dark .cmd-form-badge {
+  color: #93c5fd;
+  background: rgba(30, 58, 138, 0.30);
+  border-color: #1d4ed8;
+}
