@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import LoginPage from './components/LoginPage.jsx'
 import * as authService from './services/authService.js'
+import { getDashboardSummary } from './services/dashboardService.js'
 
 const NAV_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard'   },
@@ -10,13 +11,6 @@ const NAV_ITEMS = [
   { key: 'access-logs', label: 'Access Logs' },
   { key: 'telemetry',   label: 'Telemetry'   },
   { key: 'overrides',   label: 'Overrides'   },
-]
-
-const KPI_CARDS = [
-  { label: 'Active Devices',    value: '—', desc: 'Connected to system',   accent: false },
-  { label: 'Critical Events',   value: '—', desc: 'Last 24 hours',         accent: true  },
-  { label: 'Pending Overrides', value: '—', desc: 'Awaiting resolution',   accent: false },
-  { label: 'Latest Telemetry',  value: '—', desc: 'Most recent reading',   accent: false },
 ]
 
 const SECTION_META = {
@@ -65,11 +59,60 @@ function Sidebar({ active, onNavigate }) {
   )
 }
 
+function formatTelemetry(latest) {
+  if (!Array.isArray(latest) || latest.length === 0) return 'No data'
+  const t = latest[0]
+  if (t == null) return 'No data'
+  const parts = []
+  if (t.temperature_c != null) parts.push(`${t.temperature_c.toFixed(1)}°C`)
+  if (t.humidity_percent != null) parts.push(`${t.humidity_percent.toFixed(0)}%`)
+  if (t.room_id) parts.push(t.room_id)
+  return parts.length > 0 ? parts.join(' · ') : 'No data'
+}
+
 function DashboardPage() {
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getDashboardSummary()
+      .then((data) => {
+        if (!cancelled) {
+          setSummary(data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load dashboard data.')
+          setLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const activeDevices    = summary?.devices?.total_active                   ?? '—'
+  const criticalEvents   = summary?.events?.recent_critical_24h_count       ?? '—'
+  const pendingOverrides = summary?.overrides?.pending_count                 ?? '—'
+  const latestTelemetry  = summary ? formatTelemetry(summary?.telemetry?.latest) : '—'
+
+  const kpiCards = [
+    { label: 'Active Devices',    value: activeDevices,    desc: 'Connected to system',  accent: false },
+    { label: 'Critical Events',   value: criticalEvents,   desc: 'Last 24 hours',        accent: true  },
+    { label: 'Pending Overrides', value: pendingOverrides, desc: 'Awaiting resolution',  accent: false },
+    { label: 'Latest Telemetry',  value: latestTelemetry,  desc: 'Most recent reading',  accent: false },
+  ]
+
   return (
     <div className="dashboard-page">
+      {loading && <p className="dashboard-status">Loading dashboard…</p>}
+      {!loading && error && <p className="dashboard-error">{error}</p>}
       <div className="kpi-grid">
-        {KPI_CARDS.map((card) => (
+        {kpiCards.map((card) => (
           <div key={card.label} className={`kpi-card${card.accent ? ' kpi-card--alert' : ''}`}>
             <span className="kpi-label">{card.label}</span>
             <span className="kpi-value">{card.value}</span>
