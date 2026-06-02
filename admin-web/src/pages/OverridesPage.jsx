@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { getOverrides, createOverride } from '../services/overrideService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import * as authService from '../services/authService.js'
+import Badge from '../components/ui/Badge.jsx'
+import FilterBar from '../components/ui/FilterBar.jsx'
 
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
 const OVERRIDE_ACTIONS_LIST = [
@@ -10,14 +12,6 @@ const OVERRIDE_ACTIONS_LIST = [
   'buzzer_on', 'buzzer_off',
   'door_unlock', 'system_reset',
 ]
-
-function OverrideStatusBadge({ status }) {
-  return (
-    <span className={`override-status-badge override-status-badge--${status ?? 'requested'}`}>
-      {status ?? '—'}
-    </span>
-  )
-}
 
 function OverridesPage() {
   const [overrides,    setOverrides]    = useState([])
@@ -86,15 +80,7 @@ function OverridesPage() {
   return (
     <div className="overrides-page">
       <div className="overrides-toolbar">
-        {OVERRIDE_STATUS_FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`filter-btn${statusFilter === f ? ' filter-btn--active' : ''}`}
-            onClick={() => handleFilterChange(f)}
-          >
-            {f === 'all' ? 'All' : f}
-          </button>
-        ))}
+        <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
       </div>
 
       {loading && <p className="overrides-loading">Loading overrides…</p>}
@@ -132,7 +118,7 @@ function OverridesPage() {
                   <td>{o.actuator_id ?? '—'}</td>
                   <td>{o.action ?? '—'}</td>
                   <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
-                  <td><OverrideStatusBadge status={o.status} /></td>
+                  <td><Badge baseClass="override-status-badge" variant={o.status ?? 'requested'}>{o.status ?? '—'}</Badge></td>
                   <td className="overrides-col-ts">{formatDateTime(o.requested_at)}</td>
                   <td className="overrides-col-ts">{o.result_at ? formatDateTime(o.result_at) : '—'}</td>
                 </tr>

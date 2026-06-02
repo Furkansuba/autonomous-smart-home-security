@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getAccessLogs } from '../services/accessLogService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import Badge from '../components/ui/Badge.jsx'
+import FilterBar from '../components/ui/FilterBar.jsx'
 
 const RESULT_FILTERS = ['all', 'granted', 'denied']
-
-function ResultBadge({ result }) {
-  return (
-    <span className={`result-badge result-badge--${result ?? 'unknown'}`}>
-      {result ?? '—'}
-    </span>
-  )
-}
 
 function AccessLogsPage() {
   const [logs,    setLogs]    = useState([])
@@ -43,15 +37,7 @@ function AccessLogsPage() {
   return (
     <div className="access-logs-page">
       <div className="access-logs-toolbar">
-        {RESULT_FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`filter-btn${result === f ? ' filter-btn--active' : ''}`}
-            onClick={() => setResult(f)}
-          >
-            {f === 'all' ? 'All' : f}
-          </button>
-        ))}
+        <FilterBar options={RESULT_FILTERS} activeValue={result} onChange={setResult} />
       </div>
 
       {loading && <p className="access-logs-loading">Loading access logs…</p>}
@@ -86,7 +72,7 @@ function AccessLogsPage() {
                   <td>{l.gate_id ?? '—'}</td>
                   <td>{l.user_id ?? '—'}</td>
                   <td>{l.access_method ?? '—'}</td>
-                  <td><ResultBadge result={l.result} /></td>
+                  <td><Badge baseClass="result-badge" variant={l.result ?? 'unknown'}>{l.result ?? '—'}</Badge></td>
                   <td className="access-logs-col-ts">{formatDateTime(l.occurred_at)}</td>
                 </tr>
               ))}

@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getEvents } from '../services/eventService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import Badge from '../components/ui/Badge.jsx'
+import FilterBar from '../components/ui/FilterBar.jsx'
 
 const SEVERITY_FILTERS = ['all', 'info', 'warning', 'critical']
-
-function SeverityBadge({ severity }) {
-  return (
-    <span className={`severity-badge severity-badge--${severity ?? 'info'}`}>
-      {severity ?? '—'}
-    </span>
-  )
-}
 
 function EventsPage() {
   const [events,   setEvents]   = useState([])
@@ -43,15 +37,7 @@ function EventsPage() {
   return (
     <div className="events-page">
       <div className="events-toolbar">
-        {SEVERITY_FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`filter-btn${severity === f ? ' filter-btn--active' : ''}`}
-            onClick={() => setSeverity(f)}
-          >
-            {f === 'all' ? 'All' : f}
-          </button>
-        ))}
+        <FilterBar options={SEVERITY_FILTERS} activeValue={severity} onChange={setSeverity} />
       </div>
 
       {loading && <p className="events-loading">Loading events…</p>}
@@ -86,7 +72,7 @@ function EventsPage() {
                   <td>{e.device_id ?? '—'}</td>
                   <td>{e.room_id ?? '—'}</td>
                   <td>{e.event_type ?? '—'}</td>
-                  <td><SeverityBadge severity={e.severity} /></td>
+                  <td><Badge baseClass="severity-badge" variant={e.severity ?? 'info'}>{e.severity ?? '—'}</Badge></td>
                   <td className="events-col-msg" title={e.message ?? '—'}>{e.message ?? '—'}</td>
                   <td>{e.confirmed ? 'Yes' : 'No'}</td>
                   <td className="events-col-ts">{formatDateTime(e.occurred_at)}</td>

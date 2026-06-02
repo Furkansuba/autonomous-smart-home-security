@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getDevices, refreshDeviceStatuses } from '../services/deviceService.js'
 import { formatDateTime } from '../utils/formatters.js'
-
-function StatusBadge({ status }) {
-  return (
-    <span className={`device-status-badge device-status-badge--${status ?? 'offline'}`}>
-      {status ?? 'offline'}
-    </span>
-  )
-}
+import Badge from '../components/ui/Badge.jsx'
 
 function DevicesPage() {
   const [devices,     setDevices]     = useState([])
@@ -98,7 +91,7 @@ function DevicesPage() {
                 <tr key={d.device_id}>
                   <td className="devices-col-id">{d.device_id}</td>
                   <td>{d.name ?? '—'}</td>
-                  <td><StatusBadge status={d.status} /></td>
+                  <td><Badge baseClass="device-status-badge" variant={d.status ?? 'offline'}>{d.status ?? 'offline'}</Badge></td>
                   <td>{d.firmware_version ?? '—'}</td>
                   <td className="devices-col-ts">{formatDateTime(d.last_heartbeat_at)}</td>
                   <td>{d.is_active ? 'Yes' : 'No'}</td>
