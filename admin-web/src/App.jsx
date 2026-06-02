@@ -50,6 +50,7 @@ function PageContent({ page }) {
 function App() {
   const [authed, setAuthed]         = useState(() => authService.isAuthenticated())
   const [activePage, setActivePage] = useState('dashboard')
+  const [theme, setTheme]           = useState(() => localStorage.getItem('admin-theme') ?? 'light')
 
   function handleLoginSuccess() {
     setAuthed(true)
@@ -60,6 +61,12 @@ function App() {
     setAuthed(false)
   }
 
+  function handleToggleTheme() {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    localStorage.setItem('admin-theme', next)
+  }
+
   if (!authed) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />
   }
@@ -68,12 +75,14 @@ function App() {
   const pageTitle = NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell theme-${theme}`}>
       <Sidebar navItems={NAV_ITEMS} activePage={activePage} onNavigate={setActivePage} />
       <div className="main-wrapper">
         <Topbar
           title={pageTitle}
           user={user}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onNavigateProfile={() => setActivePage('profile')}
           onLogout={handleLogout}
         />
