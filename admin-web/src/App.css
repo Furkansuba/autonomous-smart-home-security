@@ -1072,6 +1072,246 @@
 .severity-badge--warning  { color: #744210; background: #fffaf0; border: 1px solid #fbd38d; }
 .severity-badge--critical { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
 
+/* ── Events page redesign ─────────────────────────────── */
+.events-page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.events-page-hdr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.events-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.events-page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.events-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .events-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .events-summary-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.events-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.15s;
+}
+
+.events-summary-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.events-summary-card--critical { border-top-color: #e53e3e; }
+.events-summary-card--warning  { border-top-color: #d69e2e; }
+.events-summary-card--info     { border-top-color: #2b6cb0; }
+
+.events-summary-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.events-summary-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.events-summary-val--critical { color: #c53030; }
+.events-summary-val--warning  { color: #744210; }
+.events-summary-val--info     { color: #2b6cb0; }
+
+.events-summary-card-desc {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.events-analysis-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .events-analysis-row { grid-template-columns: 1fr; }
+}
+
+.events-dist-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.events-dist-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.events-dist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.events-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.events-dist-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 58px;
+  flex-shrink: 0;
+}
+
+.events-dist-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.events-dist-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+  min-width: 2px;
+}
+
+.events-dist-bar--critical { background: #e53e3e; }
+.events-dist-bar--warning  { background: #d69e2e; }
+.events-dist-bar--info     { background: #2b6cb0; }
+
+.events-dist-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.events-dist-footer {
+  font-size: 11px;
+  color: var(--text-faint);
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.events-incident-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.events-incident-panel--critical { border-left-color: #e53e3e; }
+.events-incident-panel--warning  { border-left-color: #d69e2e; }
+.events-incident-panel--info     { border-left-color: #2b6cb0; }
+
+.events-incident-panel-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.events-incident-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.events-incident-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+.events-incident-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.events-incident-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.events-incident-field-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.events-incident-field-value--mono {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 /* ── Access Logs page ────────────────────────────────────── */
 .access-logs-page {
   display: flex;
@@ -2581,3 +2821,20 @@
 .theme-dark .devices-health-dot--online   { background: #34d399; }
 .theme-dark .devices-health-dot--degraded { background: #fbbf24; }
 .theme-dark .devices-health-dot--offline  { background: #f87171; }
+
+/* ── Dark mode: events page redesign ─────────────────── */
+.theme-dark .events-summary-card--critical { border-top-color: #f87171; }
+.theme-dark .events-summary-card--warning  { border-top-color: #fbbf24; }
+.theme-dark .events-summary-card--info     { border-top-color: #60a5fa; }
+
+.theme-dark .events-summary-val--critical { color: #f87171; }
+.theme-dark .events-summary-val--warning  { color: #fcd34d; }
+.theme-dark .events-summary-val--info     { color: #93c5fd; }
+
+.theme-dark .events-dist-bar--critical { background: #f87171; }
+.theme-dark .events-dist-bar--warning  { background: #fbbf24; }
+.theme-dark .events-dist-bar--info     { background: #60a5fa; }
+
+.theme-dark .events-incident-panel--critical { border-left-color: #f87171; }
+.theme-dark .events-incident-panel--warning  { border-left-color: #fbbf24; }
+.theme-dark .events-incident-panel--info     { border-left-color: #60a5fa; }
