@@ -3,6 +3,7 @@ import { getEvents } from '../services/eventService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
+import DataTable from '../components/ui/DataTable.jsx'
 
 const SEVERITY_FILTERS = ['all', 'info', 'warning', 'critical']
 
@@ -51,36 +52,24 @@ function EventsPage() {
       )}
 
       {!loading && !error && events.length > 0 && (
-        <div className="events-table-wrap">
-          <table className="events-table">
-            <thead>
-              <tr>
-                <th>Event ID</th>
-                <th>Device</th>
-                <th>Room</th>
-                <th>Type</th>
-                <th>Severity</th>
-                <th>Message</th>
-                <th>Confirmed</th>
-                <th>Occurred At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((e) => (
-                <tr key={e.event_id ?? e._id}>
-                  <td className="events-col-id">{e.event_id ?? '—'}</td>
-                  <td>{e.device_id ?? '—'}</td>
-                  <td>{e.room_id ?? '—'}</td>
-                  <td>{e.event_type ?? '—'}</td>
-                  <td><Badge baseClass="severity-badge" variant={e.severity ?? 'info'}>{e.severity ?? '—'}</Badge></td>
-                  <td className="events-col-msg" title={e.message ?? '—'}>{e.message ?? '—'}</td>
-                  <td>{e.confirmed ? 'Yes' : 'No'}</td>
-                  <td className="events-col-ts">{formatDateTime(e.occurred_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          wrapClassName="events-table-wrap"
+          tableClassName="events-table"
+          columns={['Event ID', 'Device', 'Room', 'Type', 'Severity', 'Message', 'Confirmed', 'Occurred At']}
+        >
+          {events.map((e) => (
+            <tr key={e.event_id ?? e._id}>
+              <td className="events-col-id">{e.event_id ?? '—'}</td>
+              <td>{e.device_id ?? '—'}</td>
+              <td>{e.room_id ?? '—'}</td>
+              <td>{e.event_type ?? '—'}</td>
+              <td><Badge baseClass="severity-badge" variant={e.severity ?? 'info'}>{e.severity ?? '—'}</Badge></td>
+              <td className="events-col-msg" title={e.message ?? '—'}>{e.message ?? '—'}</td>
+              <td>{e.confirmed ? 'Yes' : 'No'}</td>
+              <td className="events-col-ts">{formatDateTime(e.occurred_at)}</td>
+            </tr>
+          ))}
+        </DataTable>
       )}
     </div>
   )

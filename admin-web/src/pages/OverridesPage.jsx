@@ -4,6 +4,7 @@ import { formatDateTime } from '../utils/formatters.js'
 import * as authService from '../services/authService.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
+import DataTable from '../components/ui/DataTable.jsx'
 
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
 const OVERRIDE_ACTIONS_LIST = [
@@ -94,38 +95,25 @@ function OverridesPage() {
       )}
 
       {!loading && !error && overrides.length > 0 && (
-        <div className="overrides-table-wrap">
-          <table className="overrides-table">
-            <thead>
-              <tr>
-                <th>Override ID</th>
-                <th>Device</th>
-                <th>Requested By</th>
-                <th>Actuator</th>
-                <th>Action</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Requested At</th>
-                <th>Result At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overrides.map((o) => (
-                <tr key={o.override_id ?? o._id}>
-                  <td className="overrides-col-id">{o.override_id ?? '—'}</td>
-                  <td>{o.device_id ?? '—'}</td>
-                  <td>{o.requested_by ?? '—'}</td>
-                  <td>{o.actuator_id ?? '—'}</td>
-                  <td>{o.action ?? '—'}</td>
-                  <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
-                  <td><Badge baseClass="override-status-badge" variant={o.status ?? 'requested'}>{o.status ?? '—'}</Badge></td>
-                  <td className="overrides-col-ts">{formatDateTime(o.requested_at)}</td>
-                  <td className="overrides-col-ts">{o.result_at ? formatDateTime(o.result_at) : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          wrapClassName="overrides-table-wrap"
+          tableClassName="overrides-table"
+          columns={['Override ID', 'Device', 'Requested By', 'Actuator', 'Action', 'Reason', 'Status', 'Requested At', 'Result At']}
+        >
+          {overrides.map((o) => (
+            <tr key={o.override_id ?? o._id}>
+              <td className="overrides-col-id">{o.override_id ?? '—'}</td>
+              <td>{o.device_id ?? '—'}</td>
+              <td>{o.requested_by ?? '—'}</td>
+              <td>{o.actuator_id ?? '—'}</td>
+              <td>{o.action ?? '—'}</td>
+              <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
+              <td><Badge baseClass="override-status-badge" variant={o.status ?? 'requested'}>{o.status ?? '—'}</Badge></td>
+              <td className="overrides-col-ts">{formatDateTime(o.requested_at)}</td>
+              <td className="overrides-col-ts">{o.result_at ? formatDateTime(o.result_at) : '—'}</td>
+            </tr>
+          ))}
+        </DataTable>
       )}
 
       <div className="override-form-card">

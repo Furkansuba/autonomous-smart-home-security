@@ -3,6 +3,7 @@ import { getAccessLogs } from '../services/accessLogService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
+import DataTable from '../components/ui/DataTable.jsx'
 
 const RESULT_FILTERS = ['all', 'granted', 'denied']
 
@@ -51,34 +52,23 @@ function AccessLogsPage() {
       )}
 
       {!loading && !error && logs.length > 0 && (
-        <div className="access-logs-table-wrap">
-          <table className="access-logs-table">
-            <thead>
-              <tr>
-                <th>Access ID</th>
-                <th>Device</th>
-                <th>Gate</th>
-                <th>User</th>
-                <th>Method</th>
-                <th>Result</th>
-                <th>Occurred At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((l) => (
-                <tr key={l.access_id ?? l._id}>
-                  <td className="access-logs-col-id">{l.access_id ?? '—'}</td>
-                  <td>{l.device_id ?? '—'}</td>
-                  <td>{l.gate_id ?? '—'}</td>
-                  <td>{l.user_id ?? '—'}</td>
-                  <td>{l.access_method ?? '—'}</td>
-                  <td><Badge baseClass="result-badge" variant={l.result ?? 'unknown'}>{l.result ?? '—'}</Badge></td>
-                  <td className="access-logs-col-ts">{formatDateTime(l.occurred_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          wrapClassName="access-logs-table-wrap"
+          tableClassName="access-logs-table"
+          columns={['Access ID', 'Device', 'Gate', 'User', 'Method', 'Result', 'Occurred At']}
+        >
+          {logs.map((l) => (
+            <tr key={l.access_id ?? l._id}>
+              <td className="access-logs-col-id">{l.access_id ?? '—'}</td>
+              <td>{l.device_id ?? '—'}</td>
+              <td>{l.gate_id ?? '—'}</td>
+              <td>{l.user_id ?? '—'}</td>
+              <td>{l.access_method ?? '—'}</td>
+              <td><Badge baseClass="result-badge" variant={l.result ?? 'unknown'}>{l.result ?? '—'}</Badge></td>
+              <td className="access-logs-col-ts">{formatDateTime(l.occurred_at)}</td>
+            </tr>
+          ))}
+        </DataTable>
       )}
     </div>
   )

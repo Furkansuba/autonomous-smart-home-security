@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getTelemetry, getLatestTelemetry } from '../services/telemetryService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import DataTable from '../components/ui/DataTable.jsx'
 
 function TelemetryPage() {
   const [telemetry, setTelemetry] = useState([])
@@ -62,36 +63,24 @@ function TelemetryPage() {
           {telemetry.length === 0 ? (
             <p className="telemetry-empty">No telemetry records found.</p>
           ) : (
-            <div className="telemetry-table-wrap">
-              <table className="telemetry-table">
-                <thead>
-                  <tr>
-                    <th>Device</th>
-                    <th>Room</th>
-                    <th>Temp (°C)</th>
-                    <th>Humidity (%)</th>
-                    <th>Motion</th>
-                    <th>Flame</th>
-                    <th>Gas</th>
-                    <th>Recorded At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {telemetry.map((t) => (
-                    <tr key={t._id ?? t.telemetry_id ?? `${t.device_id}-${t.recorded_at}`}>
-                      <td className="telemetry-col-id">{t.device_id ?? '—'}</td>
-                      <td>{t.room_id ?? '—'}</td>
-                      <td>{t.temperature_c    != null ? t.temperature_c.toFixed(1)    : '—'}</td>
-                      <td>{t.humidity_percent != null ? t.humidity_percent.toFixed(0) : '—'}</td>
-                      <td>{t.motion_detected != null ? (t.motion_detected ? 'Yes' : 'No') : '—'}</td>
-                      <td>{t.flame_detected  != null ? (t.flame_detected  ? 'Yes' : 'No') : '—'}</td>
-                      <td>{t.gas_detected    != null ? (t.gas_detected    ? 'Yes' : 'No') : '—'}</td>
-                      <td className="telemetry-col-ts">{formatDateTime(t.recorded_at ?? t.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              wrapClassName="telemetry-table-wrap"
+              tableClassName="telemetry-table"
+              columns={['Device', 'Room', 'Temp (°C)', 'Humidity (%)', 'Motion', 'Flame', 'Gas', 'Recorded At']}
+            >
+              {telemetry.map((t) => (
+                <tr key={t._id ?? t.telemetry_id ?? `${t.device_id}-${t.recorded_at}`}>
+                  <td className="telemetry-col-id">{t.device_id ?? '—'}</td>
+                  <td>{t.room_id ?? '—'}</td>
+                  <td>{t.temperature_c    != null ? t.temperature_c.toFixed(1)    : '—'}</td>
+                  <td>{t.humidity_percent != null ? t.humidity_percent.toFixed(0) : '—'}</td>
+                  <td>{t.motion_detected != null ? (t.motion_detected ? 'Yes' : 'No') : '—'}</td>
+                  <td>{t.flame_detected  != null ? (t.flame_detected  ? 'Yes' : 'No') : '—'}</td>
+                  <td>{t.gas_detected    != null ? (t.gas_detected    ? 'Yes' : 'No') : '—'}</td>
+                  <td className="telemetry-col-ts">{formatDateTime(t.recorded_at ?? t.createdAt)}</td>
+                </tr>
+              ))}
+            </DataTable>
           )}
         </>
       )}
