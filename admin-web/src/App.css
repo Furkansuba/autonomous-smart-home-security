@@ -393,3 +393,130 @@
   padding: 3px 10px;
   align-self: flex-start;
 }
+
+/* ── Devices page ─────────────────────────────────────── */
+.devices-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.devices-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-refresh {
+  all: unset;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2b6cb0;
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 5px;
+  padding: 6px 16px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-msg {
+  font-size: 13px;
+}
+
+.refresh-msg--ok  { color: #276749; }
+.refresh-msg--err { color: #c53030; }
+
+.devices-loading,
+.devices-empty {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.devices-error {
+  font-size: 13px;
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.devices-table-wrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.devices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.devices-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #718096;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.devices-table td {
+  padding: 11px 16px;
+  color: #2d3748;
+  border-bottom: 1px solid #f0f4f8;
+  white-space: nowrap;
+}
+
+.devices-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.devices-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.devices-col-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.devices-col-ts {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* status badges */
+.device-status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.device-status-badge--online   { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
+.device-status-badge--degraded { color: #744210; background: #fffaf0; border: 1px solid #fbd38d; }
+.device-status-badge--offline  { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
