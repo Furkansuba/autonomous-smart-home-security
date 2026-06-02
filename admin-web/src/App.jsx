@@ -12,6 +12,36 @@ const NAV_ITEMS = [
   { key: 'overrides',   label: 'Overrides'   },
 ]
 
+const KPI_CARDS = [
+  { label: 'Active Devices',    value: '—', desc: 'Connected to system',   accent: false },
+  { label: 'Critical Events',   value: '—', desc: 'Last 24 hours',         accent: true  },
+  { label: 'Pending Overrides', value: '—', desc: 'Awaiting resolution',   accent: false },
+  { label: 'Latest Telemetry',  value: '—', desc: 'Most recent reading',   accent: false },
+]
+
+const SECTION_META = {
+  devices: {
+    heading: 'Devices',
+    description: 'Connected ESP32 devices, their online / degraded / offline status, firmware version, and last heartbeat will appear here.',
+  },
+  events: {
+    heading: 'Events',
+    description: 'Sensor events — fire, gas, CO, intrusion — with severity level, affected room, and timestamp will appear here.',
+  },
+  'access-logs': {
+    heading: 'Access Logs',
+    description: 'NFC access attempts — granted and denied — with user identity, tag ID, door, and timestamp will appear here.',
+  },
+  telemetry: {
+    heading: 'Telemetry',
+    description: 'Temperature, humidity, and raw sensor readings streamed live from ESP32 devices will appear here.',
+  },
+  overrides: {
+    heading: 'Overrides',
+    description: 'Manual override commands for pump, valve, and alarm actuators — with status, issuer, and full audit trail — will appear here.',
+  },
+}
+
 function Sidebar({ active, onNavigate }) {
   return (
     <aside className="sidebar">
@@ -35,14 +65,38 @@ function Sidebar({ active, onNavigate }) {
   )
 }
 
-function PagePlaceholder({ page }) {
-  const label = NAV_ITEMS.find((i) => i.key === page)?.label ?? page
+function DashboardPage() {
   return (
-    <div className="page-placeholder">
-      <h2>{label}</h2>
-      <p className="placeholder-note">This section is under construction.</p>
+    <div className="dashboard-page">
+      <div className="kpi-grid">
+        {KPI_CARDS.map((card) => (
+          <div key={card.label} className={`kpi-card${card.accent ? ' kpi-card--alert' : ''}`}>
+            <span className="kpi-label">{card.label}</span>
+            <span className="kpi-value">{card.value}</span>
+            <span className="kpi-desc">{card.desc}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
+}
+
+function SectionPlaceholder({ page }) {
+  const meta = SECTION_META[page]
+  if (!meta) return null
+  return (
+    <div className="section-placeholder">
+      <div className="section-placeholder-icon">&#9632;</div>
+      <h2 className="section-placeholder-heading">{meta.heading}</h2>
+      <p className="section-placeholder-desc">{meta.description}</p>
+      <span className="section-placeholder-badge">Coming in next phase</span>
+    </div>
+  )
+}
+
+function PageContent({ page }) {
+  if (page === 'dashboard') return <DashboardPage />
+  return <SectionPlaceholder page={page} />
 }
 
 function App() {
@@ -81,7 +135,7 @@ function App() {
           </div>
         </header>
         <main className="main-content">
-          <PagePlaceholder page={activePage} />
+          <PageContent page={activePage} />
         </main>
       </div>
     </div>

@@ -36,7 +36,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <input
               id="email"
               type="email"
-              placeholder="admin@smarthome.local"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -50,7 +50,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <input
               id="password"
               type="password"
-              placeholder="Admin123!"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -65,6 +65,10 @@ export default function LoginPage({ onLoginSuccess }) {
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
+
+        <p className="login-demo-hint">
+          Demo: admin@smarthome.local&nbsp;/&nbsp;Admin123!
+        </p>
       </div>
     </div>
   )
