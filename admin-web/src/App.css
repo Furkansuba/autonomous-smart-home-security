@@ -303,16 +303,29 @@
 .kpi-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 20px 22px 18px;
+  border-radius: 10px;
+  padding: 18px 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-top: 3px solid #e2e8f0;
+  gap: 0;
+  border-top: 4px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.15s;
+}
+
+.kpi-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .kpi-card--alert {
   border-top-color: #e53e3e;
+}
+
+.kpi-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .kpi-label {
@@ -323,20 +336,96 @@
   color: #718096;
 }
 
+.kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  flex-shrink: 0;
+}
+
+.kpi-card--alert .kpi-icon {
+  background: #fff5f5;
+  border-color: #fed7d7;
+  color: #e53e3e;
+}
+
 .kpi-value {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   color: #1a202c;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .kpi-card--alert .kpi-value {
   color: #e53e3e;
 }
 
+.kpi-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4a5568;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
 .kpi-desc {
   font-size: 12px;
   color: #a0aec0;
+  margin-top: 8px;
+}
+
+/* ── Dashboard second row ─────────────────────────────── */
+.dashboard-row2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-row2 { grid-template-columns: 1fr; }
+}
+
+.info-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.info-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #718096;
+  margin-bottom: 8px;
+}
+
+.info-panel-value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.info-panel-value--ok      { color: #276749; }
+.info-panel-value--warn    { color: #744210; }
+.info-panel-value--alert   { color: #c53030; }
+.info-panel-value--neutral { color: #2d3748; }
+
+.info-panel-desc {
+  font-size: 12px;
+  color: #a0aec0;
+  margin-top: 5px;
 }
 
 /* ── Section placeholder ──────────────────────────────── */
