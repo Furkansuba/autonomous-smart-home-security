@@ -397,7 +397,7 @@ function EventsPage() {
                   <td>{e.room_id ?? '—'}</td>
                   <td>{e.event_type ?? '—'}</td>
                   <td><SeverityBadge severity={e.severity} /></td>
-                  <td className="events-col-msg">{e.message ?? '—'}</td>
+                  <td className="events-col-msg" title={e.message ?? '—'}>{e.message ?? '—'}</td>
                   <td>{e.confirmed ? 'Yes' : 'No'}</td>
                   <td className="events-col-ts">{formatHeartbeat(e.occurred_at)}</td>
                 </tr>
@@ -731,7 +731,7 @@ function OverridesPage() {
                   <td>{o.requested_by ?? '—'}</td>
                   <td>{o.actuator_id ?? '—'}</td>
                   <td>{o.action ?? '—'}</td>
-                  <td className="overrides-col-reason">{o.reason ?? '—'}</td>
+                  <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
                   <td><OverrideStatusBadge status={o.status} /></td>
                   <td className="overrides-col-ts">{formatHeartbeat(o.requested_at)}</td>
                   <td className="overrides-col-ts">{o.result_at ? formatHeartbeat(o.result_at) : '—'}</td>

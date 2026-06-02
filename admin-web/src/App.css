@@ -539,7 +539,10 @@
   overflow-x: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
 }
 
 .devices-table {
@@ -550,19 +553,19 @@
 
 .devices-table th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #718096;
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .devices-table td {
-  padding: 11px 16px;
+  padding: 13px 16px;
   color: #2d3748;
   border-bottom: 1px solid #f0f4f8;
   white-space: nowrap;
@@ -573,7 +576,7 @@
 }
 
 .devices-table tbody tr:hover td {
-  background: #f7fafc;
+  background: #eef2f7;
 }
 
 .devices-col-id {
@@ -589,13 +592,15 @@
 
 /* status badges */
 .device-status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
 }
 
 .device-status-badge--online   { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
@@ -620,25 +625,27 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   color: #4a5568;
-  background: #f7fafc;
+  background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 5px 14px;
+  border-radius: 999px;
+  padding: 5px 18px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .filter-btn:hover {
-  background: #edf2f7;
-  color: #2d3748;
+  background: #e2e8f0;
+  color: #1a202c;
+  border-color: #cbd5e0;
 }
 
 .filter-btn--active {
   background: #1a202c;
   color: #ffffff;
   border-color: #1a202c;
+  box-shadow: 0 1px 4px rgba(26, 32, 44, 0.18);
 }
 
 .events-loading,
@@ -662,7 +669,10 @@
   overflow-x: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
 }
 
 .events-table {
@@ -673,19 +683,19 @@
 
 .events-table th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #718096;
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .events-table td {
-  padding: 11px 16px;
+  padding: 13px 16px;
   color: #2d3748;
   border-bottom: 1px solid #f0f4f8;
   white-space: nowrap;
@@ -696,7 +706,7 @@
 }
 
 .events-table tbody tr:hover td {
-  background: #f7fafc;
+  background: #eef2f7;
 }
 
 .events-col-id {
@@ -719,13 +729,15 @@
 
 /* severity badges */
 .severity-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
 }
 
 .severity-badge--info     { color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; }
@@ -766,7 +778,10 @@
   overflow-x: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
 }
 
 .access-logs-table {
@@ -777,19 +792,19 @@
 
 .access-logs-table th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #718096;
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .access-logs-table td {
-  padding: 11px 16px;
+  padding: 13px 16px;
   color: #2d3748;
   border-bottom: 1px solid #f0f4f8;
   white-space: nowrap;
@@ -800,7 +815,7 @@
 }
 
 .access-logs-table tbody tr:hover td {
-  background: #f7fafc;
+  background: #eef2f7;
 }
 
 .access-logs-col-id {
@@ -816,13 +831,15 @@
 
 /* result badges */
 .result-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
 }
 
 .result-badge--granted { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
@@ -890,7 +907,10 @@
   overflow-x: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
 }
 
 .telemetry-table {
@@ -901,19 +921,19 @@
 
 .telemetry-table th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #718096;
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .telemetry-table td {
-  padding: 11px 16px;
+  padding: 13px 16px;
   color: #2d3748;
   border-bottom: 1px solid #f0f4f8;
   white-space: nowrap;
@@ -924,7 +944,7 @@
 }
 
 .telemetry-table tbody tr:hover td {
-  background: #f7fafc;
+  background: #eef2f7;
 }
 
 .telemetry-col-id {
@@ -973,7 +993,10 @@
   overflow-x: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
 }
 
 .overrides-table {
@@ -984,19 +1007,19 @@
 
 .overrides-table th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #718096;
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .overrides-table td {
-  padding: 11px 16px;
+  padding: 13px 16px;
   color: #2d3748;
   border-bottom: 1px solid #f0f4f8;
   white-space: nowrap;
@@ -1007,7 +1030,7 @@
 }
 
 .overrides-table tbody tr:hover td {
-  background: #f7fafc;
+  background: #eef2f7;
 }
 
 .overrides-col-id {
@@ -1030,13 +1053,15 @@
 
 /* override status badges */
 .override-status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
 }
 
 .override-status-badge--requested { color: #2b6cb0; background: #ebf8ff; border: 1px solid #bee3f8; }
@@ -1198,7 +1223,7 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 13px;
   color: #2d3748;
   transition: background 0.12s;
@@ -1278,4 +1303,39 @@
   font-family: monospace;
   font-size: 13px;
   color: #4a5568;
+}
+
+/* ── Table scrollbar polish ───────────────────────────── */
+.devices-table-wrap::-webkit-scrollbar,
+.events-table-wrap::-webkit-scrollbar,
+.access-logs-table-wrap::-webkit-scrollbar,
+.telemetry-table-wrap::-webkit-scrollbar,
+.overrides-table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.devices-table-wrap::-webkit-scrollbar-track,
+.events-table-wrap::-webkit-scrollbar-track,
+.access-logs-table-wrap::-webkit-scrollbar-track,
+.telemetry-table-wrap::-webkit-scrollbar-track,
+.overrides-table-wrap::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 0 0 10px 10px;
+}
+
+.devices-table-wrap::-webkit-scrollbar-thumb,
+.events-table-wrap::-webkit-scrollbar-thumb,
+.access-logs-table-wrap::-webkit-scrollbar-thumb,
+.telemetry-table-wrap::-webkit-scrollbar-thumb,
+.overrides-table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 999px;
+}
+
+.devices-table-wrap::-webkit-scrollbar-thumb:hover,
+.events-table-wrap::-webkit-scrollbar-thumb:hover,
+.access-logs-table-wrap::-webkit-scrollbar-thumb:hover,
+.telemetry-table-wrap::-webkit-scrollbar-thumb:hover,
+.overrides-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
