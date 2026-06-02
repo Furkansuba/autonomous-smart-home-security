@@ -1415,6 +1415,248 @@
 .result-badge--denied  { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
 .result-badge--unknown { color: var(--text-muted); background: var(--icon-bg); border: 1px solid var(--border); }
 
+/* ── Access Logs page redesign ───────────────────────────── */
+.access-page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.access-page-hdr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.access-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.access-page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.access-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .access-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .access-summary-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.access-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.15s;
+}
+
+.access-summary-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.access-summary-card--granted { border-top-color: #38a169; }
+.access-summary-card--denied  { border-top-color: #e53e3e; }
+
+.access-summary-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.access-summary-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.access-summary-val--granted { color: #276749; }
+.access-summary-val--denied  { color: #c53030; }
+.access-summary-val--warn    { color: #744210; }
+
+.access-summary-card-desc {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.access-analysis-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .access-analysis-row { grid-template-columns: 1fr; }
+}
+
+.access-dist-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.access-dist-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.access-dist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.access-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.access-dist-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 58px;
+  flex-shrink: 0;
+}
+
+.access-dist-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.access-dist-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+  min-width: 2px;
+}
+
+.access-dist-bar--granted { background: #38a169; }
+.access-dist-bar--denied  { background: #e53e3e; }
+
+.access-dist-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.access-dist-footer {
+  font-size: 11px;
+  color: var(--text-faint);
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.access-latest-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.access-latest-panel--granted { border-left-color: #38a169; }
+.access-latest-panel--denied  { border-left-color: #e53e3e; }
+.access-latest-panel--neutral { border-left-color: var(--border-strong); }
+
+.access-latest-panel-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.access-latest-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.access-latest-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+.access-latest-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.access-latest-field--wide {
+  grid-column: 1 / -1;
+}
+
+.access-latest-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.access-latest-field-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.access-latest-field-value--mono {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 /* ── Telemetry page ──────────────────────────────────────── */
 .telemetry-page {
   display: flex;
@@ -2838,3 +3080,17 @@
 .theme-dark .events-incident-panel--critical { border-left-color: #f87171; }
 .theme-dark .events-incident-panel--warning  { border-left-color: #fbbf24; }
 .theme-dark .events-incident-panel--info     { border-left-color: #60a5fa; }
+
+/* ── Dark mode: access logs page redesign ────────────────── */
+.theme-dark .access-summary-card--granted { border-top-color: #34d399; }
+.theme-dark .access-summary-card--denied  { border-top-color: #f87171; }
+
+.theme-dark .access-summary-val--granted { color: #4ade80; }
+.theme-dark .access-summary-val--denied  { color: #f87171; }
+.theme-dark .access-summary-val--warn    { color: #fbbf24; }
+
+.theme-dark .access-dist-bar--granted { background: #34d399; }
+.theme-dark .access-dist-bar--denied  { background: #f87171; }
+
+.theme-dark .access-latest-panel--granted { border-left-color: #34d399; }
+.theme-dark .access-latest-panel--denied  { border-left-color: #f87171; }
