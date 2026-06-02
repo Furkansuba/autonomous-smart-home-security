@@ -72,6 +72,10 @@ function TelemetryPage() {
   const boolValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
   const boolTile     = (val) => val ? 'sensor-tile--alert' : 'sensor-tile--ok'
 
+  const gasLabel    = (val) => val == null ? 'No reading' : (val ? 'Detected' : 'Clear')
+  const gasValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
+  const gasTileClass = (val) => val == null ? '' : (val ? 'sensor-tile--alert' : 'sensor-tile--ok')
+
   return (
     <div className="telemetry-page">
 
@@ -110,7 +114,7 @@ function TelemetryPage() {
             </span>
             <span className={`telemetry-chip${latest.gas_detected ? ' telemetry-chip--alert' : ''}`}>
               <span className="telemetry-chip-label">Gas</span>
-              <span className="telemetry-chip-value">{boolLabel(latest.gas_detected)}</span>
+              <span className="telemetry-chip-value">{gasLabel(latest.gas_detected)}</span>
             </span>
           </div>
         )}
@@ -173,8 +177,8 @@ function TelemetryPage() {
                 </div>
                 <div className="telemetry-reading-field">
                   <span className="telemetry-reading-field-label">Gas</span>
-                  <span className={`telemetry-reading-field-value ${boolValClass(latest.gas_detected)}`}>
-                    {boolLabel(latest.gas_detected)}
+                  <span className={`telemetry-reading-field-value ${gasValClass(latest.gas_detected)}`}>
+                    {gasLabel(latest.gas_detected)}
                   </span>
                 </div>
               </div>
@@ -188,7 +192,7 @@ function TelemetryPage() {
             <div className="dash-panel">
               <div className="dash-panel-hdr">
                 <span className="dash-panel-title">Environmental Sensors</span>
-                <span className="dash-panel-badge">Live</span>
+                <span className="dash-panel-badge">Latest reading</span>
               </div>
               <div className="sensor-tile-grid">
                 <div className="sensor-tile">
@@ -215,9 +219,9 @@ function TelemetryPage() {
                   <span className="sensor-tile-value">{boolLabel(latest.flame_detected)}</span>
                   <span className="sensor-tile-label">Flame</span>
                 </div>
-                <div className={`sensor-tile ${boolTile(latest.gas_detected)}`}>
+                <div className={`sensor-tile ${gasTileClass(latest.gas_detected)}`}>
                   <div className="sensor-tile-icon"><IconWarning /></div>
-                  <span className="sensor-tile-value">{boolLabel(latest.gas_detected)}</span>
+                  <span className="sensor-tile-value">{gasLabel(latest.gas_detected)}</span>
                   <span className="sensor-tile-label">Gas</span>
                 </div>
               </div>
