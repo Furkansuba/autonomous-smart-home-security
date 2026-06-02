@@ -747,3 +747,112 @@
 .result-badge--granted { color: #276749; background: #f0fff4; border: 1px solid #9ae6b4; }
 .result-badge--denied  { color: #742a2a; background: #fff5f5; border: 1px solid #feb2b2; }
 .result-badge--unknown { color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; }
+
+/* ── Telemetry page ──────────────────────────────────────── */
+.telemetry-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.telemetry-loading,
+.telemetry-empty {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.telemetry-error {
+  font-size: 13px;
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.telemetry-latest-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #2b6cb0;
+  border-radius: 8px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.telemetry-latest-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #718096;
+}
+
+.telemetry-latest-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #2d3748;
+}
+
+.telemetry-latest-empty {
+  font-size: 13px;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.telemetry-table-wrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.telemetry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.telemetry-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #718096;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.telemetry-table td {
+  padding: 11px 16px;
+  color: #2d3748;
+  border-bottom: 1px solid #f0f4f8;
+  white-space: nowrap;
+}
+
+.telemetry-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.telemetry-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.telemetry-col-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.telemetry-col-ts {
+  color: #718096;
+  font-size: 12px;
+}
