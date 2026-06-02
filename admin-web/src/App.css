@@ -1522,3 +1522,355 @@
 .theme-dark .avatar-dropdown-item--danger:hover {
   background: rgba(127, 29, 29, 0.30);
 }
+
+/* ── Dashboard status messages ────────────────────────── */
+.dashboard-status {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.dashboard-error {
+  font-size: 13px;
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.theme-dark .dashboard-error {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.25);
+  border-color: #7f1d1d;
+}
+
+/* ── Security Status Banner ───────────────────────────── */
+.sec-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 10px;
+  padding: 14px 20px;
+  border: 1px solid;
+  border-left-width: 4px;
+}
+
+.sec-banner--ok {
+  background: #f0fff4;
+  border-color: #9ae6b4;
+  border-left-color: #38a169;
+}
+
+.sec-banner--warn {
+  background: #fffaf0;
+  border-color: #fbd38d;
+  border-left-color: #d69e2e;
+}
+
+.sec-banner--alert {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  border-left-color: #e53e3e;
+}
+
+.sec-banner-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sec-banner--ok    .sec-banner-icon { color: #38a169; }
+.sec-banner--warn  .sec-banner-icon { color: #d69e2e; }
+.sec-banner--alert .sec-banner-icon { color: #e53e3e; }
+
+.sec-banner-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sec-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sec-banner--ok    .sec-banner-title { color: #276749; }
+.sec-banner--warn  .sec-banner-title { color: #744210; }
+.sec-banner--alert .sec-banner-title { color: #c53030; }
+
+.sec-banner-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sec-banner-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  flex-shrink: 0;
+}
+
+/* ── Dashboard middle section ─────────────────────────── */
+.dashboard-mid {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-mid { grid-template-columns: 1fr; }
+}
+
+/* ── Generic dash panel ───────────────────────────────── */
+.dash-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.dash-panel-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dash-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dash-panel-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.dash-panel-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 6px;
+}
+
+/* ── Sensor tile grid ─────────────────────────────────── */
+.sensor-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .sensor-tile-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.sensor-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--icon-bg);
+  gap: 5px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.sensor-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.sensor-tile-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.sensor-tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.sensor-tile--ok {
+  border-color: #9ae6b4;
+  background: #f0fff4;
+}
+.sensor-tile--ok .sensor-tile-icon  { color: #38a169; }
+.sensor-tile--ok .sensor-tile-value { color: #276749; }
+
+.sensor-tile--warn {
+  border-color: #fbd38d;
+  background: #fffaf0;
+}
+.sensor-tile--warn .sensor-tile-icon  { color: #d69e2e; }
+.sensor-tile--warn .sensor-tile-value { color: #744210; }
+
+.sensor-tile--alert {
+  border-color: #feb2b2;
+  background: #fff5f5;
+}
+.sensor-tile--alert .sensor-tile-icon  { color: #e53e3e; }
+.sensor-tile--alert .sensor-tile-value { color: #c53030; }
+
+/* ── Dash side stack ──────────────────────────────────── */
+.dash-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Device connectivity panel ────────────────────────── */
+.dash-big-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.dash-big-value--ok { color: #276749; }
+
+.connectivity-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.connectivity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connectivity-dot--ok      { background: #38a169; }
+.connectivity-dot--neutral { background: var(--text-faint); }
+
+.connectivity-status-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Risk assessment panel ────────────────────────────── */
+.risk-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.risk-value--ok      { color: #276749; }
+.risk-value--warn    { color: #744210; }
+.risk-value--alert   { color: #c53030; }
+.risk-value--neutral { color: var(--text); }
+
+.risk-bar-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.risk-bar-fill--ok      { background: #38a169; }
+.risk-bar-fill--warn    { background: #d69e2e; }
+.risk-bar-fill--alert   { background: #e53e3e; }
+.risk-bar-fill--neutral { background: var(--border-strong); }
+
+/* ── Info panel accent modifier ───────────────────────── */
+.info-panel--accented {
+  border-left: 3px solid var(--border-strong);
+}
+
+/* ── Dark mode: security banner ───────────────────────── */
+.theme-dark .sec-banner--ok {
+  background: rgba(6, 78, 59, 0.18);
+  border-color: #065f46;
+  border-left-color: #34d399;
+}
+.theme-dark .sec-banner--ok .sec-banner-icon  { color: #34d399; }
+.theme-dark .sec-banner--ok .sec-banner-title { color: #6ee7b7; }
+
+.theme-dark .sec-banner--warn {
+  background: rgba(120, 53, 15, 0.18);
+  border-color: #92400e;
+  border-left-color: #fbbf24;
+}
+.theme-dark .sec-banner--warn .sec-banner-icon  { color: #fbbf24; }
+.theme-dark .sec-banner--warn .sec-banner-title { color: #fcd34d; }
+
+.theme-dark .sec-banner--alert {
+  background: rgba(127, 29, 29, 0.18);
+  border-color: #991b1b;
+  border-left-color: #f87171;
+}
+.theme-dark .sec-banner--alert .sec-banner-icon  { color: #f87171; }
+.theme-dark .sec-banner--alert .sec-banner-title { color: #fca5a5; }
+
+/* ── Dark mode: sensor tiles ──────────────────────────── */
+.theme-dark .sensor-tile--ok {
+  border-color: #065f46;
+  background: rgba(6, 78, 59, 0.18);
+}
+.theme-dark .sensor-tile--ok .sensor-tile-icon  { color: #34d399; }
+.theme-dark .sensor-tile--ok .sensor-tile-value { color: #6ee7b7; }
+
+.theme-dark .sensor-tile--warn {
+  border-color: #92400e;
+  background: rgba(120, 53, 15, 0.18);
+}
+.theme-dark .sensor-tile--warn .sensor-tile-icon  { color: #fbbf24; }
+.theme-dark .sensor-tile--warn .sensor-tile-value { color: #fcd34d; }
+
+.theme-dark .sensor-tile--alert {
+  border-color: #991b1b;
+  background: rgba(127, 29, 29, 0.18);
+}
+.theme-dark .sensor-tile--alert .sensor-tile-icon  { color: #f87171; }
+.theme-dark .sensor-tile--alert .sensor-tile-value { color: #fca5a5; }
+
+/* ── Dark mode: connectivity + risk ──────────────────── */
+.theme-dark .dash-big-value--ok      { color: #4ade80; }
+.theme-dark .connectivity-dot--ok    { background: #4ade80; }
+
+.theme-dark .risk-value--ok    { color: #4ade80; }
+.theme-dark .risk-value--warn  { color: #fbbf24; }
+.theme-dark .risk-value--alert { color: #f87171; }
+
+.theme-dark .risk-bar-fill--ok      { background: #4ade80; }
+.theme-dark .risk-bar-fill--warn    { background: #fbbf24; }
+.theme-dark .risk-bar-fill--alert   { background: #f87171; }
