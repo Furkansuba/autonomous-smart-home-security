@@ -68,9 +68,21 @@ function DashboardPage() {
   const flameStatus  = rawTel == null ? 'neutral' : rawTel.flame_detected  ? 'alert' : 'ok'
   const gasStatus    = rawTel == null ? 'neutral' : rawTel.gas_detected    ? 'alert' : 'ok'
 
+  const signalParts = rawTel === null ? [] : [
+    rawTel.motion_detected ? 'Motion detected' : 'Motion clear',
+    rawTel.flame_detected  ? 'Flame detected'  : 'Flame clear',
+    rawTel.gas_detected    ? 'Gas detected'    : 'Gas clear',
+  ]
+  const signalSummary = signalParts.join(' · ')
+
+  const lastReadingParts = []
+  if (rawTel?.temperature_c   != null) lastReadingParts.push(`${rawTel.temperature_c.toFixed(1)}°C`)
+  if (rawTel?.humidity_percent != null) lastReadingParts.push(`${rawTel.humidity_percent.toFixed(0)}% humidity`)
+  const lastReading = lastReadingParts.join(' · ')
+
   // Risk score derived from critical events + pending overrides
   const riskScore = summary === null ? null : Math.min(100, critCount * 20 + pendCount * 10)
-  const riskLabel = riskScore === null ? '—' : riskScore === 0 ? 'Low' : riskScore < 40 ? 'Moderate' : riskScore < 70 ? 'High' : 'Critical'
+  const riskLabel = riskScore === null ? '—' : riskScore === 0 ? 'Low' : riskScore < 40 ? 'Moderate' : riskScore < 70 ? 'Elevated' : 'High Attention'
   const riskColor = riskScore === null ? 'neutral' : riskScore === 0 ? 'ok' : riskScore < 40 ? 'warn' : 'alert'
 
   const kpiCards = [
@@ -217,6 +229,12 @@ function DashboardPage() {
               <span className="sensor-tile-label">Gas</span>
             </div>
           </div>
+          {rawTel !== null && (
+            <div className="env-snapshot-footer">
+              {signalSummary && <span className="env-snapshot-signal">{signalSummary}</span>}
+              {lastReading   && <span className="env-snapshot-reading">{lastReading}</span>}
+            </div>
+          )}
         </div>
 
         <div className="dash-side-stack">

@@ -1741,6 +1741,28 @@
 .sensor-tile--alert .sensor-tile-icon  { color: #e53e3e; }
 .sensor-tile--alert .sensor-tile-value { color: #c53030; }
 
+/* ── Environmental snapshot footer ───────────────────── */
+.env-snapshot-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.env-snapshot-signal {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.env-snapshot-reading {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
 /* ── Dash side stack ──────────────────────────────────── */
 .dash-side-stack {
   display: flex;
