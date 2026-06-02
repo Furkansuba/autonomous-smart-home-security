@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import './App.css'
+import LoginPage from './components/LoginPage.jsx'
+import * as authService from './services/authService.js'
 
 const NAV_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard'   },
@@ -44,7 +46,25 @@ function PagePlaceholder({ page }) {
 }
 
 function App() {
+  const [authed, setAuthed]         = useState(() => authService.isAuthenticated())
   const [activePage, setActivePage] = useState('dashboard')
+
+  function handleLoginSuccess() {
+    setAuthed(true)
+  }
+
+  function handleLogout() {
+    authService.logout()
+    setAuthed(false)
+  }
+
+  if (!authed) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />
+  }
+
+  const user = authService.getStoredUser()
+  const userLabel = user?.email ?? 'Admin'
+
   return (
     <div className="app-shell">
       <Sidebar active={activePage} onNavigate={setActivePage} />
@@ -53,7 +73,12 @@ function App() {
           <span className="topbar-title">
             {NAV_ITEMS.find((i) => i.key === activePage)?.label}
           </span>
-          <span className="topbar-badge">Admin</span>
+          <div className="topbar-right">
+            <span className="topbar-user">{userLabel}</span>
+            <button className="btn-logout" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </header>
         <main className="main-content">
           <PagePlaceholder page={activePage} />
