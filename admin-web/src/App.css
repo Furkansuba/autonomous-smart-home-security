@@ -264,10 +264,7 @@
 }
 
 .login-brand-icon {
-  color: #e53e3e;
-  font-size: 22px;
   display: block;
-  margin-bottom: 10px;
 }
 
 .login-title {
@@ -365,16 +362,6 @@
   cursor: not-allowed;
 }
 
-/* ── Login demo hint ──────────────────────────────────── */
-.login-demo-hint {
-  margin: 18px 0 0;
-  font-size: 12px;
-  color: #4b5563;
-  text-align: center;
-  letter-spacing: 0.2px;
-  border-top: 1px solid #1e2230;
-  padding-top: 14px;
-}
 
 /* ── Dashboard KPI grid ───────────────────────────────── */
 .dashboard-page {
@@ -2188,16 +2175,15 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
-  min-width: 200px;
+  min-width: 220px;
   z-index: 100;
   overflow: hidden;
 }
 
 .avatar-dropdown-email {
-  padding: 12px 16px 10px;
   font-size: 12px;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2206,10 +2192,12 @@
 .avatar-dropdown-item {
   all: unset;
   cursor: pointer;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 16px;
+  padding: 10px 16px;
   font-size: 13px;
   color: var(--text);
   transition: background 0.12s;
@@ -2237,13 +2225,14 @@
 .profile-card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 4px solid #2b6cb0;
   border-radius: 8px;
-  padding: 32px 28px;
-  max-width: 480px;
+  padding: 28px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 24px;
+  gap: 20px;
   transition: background 0.2s, border-color 0.2s;
 }
 
@@ -3094,3 +3083,176 @@
 
 .theme-dark .access-latest-panel--granted { border-left-color: #34d399; }
 .theme-dark .access-latest-panel--denied  { border-left-color: #f87171; }
+
+/* ── Login page polish ─────────────────────────────────── */
+.login-page {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.login-brand-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(229, 62, 62, 0.10);
+  border: 1px solid rgba(229, 62, 62, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+
+/* ── Profile page polish ───────────────────────────────── */
+.profile-page-hdr {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.profile-page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.profile-card-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+}
+
+.profile-card-top-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-display-email {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-role-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #2b6cb0;
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 4px;
+  padding: 2px 8px;
+  align-self: flex-start;
+}
+
+.profile-fields--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  width: 100%;
+}
+
+.profile-field--full {
+  grid-column: 1 / -1;
+}
+
+.profile-status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.profile-status-badge--active {
+  color: #276749;
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+}
+
+/* ── Avatar dropdown polish ────────────────────────────── */
+.avatar-dropdown-header {
+  padding: 12px 16px 11px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.avatar-dropdown-role {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.avatar-dropdown-body {
+  padding: 6px 0;
+}
+
+.avatar-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 12px;
+}
+
+/* ── Topbar session indicator ──────────────────────────── */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-session-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--icon-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* ── Dark mode: new polish classes ─────────────────────── */
+.theme-dark .profile-card {
+  border-left-color: #3b82f6;
+}
+
+.theme-dark .profile-role-badge {
+  color: #93c5fd;
+  background: rgba(30, 58, 138, 0.22);
+  border-color: #1d4ed8;
+}
+
+.theme-dark .profile-status-badge--active {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.22);
+  border-color: #065f46;
+}

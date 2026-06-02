@@ -25,20 +25,23 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <svg className="login-brand-icon" width="22" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" fill="#e53e3e"/>
-          </svg>
+          <div className="login-brand-wrap">
+            <svg className="login-brand-icon" width="26" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" fill="#e53e3e"/>
+              <path d="M12 5L5 8.5v4.5c0 3.9 2.7 7.55 7 8.85 4.3-1.3 7-4.95 7-8.85V8.5L12 5z" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="0.6"/>
+            </svg>
+          </div>
           <h1 className="login-title">Smart Home Security</h1>
-          <p className="login-subtitle">Admin Panel</p>
+          <p className="login-subtitle">Security Operations Portal</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit} noValidate>
           <div className="form-field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email Address</label>
             <input
               id="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="admin@smarthome.local"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -64,13 +67,10 @@ export default function LoginPage({ onLoginSuccess }) {
           {error && <p className="login-error">{error}</p>}
 
           <button type="submit" className="btn-login" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? 'Authenticating…' : 'Sign In to Dashboard'}
           </button>
         </form>
 
-        <p className="login-demo-hint">
-          Demo: admin@smarthome.local&nbsp;/&nbsp;Admin123!
-        </p>
       </div>
     </div>
   )
