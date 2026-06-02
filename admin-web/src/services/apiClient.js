@@ -24,6 +24,15 @@ export async function apiRequest(path, options = {}) {
     data = null
   }
 
+  const isLoginRequest = path.includes('/api/auth/login')
+
+  if (response.status === 401 && token && !isLoginRequest) {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    window.location.href = '/'
+    throw new Error('Session expired. Please log in again.')
+  }
+
   if (!response.ok) {
     const message =
       (data && (data.message || data.error)) ||
