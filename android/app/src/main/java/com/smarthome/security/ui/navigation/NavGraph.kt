@@ -11,10 +11,13 @@ import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.remote.RetrofitClient
 import com.smarthome.security.data.repository.AuthRepository
 import com.smarthome.security.data.repository.DashboardRepository
+import com.smarthome.security.data.repository.DevicesRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
 import com.smarthome.security.ui.dashboard.DashboardViewModel
 import com.smarthome.security.ui.dashboard.DashboardViewModelFactory
 import com.smarthome.security.ui.devices.DevicesScreen
+import com.smarthome.security.ui.devices.DevicesViewModel
+import com.smarthome.security.ui.devices.DevicesViewModelFactory
 import com.smarthome.security.ui.events.EventsScreen
 import com.smarthome.security.ui.login.LoginScreen
 import com.smarthome.security.ui.login.LoginViewModel
@@ -38,6 +41,7 @@ fun NavGraph() {
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository(RetrofitClient.api, sessionManager) }
     val dashboardRepository = remember { DashboardRepository(RetrofitClient.dashboardApi, sessionManager) }
+    val devicesRepository = remember { DevicesRepository(RetrofitClient.devicesApi, sessionManager) }
 
     NavHost(
         navController = navController,
@@ -69,7 +73,13 @@ fun NavGraph() {
             )
         }
         composable(Routes.DEVICES) {
-            DevicesScreen(onNavigateBack = { navController.popBackStack() })
+            val devicesViewModel: DevicesViewModel = viewModel(
+                factory = DevicesViewModelFactory(devicesRepository),
+            )
+            DevicesScreen(
+                viewModel = devicesViewModel,
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.EVENTS) {
             EventsScreen(onNavigateBack = { navController.popBackStack() })
