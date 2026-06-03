@@ -13,6 +13,7 @@ import com.smarthome.security.data.repository.AuthRepository
 import com.smarthome.security.data.repository.DashboardRepository
 import com.smarthome.security.data.repository.DevicesRepository
 import com.smarthome.security.data.repository.EventsRepository
+import com.smarthome.security.data.repository.TelemetryRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
 import com.smarthome.security.ui.dashboard.DashboardViewModel
 import com.smarthome.security.ui.dashboard.DashboardViewModelFactory
@@ -27,6 +28,8 @@ import com.smarthome.security.ui.login.LoginViewModel
 import com.smarthome.security.ui.login.LoginViewModelFactory
 import com.smarthome.security.ui.profile.ProfileScreen
 import com.smarthome.security.ui.telemetry.TelemetryScreen
+import com.smarthome.security.ui.telemetry.TelemetryViewModel
+import com.smarthome.security.ui.telemetry.TelemetryViewModelFactory
 
 object Routes {
     const val LOGIN = "login"
@@ -46,6 +49,7 @@ fun NavGraph() {
     val dashboardRepository = remember { DashboardRepository(RetrofitClient.dashboardApi, sessionManager) }
     val devicesRepository = remember { DevicesRepository(RetrofitClient.devicesApi, sessionManager) }
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
+    val telemetryRepository = remember { TelemetryRepository(RetrofitClient.telemetryApi, sessionManager) }
 
     NavHost(
         navController = navController,
@@ -95,7 +99,13 @@ fun NavGraph() {
             )
         }
         composable(Routes.TELEMETRY) {
-            TelemetryScreen(onNavigateBack = { navController.popBackStack() })
+            val telemetryViewModel: TelemetryViewModel = viewModel(
+                factory = TelemetryViewModelFactory(telemetryRepository),
+            )
+            TelemetryScreen(
+                viewModel = telemetryViewModel,
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.PROFILE) {
             ProfileScreen(
