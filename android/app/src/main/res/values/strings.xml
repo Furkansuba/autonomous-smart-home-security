@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Smart Home Security</string>
+    <string name="screen_login">Sign In</string>
+    <string name="screen_dashboard">Dashboard</string>
+    <string name="screen_devices">Devices</string>
+    <string name="screen_events">Events &amp; Alerts</string>
+    <string name="screen_telemetry">Telemetry</string>
+    <string name="screen_profile">Profile</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="btn_sign_in">Sign In</string>
+    <string name="btn_logout">Logout</string>
+    <string name="content_description_back">Back</string>
+    <string name="content_description_profile">Profile</string>
+</resources>
