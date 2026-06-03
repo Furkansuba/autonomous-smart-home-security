@@ -13,7 +13,8 @@ import kotlinx.coroutines.launch
 
 sealed class TelemetryUiState {
     object Loading : TelemetryUiState()
-    data class Success(val telemetry: TelemetrySummary) : TelemetryUiState()
+    data class Success(val readings: List<TelemetrySummary>) : TelemetryUiState()
+    object Empty : TelemetryUiState()
     data class Error(val message: String) : TelemetryUiState()
     object SessionExpired : TelemetryUiState()
 }
@@ -29,9 +30,12 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
     fun loadTelemetry() {
         _uiState.value = TelemetryUiState.Loading
         viewModelScope.launch {
-            val result = repository.getLatestTelemetry()
+            val result = repository.getTelemetryList()
             _uiState.value = result.fold(
-                onSuccess = { TelemetryUiState.Success(it) },
+                onSuccess = { readings ->
+                    if (readings.isEmpty()) TelemetryUiState.Empty
+                    else TelemetryUiState.Success(readings)
+                },
                 onFailure = { error ->
                     if (error is SessionExpiredException)
                         TelemetryUiState.SessionExpired

@@ -9,22 +9,21 @@ class TelemetryRepository(
     private val api: TelemetryApi,
     private val sessionManager: SessionManager,
 ) {
-    suspend fun getLatestTelemetry(): Result<TelemetrySummary> {
+    suspend fun getTelemetryList(): Result<List<TelemetrySummary>> {
         val token = sessionManager.getToken()
             ?: return Result.failure(Exception("Session not found. Please log in again."))
         return try {
-            val response = api.getLatestTelemetry("Bearer $token")
+            val response = api.getTelemetryList("Bearer $token", limit = 20)
             when {
                 response.isSuccessful -> {
                     val body = response.body()
-                    if (body != null) Result.success(body.telemetry)
+                    if (body != null) Result.success(body.telemetry ?: emptyList())
                     else Result.failure(Exception("Empty response from server."))
                 }
                 response.code() == 401 -> {
                     sessionManager.clearSession()
                     Result.failure(SessionExpiredException())
                 }
-                response.code() == 404 -> Result.failure(Exception("No telemetry data found yet."))
                 else -> Result.failure(Exception("Failed to load telemetry (${response.code()})."))
             }
         } catch (e: Exception) {

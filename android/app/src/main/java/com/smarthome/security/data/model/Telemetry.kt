@@ -16,6 +16,6 @@ data class TelemetrySummary(
     @SerializedName("createdAt") val createdAt: String?,
 )
 
-data class TelemetryResponse(
-    val telemetry: TelemetrySummary,
+data class TelemetryListResponse(
+    val telemetry: List<TelemetrySummary>?,
 )

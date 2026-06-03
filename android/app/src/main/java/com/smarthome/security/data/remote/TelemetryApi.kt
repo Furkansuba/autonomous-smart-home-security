@@ -1,13 +1,15 @@
 package com.smarthome.security.data.remote
 
-import com.smarthome.security.data.model.TelemetryResponse
+import com.smarthome.security.data.model.TelemetryListResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Query
 
 interface TelemetryApi {
-    @GET("api/telemetry/latest")
-    suspend fun getLatestTelemetry(
+    @GET("api/telemetry")
+    suspend fun getTelemetryList(
         @Header("Authorization") token: String,
-    ): Response<TelemetryResponse>
+        @Query("limit") limit: Int,
+    ): Response<TelemetryListResponse>
 }
