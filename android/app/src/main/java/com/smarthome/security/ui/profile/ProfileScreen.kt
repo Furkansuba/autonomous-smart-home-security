@@ -13,6 +13,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +35,8 @@ fun ProfileScreen(
     email: String,
     fullName: String,
     role: String,
+    isDarkMode: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -86,6 +91,34 @@ fun ProfileScreen(
                         onClick = {},
                         label = { Text(role.ifBlank { "Resident" }.replaceFirstChar { it.uppercase() }) },
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Appearance",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = !isDarkMode,
+                    onClick = { onThemeToggle(false) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) {
+                    Text("Light")
+                }
+                SegmentedButton(
+                    selected = isDarkMode,
+                    onClick = { onThemeToggle(true) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) {
+                    Text("Dark")
                 }
             }
 

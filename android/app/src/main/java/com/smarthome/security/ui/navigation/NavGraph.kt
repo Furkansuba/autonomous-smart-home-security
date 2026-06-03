@@ -41,7 +41,10 @@ object Routes {
 }
 
 @Composable
-fun NavGraph() {
+fun NavGraph(
+    isDarkMode: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -122,6 +125,8 @@ fun NavGraph() {
                 email = sessionManager.getEmail() ?: "",
                 fullName = sessionManager.getFullName() ?: "",
                 role = sessionManager.getRole() ?: "",
+                isDarkMode = isDarkMode,
+                onThemeToggle = onThemeToggle,
                 onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     authRepository.logout()
