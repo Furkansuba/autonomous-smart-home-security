@@ -48,6 +48,7 @@ fun DevicesScreen(
     viewModel: DevicesViewModel,
     onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
+    showBackButton: Boolean = true,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -56,11 +57,13 @@ fun DevicesScreen(
             TopAppBar(
                 title = { Text("Devices") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
+                    if (showBackButton) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
                     }
                 },
             )

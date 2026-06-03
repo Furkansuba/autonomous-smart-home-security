@@ -1,11 +1,27 @@
 package com.smarthome.security.ui.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeviceHub
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.remote.RetrofitClient
@@ -40,6 +56,28 @@ object Routes {
     const val PROFILE = "profile"
 }
 
+private data class BottomNavItem(
+    val label: String,
+    val icon: ImageVector,
+    val route: String,
+)
+
+private val bottomNavItems = listOf(
+    BottomNavItem("Home",    Icons.Filled.Shield,              Routes.DASHBOARD),
+    BottomNavItem("Devices", Icons.Filled.DeviceHub,           Routes.DEVICES),
+    BottomNavItem("Alerts",  Icons.Filled.NotificationsActive, Routes.EVENTS),
+    BottomNavItem("Sensors", Icons.Filled.Sensors,             Routes.TELEMETRY),
+    BottomNavItem("Profile", Icons.Filled.Person,              Routes.PROFILE),
+)
+
+private val bottomNavRoutes = setOf(
+    Routes.DASHBOARD,
+    Routes.DEVICES,
+    Routes.EVENTS,
+    Routes.TELEMETRY,
+    Routes.PROFILE,
+)
+
 @Composable
 fun NavGraph(
     isDarkMode: Boolean,
@@ -54,87 +92,144 @@ fun NavGraph(
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
     val telemetryRepository = remember { TelemetryRepository(RetrofitClient.telemetryApi, sessionManager) }
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
     val onSessionExpired: () -> Unit = {
         navController.navigate(Routes.LOGIN) {
             popUpTo(0) { inclusive = true }
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.LOGIN,
-    ) {
-        composable(Routes.LOGIN) {
-            val loginViewModel: LoginViewModel = viewModel(
-                factory = LoginViewModelFactory(authRepository),
-            )
-            LoginScreen(
-                viewModel = loginViewModel,
-                onLoginSuccess = {
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+    Scaffold(
+        bottomBar = {
+            if (currentRoute in bottomNavRoutes) {
+                NavigationBar {
+                    bottomNavItems.forEach { item ->
+                        NavigationBarItem(
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.DASHBOARD) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                        )
                     }
-                },
-            )
-        }
-        composable(Routes.DASHBOARD) {
-            val dashboardViewModel: DashboardViewModel = viewModel(
-                factory = DashboardViewModelFactory(dashboardRepository),
-            )
-            DashboardScreen(
-                viewModel = dashboardViewModel,
-                onNavigateToDevices = { navController.navigate(Routes.DEVICES) },
-                onNavigateToEvents = { navController.navigate(Routes.EVENTS) },
-                onNavigateToTelemetry = { navController.navigate(Routes.TELEMETRY) },
-                onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
-                onSessionExpired = onSessionExpired,
-            )
-        }
-        composable(Routes.DEVICES) {
-            val devicesViewModel: DevicesViewModel = viewModel(
-                factory = DevicesViewModelFactory(devicesRepository),
-            )
-            DevicesScreen(
-                viewModel = devicesViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onSessionExpired = onSessionExpired,
-            )
-        }
-        composable(Routes.EVENTS) {
-            val eventsViewModel: EventsViewModel = viewModel(
-                factory = EventsViewModelFactory(eventsRepository),
-            )
-            EventsScreen(
-                viewModel = eventsViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onSessionExpired = onSessionExpired,
-            )
-        }
-        composable(Routes.TELEMETRY) {
-            val telemetryViewModel: TelemetryViewModel = viewModel(
-                factory = TelemetryViewModelFactory(telemetryRepository),
-            )
-            TelemetryScreen(
-                viewModel = telemetryViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onSessionExpired = onSessionExpired,
-            )
-        }
-        composable(Routes.PROFILE) {
-            ProfileScreen(
-                email = sessionManager.getEmail() ?: "",
-                fullName = sessionManager.getFullName() ?: "",
-                role = sessionManager.getRole() ?: "",
-                isDarkMode = isDarkMode,
-                onThemeToggle = onThemeToggle,
-                onNavigateBack = { navController.popBackStack() },
-                onLogout = {
-                    authRepository.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-            )
+                }
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Routes.LOGIN,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(Routes.LOGIN) {
+                val loginViewModel: LoginViewModel = viewModel(
+                    factory = LoginViewModelFactory(authRepository),
+                )
+                LoginScreen(
+                    viewModel = loginViewModel,
+                    onLoginSuccess = {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Routes.DASHBOARD) {
+                val dashboardViewModel: DashboardViewModel = viewModel(
+                    factory = DashboardViewModelFactory(dashboardRepository),
+                )
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    fullName = sessionManager.getFullName() ?: "",
+                    onNavigateToDevices = {
+                        navController.navigate(Routes.DEVICES) {
+                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToEvents = {
+                        navController.navigate(Routes.EVENTS) {
+                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToTelemetry = {
+                        navController.navigate(Routes.TELEMETRY) {
+                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate(Routes.PROFILE) {
+                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onSessionExpired = onSessionExpired,
+                )
+            }
+            composable(Routes.DEVICES) {
+                val devicesViewModel: DevicesViewModel = viewModel(
+                    factory = DevicesViewModelFactory(devicesRepository),
+                )
+                DevicesScreen(
+                    viewModel = devicesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSessionExpired = onSessionExpired,
+                    showBackButton = false,
+                )
+            }
+            composable(Routes.EVENTS) {
+                val eventsViewModel: EventsViewModel = viewModel(
+                    factory = EventsViewModelFactory(eventsRepository),
+                )
+                EventsScreen(
+                    viewModel = eventsViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSessionExpired = onSessionExpired,
+                )
+            }
+            composable(Routes.TELEMETRY) {
+                val telemetryViewModel: TelemetryViewModel = viewModel(
+                    factory = TelemetryViewModelFactory(telemetryRepository),
+                )
+                TelemetryScreen(
+                    viewModel = telemetryViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSessionExpired = onSessionExpired,
+                )
+            }
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    email = sessionManager.getEmail() ?: "",
+                    fullName = sessionManager.getFullName() ?: "",
+                    role = sessionManager.getRole() ?: "",
+                    isDarkMode = isDarkMode,
+                    onThemeToggle = onThemeToggle,
+                    onNavigateBack = { navController.popBackStack() },
+                    onLogout = {
+                        authRepository.logout()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
+            }
         }
     }
 }
