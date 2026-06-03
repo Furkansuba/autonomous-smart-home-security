@@ -23,6 +23,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,7 @@ fun DashboardScreen(
     onNavigateToProfile: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -161,6 +162,7 @@ private fun SummarySection(summary: DashboardSummary) {
             SummaryRow(label = "Online", value = "${summary.devices.statusCounts.online}")
             SummaryRow(label = "Degraded", value = "${summary.devices.statusCounts.degraded}")
             SummaryRow(label = "Offline", value = "${summary.devices.statusCounts.offline}")
+            HorizontalDivider()
             SummaryRow(label = "Critical Events (24h)", value = "${summary.events.recentCritical24hCount}")
             SummaryRow(label = "Pending Overrides", value = "${summary.overrides.pendingCount}")
         }

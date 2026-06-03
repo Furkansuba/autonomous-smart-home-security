@@ -28,7 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ fun DevicesScreen(
     onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -104,11 +104,17 @@ fun DevicesScreen(
                 }
                 is DevicesUiState.Success -> {
                     if (state.devices.isEmpty()) {
-                        Text(
-                            text = "No devices found.",
-                            modifier = Modifier.align(Alignment.Center),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Card(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(24.dp),
+                        ) {
+                            Text(
+                                text = "No devices found.",
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     } else {
                         LazyColumn(
                             modifier = Modifier
@@ -197,7 +203,7 @@ private fun StatusChip(status: String) {
     }
     SuggestionChip(
         onClick = {},
-        label = { Text(text = status, fontSize = 12.sp) },
+        label = { Text(text = status.replaceFirstChar { it.uppercase() }, fontSize = 12.sp) },
         colors = SuggestionChipDefaults.suggestionChipColors(
             containerColor = containerColor,
             labelColor = labelColor,

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -58,26 +59,35 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = fullName.ifBlank { "User" },
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = fullName.ifBlank { "User" },
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
 
-            Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = email,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                    Text(
+                        text = email,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-            AssistChip(
-                onClick = {},
-                label = { Text(role.ifBlank { "resident" }) },
-            )
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(role.ifBlank { "Resident" }.replaceFirstChar { it.uppercase() }) },
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 

@@ -26,7 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,7 @@ fun TelemetryScreen(
     onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -70,18 +70,26 @@ fun TelemetryScreen(
                 is TelemetryUiState.Error -> {
                     Column(
                         modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
-                            text = state.message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Button(onClick = { viewModel.loadTelemetry() }) {
-                            Text("Retry")
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = state.message,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(onClick = { viewModel.loadTelemetry() }) {
+                                    Text("Retry")
+                                }
+                            }
                         }
                     }
                 }
@@ -112,7 +120,7 @@ private fun TelemetryContent(
         Spacer(modifier = Modifier.height(2.dp))
 
         InfoCard(label = "Device ID", value = telemetry.deviceId)
-        telemetry.roomId?.let { InfoCard(label = "Room", value = it) }
+        telemetry.roomId?.let { InfoCard(label = "Room", value = formatRoomId(it)) }
 
         telemetry.temperatureC?.let {
             InfoCard(label = "Temperature", value = "%.1f °C".format(it))
@@ -122,10 +130,10 @@ private fun TelemetryContent(
         }
 
         telemetry.motionDetected?.let {
-            AlertCard(label = "Motion Detected", active = it, activeLabel = "YES", inactiveLabel = "No")
+            AlertCard(label = "Motion Detected", active = it, activeLabel = "YES", inactiveLabel = "Clear")
         }
         telemetry.flameDetected?.let {
-            AlertCard(label = "Flame Detected", active = it, activeLabel = "DETECTED", inactiveLabel = "None")
+            AlertCard(label = "Flame Detected", active = it, activeLabel = "DETECTED", inactiveLabel = "Clear")
         }
         telemetry.gasRaw?.let {
             InfoCard(label = "Gas (raw)", value = it.toString())
@@ -140,7 +148,7 @@ private fun TelemetryContent(
         val timestamp = telemetry.occurredAt ?: telemetry.createdAt
         timestamp?.let {
             Spacer(modifier = Modifier.height(2.dp))
-            InfoCard(label = "Recorded At", value = it.replace("T", " ").substringBefore("."))
+            InfoCard(label = "Recorded At", value = it.replace("T", " ").substringBefore(".") + " UTC")
         }
     }
 }
@@ -195,3 +203,6 @@ private fun AlertCard(
         }
     }
 }
+
+private fun formatRoomId(raw: String): String =
+    raw.replace('_', ' ').replaceFirstChar { it.uppercase() }

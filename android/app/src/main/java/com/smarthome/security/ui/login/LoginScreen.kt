@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -93,12 +94,18 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
 
         if (uiState.errorMessage != null) {
-            Text(
-                text = uiState.errorMessage!!,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-            )
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    text = uiState.errorMessage!!,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
         } else {
             Spacer(modifier = Modifier.height(24.dp))
