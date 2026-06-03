@@ -56,6 +56,7 @@ fun NavGraph() {
         }
         composable(Routes.PROFILE) {
             ProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
