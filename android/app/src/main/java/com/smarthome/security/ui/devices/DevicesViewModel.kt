@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.Device
+import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.DevicesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ sealed class DevicesUiState {
     object Loading : DevicesUiState()
     data class Success(val devices: List<Device>) : DevicesUiState()
     data class Error(val message: String) : DevicesUiState()
+    object SessionExpired : DevicesUiState()
 }
 
 class DevicesViewModel(private val repository: DevicesRepository) : ViewModel() {
@@ -30,7 +32,12 @@ class DevicesViewModel(private val repository: DevicesRepository) : ViewModel() 
             val result = repository.getDevices()
             _uiState.value = result.fold(
                 onSuccess = { DevicesUiState.Success(it) },
-                onFailure = { DevicesUiState.Error(it.message ?: "Unknown error.") },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        DevicesUiState.SessionExpired
+                    else
+                        DevicesUiState.Error(error.message ?: "Unknown error.")
+                },
             )
         }
     }

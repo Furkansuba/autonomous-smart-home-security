@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.DashboardSummary
+import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.DashboardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ sealed class DashboardUiState {
     object Loading : DashboardUiState()
     data class Success(val summary: DashboardSummary) : DashboardUiState()
     data class Error(val message: String) : DashboardUiState()
+    object SessionExpired : DashboardUiState()
 }
 
 class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
@@ -30,7 +32,12 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
             val result = repository.getSummary()
             _uiState.value = result.fold(
                 onSuccess = { DashboardUiState.Success(it) },
-                onFailure = { DashboardUiState.Error(it.message ?: "Unknown error.") },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        DashboardUiState.SessionExpired
+                    else
+                        DashboardUiState.Error(error.message ?: "Unknown error.")
+                },
             )
         }
     }

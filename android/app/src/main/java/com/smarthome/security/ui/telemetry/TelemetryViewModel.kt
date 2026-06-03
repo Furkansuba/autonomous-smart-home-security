@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.TelemetrySummary
+import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.TelemetryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ sealed class TelemetryUiState {
     object Loading : TelemetryUiState()
     data class Success(val telemetry: TelemetrySummary) : TelemetryUiState()
     data class Error(val message: String) : TelemetryUiState()
+    object SessionExpired : TelemetryUiState()
 }
 
 class TelemetryViewModel(private val repository: TelemetryRepository) : ViewModel() {
@@ -30,7 +32,12 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
             val result = repository.getLatestTelemetry()
             _uiState.value = result.fold(
                 onSuccess = { TelemetryUiState.Success(it) },
-                onFailure = { TelemetryUiState.Error(it.message ?: "Unknown error.") },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        TelemetryUiState.SessionExpired
+                    else
+                        TelemetryUiState.Error(error.message ?: "Unknown error.")
+                },
             )
         }
     }

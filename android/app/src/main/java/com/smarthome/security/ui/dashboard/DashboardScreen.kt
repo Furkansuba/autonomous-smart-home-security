@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ fun DashboardScreen(
     onNavigateToEvents: () -> Unit,
     onNavigateToTelemetry: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -114,6 +116,9 @@ fun DashboardScreen(
                 }
                 is DashboardUiState.Success -> {
                     SummarySection(summary = state.summary)
+                }
+                is DashboardUiState.SessionExpired -> {
+                    LaunchedEffect(Unit) { onSessionExpired() }
                 }
             }
 

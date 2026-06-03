@@ -3,6 +3,7 @@ package com.smarthome.security.data.repository
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.data.remote.TelemetryApi
+import com.smarthome.security.data.remote.SessionExpiredException
 
 class TelemetryRepository(
     private val api: TelemetryApi,
@@ -19,7 +20,10 @@ class TelemetryRepository(
                     if (body != null) Result.success(body.telemetry)
                     else Result.failure(Exception("Empty response from server."))
                 }
-                response.code() == 401 -> Result.failure(Exception("Session expired. Please log in again."))
+                response.code() == 401 -> {
+                    sessionManager.clearSession()
+                    Result.failure(SessionExpiredException())
+                }
                 response.code() == 404 -> Result.failure(Exception("No telemetry data found yet."))
                 else -> Result.failure(Exception("Failed to load telemetry (${response.code()})."))
             }

@@ -27,6 +27,7 @@ import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import com.smarthome.security.data.model.Event
 fun EventsScreen(
     viewModel: EventsViewModel,
     onNavigateBack: () -> Unit,
+    onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -97,6 +99,9 @@ fun EventsScreen(
                     }
                 }
 
+                is EventsUiState.SessionExpired -> {
+                    LaunchedEffect(Unit) { onSessionExpired() }
+                }
                 is EventsUiState.Success -> {
                     if (state.events.isEmpty()) {
                         Text(

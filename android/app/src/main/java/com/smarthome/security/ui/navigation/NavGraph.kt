@@ -51,6 +51,12 @@ fun NavGraph() {
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
     val telemetryRepository = remember { TelemetryRepository(RetrofitClient.telemetryApi, sessionManager) }
 
+    val onSessionExpired: () -> Unit = {
+        navController.navigate(Routes.LOGIN) {
+            popUpTo(0) { inclusive = true }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.LOGIN,
@@ -78,6 +84,7 @@ fun NavGraph() {
                 onNavigateToEvents = { navController.navigate(Routes.EVENTS) },
                 onNavigateToTelemetry = { navController.navigate(Routes.TELEMETRY) },
                 onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+                onSessionExpired = onSessionExpired,
             )
         }
         composable(Routes.DEVICES) {
@@ -87,6 +94,7 @@ fun NavGraph() {
             DevicesScreen(
                 viewModel = devicesViewModel,
                 onNavigateBack = { navController.popBackStack() },
+                onSessionExpired = onSessionExpired,
             )
         }
         composable(Routes.EVENTS) {
@@ -96,6 +104,7 @@ fun NavGraph() {
             EventsScreen(
                 viewModel = eventsViewModel,
                 onNavigateBack = { navController.popBackStack() },
+                onSessionExpired = onSessionExpired,
             )
         }
         composable(Routes.TELEMETRY) {
@@ -105,6 +114,7 @@ fun NavGraph() {
             TelemetryScreen(
                 viewModel = telemetryViewModel,
                 onNavigateBack = { navController.popBackStack() },
+                onSessionExpired = onSessionExpired,
             )
         }
         composable(Routes.PROFILE) {

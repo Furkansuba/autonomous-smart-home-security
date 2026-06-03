@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.Event
+import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.EventsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ sealed class EventsUiState {
     object Loading : EventsUiState()
     data class Success(val events: List<Event>) : EventsUiState()
     data class Error(val message: String) : EventsUiState()
+    object SessionExpired : EventsUiState()
 }
 
 class EventsViewModel(private val repository: EventsRepository) : ViewModel() {
@@ -30,7 +32,12 @@ class EventsViewModel(private val repository: EventsRepository) : ViewModel() {
             val result = repository.getEvents()
             _uiState.value = result.fold(
                 onSuccess = { EventsUiState.Success(it) },
-                onFailure = { EventsUiState.Error(it.message ?: "Unknown error.") },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        EventsUiState.SessionExpired
+                    else
+                        EventsUiState.Error(error.message ?: "Unknown error.")
+                },
             )
         }
     }

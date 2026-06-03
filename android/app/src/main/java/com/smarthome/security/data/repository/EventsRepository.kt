@@ -3,6 +3,7 @@ package com.smarthome.security.data.repository
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.Event
 import com.smarthome.security.data.remote.EventsApi
+import com.smarthome.security.data.remote.SessionExpiredException
 
 class EventsRepository(
     private val api: EventsApi,
@@ -15,7 +16,10 @@ class EventsRepository(
             val response = api.getEvents("Bearer $token")
             when {
                 response.isSuccessful -> Result.success(response.body()?.events ?: emptyList())
-                response.code() == 401 -> Result.failure(Exception("Session expired. Please log in again."))
+                response.code() == 401 -> {
+                    sessionManager.clearSession()
+                    Result.failure(SessionExpiredException())
+                }
                 else -> Result.failure(Exception("Failed to load events (${response.code()})."))
             }
         } catch (e: Exception) {

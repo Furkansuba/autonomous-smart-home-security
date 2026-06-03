@@ -3,6 +3,7 @@ package com.smarthome.security.data.repository
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.DashboardSummary
 import com.smarthome.security.data.remote.DashboardApi
+import com.smarthome.security.data.remote.SessionExpiredException
 
 class DashboardRepository(
     private val api: DashboardApi,
@@ -15,7 +16,10 @@ class DashboardRepository(
             val response = api.getSummary("Bearer $token")
             when {
                 response.isSuccessful -> Result.success(response.body()!!)
-                response.code() == 401 -> Result.failure(Exception("Session expired. Please log in again."))
+                response.code() == 401 -> {
+                    sessionManager.clearSession()
+                    Result.failure(SessionExpiredException())
+                }
                 else -> Result.failure(Exception("Failed to load dashboard (${response.code()})."))
             }
         } catch (e: Exception) {

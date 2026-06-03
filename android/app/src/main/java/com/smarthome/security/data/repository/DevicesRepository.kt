@@ -3,6 +3,7 @@ package com.smarthome.security.data.repository
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.Device
 import com.smarthome.security.data.remote.DevicesApi
+import com.smarthome.security.data.remote.SessionExpiredException
 
 class DevicesRepository(
     private val api: DevicesApi,
@@ -15,7 +16,10 @@ class DevicesRepository(
             val response = api.getDevices("Bearer $token")
             when {
                 response.isSuccessful -> Result.success(response.body()?.devices ?: emptyList())
-                response.code() == 401 -> Result.failure(Exception("Session expired. Please log in again."))
+                response.code() == 401 -> {
+                    sessionManager.clearSession()
+                    Result.failure(SessionExpiredException())
+                }
                 else -> Result.failure(Exception("Failed to load devices (${response.code()})."))
             }
         } catch (e: Exception) {
