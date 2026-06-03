@@ -27,7 +27,13 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onNavigateBack: () -> Unit, onLogout: () -> Unit) {
+fun ProfileScreen(
+    email: String,
+    fullName: String,
+    role: String,
+    onNavigateBack: () -> Unit,
+    onLogout: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -53,7 +59,7 @@ fun ProfileScreen(onNavigateBack: () -> Unit, onLogout: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Resident",
+                text = fullName.ifBlank { "User" },
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -61,7 +67,7 @@ fun ProfileScreen(onNavigateBack: () -> Unit, onLogout: () -> Unit) {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "resident@home.local",
+                text = email,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -70,7 +76,7 @@ fun ProfileScreen(onNavigateBack: () -> Unit, onLogout: () -> Unit) {
 
             AssistChip(
                 onClick = {},
-                label = { Text("resident") },
+                label = { Text(role.ifBlank { "resident" }) },
             )
 
             Spacer(modifier = Modifier.weight(1f))
