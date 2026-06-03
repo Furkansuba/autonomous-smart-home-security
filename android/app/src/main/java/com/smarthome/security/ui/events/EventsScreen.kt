@@ -26,10 +26,14 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -135,9 +139,19 @@ fun EventsScreen(
 
 @Composable
 private fun EventCard(event: Event) {
+    var expanded by remember { mutableStateOf(false) }
+    val isCritical = event.severity == "critical"
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = if (isCritical)
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+            )
+        else
+            CardDefaults.cardColors(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -153,23 +167,38 @@ private fun EventCard(event: Event) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                 )
-                SeverityChip(severity = event.severity)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    SeverityChip(severity = event.severity)
+                    Text(
+                        text = if (expanded) "▴" else "▾",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
-            EventRow(label = "Device", value = event.deviceId)
+            val roomPart = event.roomId?.let { formatRoomId(it) }
+            val timePart = formatTimestampShort(event.occurredAt)
+            Text(
+                text = listOfNotNull(roomPart, timePart).joinToString(" · "),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-            if (!event.roomId.isNullOrBlank()) {
-                EventRow(label = "Room", value = formatRoomId(event.roomId))
-            }
-
-            if (!event.message.isNullOrBlank()) {
-                EventRow(label = "Message", value = event.message)
-            }
-
-            EventRow(label = "Time", value = formatTimestamp(event.occurredAt))
-
-            if (event.confirmed != null) {
-                EventRow(label = "Confirmed", value = if (event.confirmed) "Yes" else "No")
+            if (expanded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                EventRow(label = "Device", value = event.deviceId)
+                if (!event.message.isNullOrBlank()) {
+                    EventRow(label = "Message", value = event.message!!)
+                }
+                if (event.confirmed != null) {
+                    EventRow(label = "Confirmed", value = if (event.confirmed) "Yes" else "No")
+                }
+                EventRow(label = "Event ID", value = event.eventId)
+                EventRow(label = "Time", value = formatTimestamp(event.occurredAt))
             }
         }
     }
@@ -221,6 +250,15 @@ private fun formatTimestamp(raw: String): String {
     return try {
         val noMillis = raw.substringBefore(".")
         noMillis.replace("T", " ").trimEnd('Z') + " UTC"
+    } catch (e: Exception) {
+        raw
+    }
+}
+
+private fun formatTimestampShort(raw: String): String {
+    return try {
+        val time = raw.substringAfter("T").substringBefore(".")
+        "${time.substring(0, 5)} UTC"
     } catch (e: Exception) {
         raw
     }

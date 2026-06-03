@@ -26,10 +26,14 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -135,8 +139,11 @@ fun DevicesScreen(
 
 @Composable
 private fun DeviceCard(device: Device) {
+    var expanded by remember { mutableStateOf(false) }
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -153,24 +160,40 @@ private fun DeviceCard(device: Device) {
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                 )
-                StatusChip(status = device.status)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    StatusChip(status = device.status)
+                    Text(
+                        text = if (expanded) "▴" else "▾",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
-            DeviceRow(label = "ID", value = device.deviceId)
-
-            if (!device.firmwareVersion.isNullOrBlank()) {
-                DeviceRow(label = "Firmware", value = device.firmwareVersion)
+            val secondaryText = device.locationLabel?.takeIf { it.isNotBlank() }
+                ?: device.lastHeartbeatAt?.let { formatTimestamp(it) }
+            secondaryText?.let {
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
-            if (!device.lastHeartbeatAt.isNullOrBlank()) {
-                DeviceRow(label = "Last heartbeat", value = formatTimestamp(device.lastHeartbeatAt))
+            if (expanded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                DeviceRow(label = "ID", value = device.deviceId)
+                if (!device.firmwareVersion.isNullOrBlank()) {
+                    DeviceRow(label = "Firmware", value = device.firmwareVersion!!)
+                }
+                if (!device.lastHeartbeatAt.isNullOrBlank()) {
+                    DeviceRow(label = "Last heartbeat", value = formatTimestamp(device.lastHeartbeatAt!!))
+                }
+                DeviceRow(label = "Active", value = if (device.isActive) "Yes" else "No")
             }
-
-            if (!device.locationLabel.isNullOrBlank()) {
-                DeviceRow(label = "Location", value = device.locationLabel)
-            }
-
-            DeviceRow(label = "Active", value = if (device.isActive) "Yes" else "No")
         }
     }
 }

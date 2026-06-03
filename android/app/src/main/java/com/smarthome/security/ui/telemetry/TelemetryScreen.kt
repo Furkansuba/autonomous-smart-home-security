@@ -115,40 +115,47 @@ private fun TelemetryContent(
     telemetry: TelemetrySummary,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Latest Sensor Readings", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(2.dp))
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-        InfoCard(label = "Device ID", value = telemetry.deviceId)
-        telemetry.roomId?.let { InfoCard(label = "Room", value = formatRoomId(it)) }
+        if (telemetry.motionDetected == true) AlertBanner("Motion detected")
+        if (telemetry.flameDetected == true) AlertBanner("Flame detected")
 
-        telemetry.temperatureC?.let {
-            InfoCard(label = "Temperature", value = "%.1f °C".format(it))
-        }
-        telemetry.humidityPercent?.let {
-            InfoCard(label = "Humidity", value = "%.1f %%".format(it))
-        }
-
+        SectionHeader("Security Signals")
         telemetry.motionDetected?.let {
-            AlertCard(label = "Motion Detected", active = it, activeLabel = "YES", inactiveLabel = "Clear")
+            AlertCard(label = "Motion", active = it, activeLabel = "Detected", inactiveLabel = "Clear")
         }
         telemetry.flameDetected?.let {
-            AlertCard(label = "Flame Detected", active = it, activeLabel = "DETECTED", inactiveLabel = "Clear")
-        }
-        telemetry.gasRaw?.let {
-            InfoCard(label = "Gas (raw)", value = it.toString())
-        }
-        telemetry.coRaw?.let {
-            InfoCard(label = "CO (raw)", value = it.toString())
+            AlertCard(label = "Flame", active = it, activeLabel = "Detected", inactiveLabel = "Clear")
         }
         telemetry.reedOpen?.let {
-            AlertCard(label = "Reed Switch", active = it, activeLabel = "OPEN", inactiveLabel = "Closed")
+            AlertCard(label = "Reed Switch", active = it, activeLabel = "Open", inactiveLabel = "Closed")
         }
 
+        if (telemetry.gasRaw != null || telemetry.coRaw != null) {
+            SectionHeader("Air Safety")
+            telemetry.gasRaw?.let { InfoCard(label = "Gas (raw)", value = it.toString()) }
+            telemetry.coRaw?.let { InfoCard(label = "CO (raw)", value = it.toString()) }
+        }
+
+        if (telemetry.temperatureC != null || telemetry.humidityPercent != null) {
+            SectionHeader("Environment")
+            telemetry.temperatureC?.let {
+                InfoCard(label = "Temperature", value = "%.1f °C".format(it))
+            }
+            telemetry.humidityPercent?.let {
+                InfoCard(label = "Humidity", value = "%.1f %%".format(it))
+            }
+        }
+
+        SectionHeader("Metadata")
+        InfoCard(label = "Device", value = telemetry.deviceId)
+        telemetry.roomId?.let { InfoCard(label = "Room", value = formatRoomId(it)) }
         val timestamp = telemetry.occurredAt ?: telemetry.createdAt
         timestamp?.let {
-            Spacer(modifier = Modifier.height(2.dp))
-            InfoCard(label = "Recorded At", value = it.replace("T", " ").substringBefore(".") + " UTC")
+            InfoCard(
+                label = "Recorded at",
+                value = it.replace("T", " ").substringBefore(".") + " UTC",
+            )
         }
     }
 }
@@ -201,6 +208,33 @@ private fun AlertCard(
                 color = valueColor,
             )
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
+    )
+}
+
+@Composable
+private fun AlertBanner(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+        )
     }
 }
 

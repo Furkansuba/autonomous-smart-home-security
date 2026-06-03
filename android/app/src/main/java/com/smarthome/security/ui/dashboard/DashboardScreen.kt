@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -163,14 +164,21 @@ private fun SummarySection(summary: DashboardSummary) {
             SummaryRow(label = "Degraded", value = "${summary.devices.statusCounts.degraded}")
             SummaryRow(label = "Offline", value = "${summary.devices.statusCounts.offline}")
             HorizontalDivider()
-            SummaryRow(label = "Critical Events (24h)", value = "${summary.events.recentCritical24hCount}")
+            SummaryRow(
+                label = "Critical Events (24h)",
+                value = "${summary.events.recentCritical24hCount}",
+                valueColor = if (summary.events.recentCritical24hCount > 0)
+                    MaterialTheme.colorScheme.error
+                else
+                    Color.Unspecified,
+            )
             SummaryRow(label = "Pending Overrides", value = "${summary.overrides.pendingCount}")
         }
     }
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String) {
+private fun SummaryRow(label: String, value: String, valueColor: Color = Color.Unspecified) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -184,6 +192,7 @@ private fun SummaryRow(label: String, value: String) {
             text = value,
             fontWeight = FontWeight.Medium,
             fontSize = 14.sp,
+            color = valueColor,
         )
     }
 }
