@@ -19,4 +19,5 @@ object RetrofitClient {
         .build()
 
     val api: AuthApi = retrofit.create(AuthApi::class.java)
+    val dashboardApi: DashboardApi = retrofit.create(DashboardApi::class.java)
 }

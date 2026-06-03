@@ -10,7 +10,10 @@ import androidx.navigation.compose.rememberNavController
 import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.remote.RetrofitClient
 import com.smarthome.security.data.repository.AuthRepository
+import com.smarthome.security.data.repository.DashboardRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
+import com.smarthome.security.ui.dashboard.DashboardViewModel
+import com.smarthome.security.ui.dashboard.DashboardViewModelFactory
 import com.smarthome.security.ui.devices.DevicesScreen
 import com.smarthome.security.ui.events.EventsScreen
 import com.smarthome.security.ui.login.LoginScreen
@@ -34,6 +37,7 @@ fun NavGraph() {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository(RetrofitClient.api, sessionManager) }
+    val dashboardRepository = remember { DashboardRepository(RetrofitClient.dashboardApi, sessionManager) }
 
     NavHost(
         navController = navController,
@@ -53,7 +57,11 @@ fun NavGraph() {
             )
         }
         composable(Routes.DASHBOARD) {
+            val dashboardViewModel: DashboardViewModel = viewModel(
+                factory = DashboardViewModelFactory(dashboardRepository),
+            )
             DashboardScreen(
+                viewModel = dashboardViewModel,
                 onNavigateToDevices = { navController.navigate(Routes.DEVICES) },
                 onNavigateToEvents = { navController.navigate(Routes.EVENTS) },
                 onNavigateToTelemetry = { navController.navigate(Routes.TELEMETRY) },
