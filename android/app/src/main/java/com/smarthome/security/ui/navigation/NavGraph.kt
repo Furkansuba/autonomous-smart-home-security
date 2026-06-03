@@ -12,6 +12,7 @@ import com.smarthome.security.data.remote.RetrofitClient
 import com.smarthome.security.data.repository.AuthRepository
 import com.smarthome.security.data.repository.DashboardRepository
 import com.smarthome.security.data.repository.DevicesRepository
+import com.smarthome.security.data.repository.EventsRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
 import com.smarthome.security.ui.dashboard.DashboardViewModel
 import com.smarthome.security.ui.dashboard.DashboardViewModelFactory
@@ -19,6 +20,8 @@ import com.smarthome.security.ui.devices.DevicesScreen
 import com.smarthome.security.ui.devices.DevicesViewModel
 import com.smarthome.security.ui.devices.DevicesViewModelFactory
 import com.smarthome.security.ui.events.EventsScreen
+import com.smarthome.security.ui.events.EventsViewModel
+import com.smarthome.security.ui.events.EventsViewModelFactory
 import com.smarthome.security.ui.login.LoginScreen
 import com.smarthome.security.ui.login.LoginViewModel
 import com.smarthome.security.ui.login.LoginViewModelFactory
@@ -42,6 +45,7 @@ fun NavGraph() {
     val authRepository = remember { AuthRepository(RetrofitClient.api, sessionManager) }
     val dashboardRepository = remember { DashboardRepository(RetrofitClient.dashboardApi, sessionManager) }
     val devicesRepository = remember { DevicesRepository(RetrofitClient.devicesApi, sessionManager) }
+    val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
 
     NavHost(
         navController = navController,
@@ -82,7 +86,13 @@ fun NavGraph() {
             )
         }
         composable(Routes.EVENTS) {
-            EventsScreen(onNavigateBack = { navController.popBackStack() })
+            val eventsViewModel: EventsViewModel = viewModel(
+                factory = EventsViewModelFactory(eventsRepository),
+            )
+            EventsScreen(
+                viewModel = eventsViewModel,
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.TELEMETRY) {
             TelemetryScreen(onNavigateBack = { navController.popBackStack() })
