@@ -150,7 +150,7 @@ fun NavGraph() {
             }
             composable(Routes.DASHBOARD) {
                 val dashboardViewModel: DashboardViewModel = viewModel(
-                    factory = DashboardViewModelFactory(dashboardRepository),
+                    factory = DashboardViewModelFactory(dashboardRepository, eventsRepository),
                 )
                 DashboardScreen(
                     viewModel = dashboardViewModel,

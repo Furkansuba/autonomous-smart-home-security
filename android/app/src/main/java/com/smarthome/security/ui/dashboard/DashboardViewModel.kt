@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.DashboardSummary
+import com.smarthome.security.data.model.Event
 import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.DashboardRepository
+import com.smarthome.security.data.repository.EventsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,9 +20,15 @@ sealed class DashboardUiState {
     object SessionExpired : DashboardUiState()
 }
 
-class DashboardViewModel(private val repository: DashboardRepository) : ViewModel() {
+class DashboardViewModel(
+    private val repository: DashboardRepository,
+    private val eventsRepository: EventsRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow<DashboardUiState>(DashboardUiState.Loading)
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _recentEvents = MutableStateFlow<List<Event>>(emptyList())
+    val recentEvents: StateFlow<List<Event>> = _recentEvents.asStateFlow()
 
     init {
         loadSummary()
@@ -40,11 +48,19 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 },
             )
         }
+        viewModelScope.launch {
+            eventsRepository.getEvents().onSuccess { events ->
+                _recentEvents.value = events.take(3)
+            }
+        }
     }
 }
 
-class DashboardViewModelFactory(private val repository: DashboardRepository) : ViewModelProvider.Factory {
+class DashboardViewModelFactory(
+    private val repository: DashboardRepository,
+    private val eventsRepository: EventsRepository,
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        DashboardViewModel(repository) as T
+        DashboardViewModel(repository, eventsRepository) as T
 }

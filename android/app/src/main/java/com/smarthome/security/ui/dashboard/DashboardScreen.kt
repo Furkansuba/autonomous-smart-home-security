@@ -9,8 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +29,12 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeviceHub
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Pending
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.SignalWifiOff
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +42,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -59,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.DashboardSummary
+import com.smarthome.security.data.model.Event
 import com.smarthome.security.ui.theme.AppColors
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -76,6 +86,7 @@ fun DashboardScreen(
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val recentEvents by viewModel.recentEvents.collectAsStateWithLifecycle()
     var lastSummary by remember { mutableStateOf<DashboardSummary?>(null) }
 
     LaunchedEffect(uiState) {
@@ -114,6 +125,7 @@ fun DashboardScreen(
                     if (cached != null) {
                         DashboardContent(
                             summary = cached,
+                            recentEvents = recentEvents,
                             onNavigateToDevices = onNavigateToDevices,
                             onNavigateToEvents = onNavigateToEvents,
                             onNavigateToOverrides = onNavigateToOverrides,
@@ -164,6 +176,7 @@ fun DashboardScreen(
                 is DashboardUiState.Success -> {
                     DashboardContent(
                         summary = state.summary,
+                        recentEvents = recentEvents,
                         onNavigateToDevices = onNavigateToDevices,
                         onNavigateToEvents = onNavigateToEvents,
                         onNavigateToOverrides = onNavigateToOverrides,
@@ -205,6 +218,7 @@ private fun DashboardHeader(fullName: String) {
 @Composable
 private fun DashboardContent(
     summary: DashboardSummary,
+    recentEvents: List<Event>,
     onNavigateToDevices: () -> Unit,
     onNavigateToEvents: () -> Unit,
     onNavigateToOverrides: () -> Unit,
@@ -220,6 +234,13 @@ private fun DashboardContent(
         StatTilesGrid(summary = summary, onNavigateToOverrides = onNavigateToOverrides)
 
         DeviceHealthCard(summary = summary)
+
+        if (recentEvents.isNotEmpty()) {
+            RecentActivitySection(
+                events = recentEvents,
+                onNavigateToEvents = onNavigateToEvents,
+            )
+        }
 
         AttentionRequiredSection(
             summary = summary,
@@ -720,6 +741,133 @@ private fun AttentionRequiredSection(
         }
     }
 }
+
+@Composable
+private fun RecentActivitySection(
+    events: List<Event>,
+    onNavigateToEvents: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNavigateToEvents)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Recent activity",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "View all",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            events.forEachIndexed { index, event ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f),
+                    )
+                }
+                RecentEventRow(event = event, onClick = onNavigateToEvents)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+private fun RecentEventRow(event: Event, onClick: () -> Unit) {
+    val accentColor = resolveSeverityColor(event.severity)
+    val icon = recentEventTypeIcon(event.eventType)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .fillMaxHeight()
+                .background(accentColor),
+        )
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = accentColor,
+            )
+            Text(
+                text = recentEventFormatType(event.eventType),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = event.severity.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.labelSmall,
+                color = accentColor,
+            )
+            Text(
+                text = relativeTime(event.occurredAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun resolveSeverityColor(severity: String): Color = when (severity) {
+    "critical" -> MaterialTheme.colorScheme.error
+    "warning" -> MaterialTheme.colorScheme.tertiary
+    else -> MaterialTheme.colorScheme.primary
+}
+
+private fun recentEventTypeIcon(eventType: String): ImageVector {
+    val lower = eventType.lowercase()
+    return when {
+        "fire" in lower -> Icons.Filled.LocalFireDepartment
+        "gas" in lower || "co" in lower -> Icons.Filled.Warning
+        "intrusion" in lower -> Icons.Filled.Security
+        "motion" in lower -> Icons.Filled.Sensors
+        "nfc" in lower || "access" in lower -> Icons.Filled.Nfc
+        "heartbeat" in lower || "offline" in lower -> Icons.Filled.SignalWifiOff
+        "override" in lower -> Icons.Filled.Tune
+        else -> Icons.Filled.NotificationsActive
+    }
+}
+
+private fun recentEventFormatType(raw: String): String =
+    raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
 
 private fun timeOfDayGreeting(): String {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
