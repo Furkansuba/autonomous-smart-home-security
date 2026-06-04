@@ -74,7 +74,16 @@ fun EventsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Alerts") },
+                title = {
+                    Column {
+                        Text("Alerts")
+                        Text(
+                            text = "Security incident feed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
             )
         },
     ) { padding ->

@@ -64,7 +64,18 @@ fun TelemetryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Sensors") })
+            TopAppBar(
+            title = {
+                Column {
+                    Text("Sensors")
+                    Text(
+                        text = "Room sensor readings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+        )
         },
     ) { padding ->
         Box(
@@ -273,12 +284,6 @@ private fun SensorsHeader(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Text(
-            text = "Room sensor readings",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = if (isAlert) Icons.Filled.Warning else Icons.Filled.CheckCircle,
@@ -340,7 +345,7 @@ private fun SensorsSummaryCard(
                 )
                 SummaryMetric(
                     value = alertCount.toString(),
-                    label = "Alerting",
+                    label = "Needs review",
                     valueColor = if (alertCount > 0) MaterialTheme.colorScheme.error
                                  else MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -91,11 +91,6 @@ fun DashboardScreen(
             Color.Transparent,
         ),
     )
-    val quickReview: String? = run {
-        val s = (uiState as? DashboardUiState.Success)?.summary ?: lastSummary
-        s?.let { deriveQuickReview(it) }
-    }
-
     PullToRefreshBox(
         isRefreshing = uiState is DashboardUiState.Loading,
         onRefresh = { viewModel.loadSummary() },
@@ -112,10 +107,7 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            DashboardHeader(
-                fullName = fullName,
-                quickReview = quickReview,
-            )
+            DashboardHeader(fullName = fullName)
 
             when (val state = uiState) {
                 is DashboardUiState.Loading -> {
@@ -176,7 +168,7 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardHeader(fullName: String, quickReview: String?) {
+private fun DashboardHeader(fullName: String) {
     val greeting = remember { timeOfDayGreeting() }
     val firstName = remember(fullName) {
         if (fullName.isBlank()) "there" else fullName.trim().substringBefore(" ")
@@ -197,14 +189,6 @@ private fun DashboardHeader(fullName: String, quickReview: String?) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (quickReview != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = quickReview,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
@@ -230,8 +214,6 @@ private fun DashboardContent(
             summary = summary,
             onNavigateToDevices = onNavigateToDevices,
         )
-
-        SystemSnapshotCard(summary = summary)
 
         if (summary.events.recentCritical24hCount > 0) {
             val count = summary.events.recentCritical24hCount
@@ -713,70 +695,6 @@ private fun AttentionRequiredSection(
     }
 }
 
-@Composable
-private fun SystemSnapshotCard(summary: DashboardSummary) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        shape = RoundedCornerShape(14.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = "System Snapshot",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            SnapshotRow(
-                label = "Devices",
-                value = "${summary.devices.statusCounts.online} online / ${summary.devices.totalActive} total",
-            )
-            SnapshotRow(
-                label = "Critical alerts",
-                value = if (summary.events.recentCritical24hCount > 0)
-                    "${summary.events.recentCritical24hCount} in the last 24h"
-                else "None in the last 24h",
-            )
-            SnapshotRow(
-                label = "Pending overrides",
-                value = if (summary.overrides.pendingCount > 0)
-                    "${summary.overrides.pendingCount} awaiting review"
-                else "None",
-            )
-            SnapshotRow(
-                label = "Snapshot taken",
-                value = relativeTime(summary.generatedAt),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SnapshotRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
 private fun timeOfDayGreeting(): String {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     return when {
@@ -813,23 +731,3 @@ private fun shortTime(raw: String): String {
     }
 }
 
-private fun deriveQuickReview(summary: DashboardSummary): String {
-    val total = summary.devices.totalActive
-    val online = summary.devices.statusCounts.online
-    val offline = summary.devices.statusCounts.offline
-    val degraded = summary.devices.statusCounts.degraded
-    val critical = summary.events.recentCritical24hCount
-    return when {
-        critical > 0 && offline > 0 ->
-            "$critical critical alert${if (critical > 1) "s" else ""} · $offline device${if (offline > 1) "s" else ""} offline"
-        critical > 0 ->
-            "$critical critical alert${if (critical > 1) "s" else ""} in the last 24h"
-        offline > 0 ->
-            "$offline of $total device${if (total > 1) "s" else ""} offline"
-        degraded > 0 ->
-            "$degraded device${if (degraded > 1) "s" else ""} in degraded state"
-        else ->
-            if (total == 0) "No active devices registered"
-            else "$online of $total device${if (total > 1) "s" else ""} online · no critical alerts"
-    }
-}
