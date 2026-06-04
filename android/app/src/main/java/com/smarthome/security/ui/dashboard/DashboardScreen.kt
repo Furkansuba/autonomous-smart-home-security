@@ -483,7 +483,7 @@ private fun StatTilesGrid(summary: DashboardSummary, onNavigateToOverrides: () -
                 label = "Pending\nOverrides",
                 accentColor = if (pending > 0) AppColors.statusDegraded
                               else MaterialTheme.colorScheme.onSurfaceVariant,
-                onClick = if (pending > 0) onNavigateToOverrides else null,
+                onClick = onNavigateToOverrides,
             )
         }
     }
