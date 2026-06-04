@@ -156,14 +156,6 @@ fun ProfileScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
                     ProfileRow(
-                        label = "Role",
-                        value = role.ifBlank { "Resident" }.replaceFirstChar { it.uppercase() },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    ProfileRow(
                         label = "Access",
                         value = accessLevel,
                     )

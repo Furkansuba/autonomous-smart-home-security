@@ -74,7 +74,7 @@ fun DevicesScreen(
                     Column {
                         Text("Devices")
                         Text(
-                            text = "Device fleet status",
+                            text = "Connected devices",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

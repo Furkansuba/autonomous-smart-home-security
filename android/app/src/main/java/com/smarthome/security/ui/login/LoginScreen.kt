@@ -82,7 +82,7 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Security console access",
+            text = "Secure home access",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -160,7 +160,7 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
-                Text("Access Console")
+                Text("Sign In")
             }
         }
     }

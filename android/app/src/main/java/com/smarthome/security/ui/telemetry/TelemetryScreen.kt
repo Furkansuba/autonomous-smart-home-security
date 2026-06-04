@@ -560,14 +560,14 @@ private fun SensorCardDetails(reading: TelemetrySummary) {
             DetailRow("Flame", if (it) "Detected" else "Clear", alert = it)
         }
         reading.reedOpen?.let {
-            DetailRow("Reed Switch", if (it) "Open" else "Closed", alert = it)
+            DetailRow("Door sensor", if (it) "Open" else "Closed", alert = it)
         }
     }
 
     if (hasAirSafety) {
         SectionHeader("Air Safety")
-        reading.gasRaw?.let { DetailRow("Gas (raw)", it.toString()) }
-        reading.coRaw?.let { DetailRow("CO (raw)", it.toString()) }
+        reading.gasRaw?.let { DetailRow("Gas level", it.toString()) }
+        reading.coRaw?.let { DetailRow("CO level", it.toString()) }
     }
 
     if (hasEnvironment) {
