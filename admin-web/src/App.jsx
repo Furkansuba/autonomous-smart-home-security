@@ -72,11 +72,14 @@ function App() {
   }
 
   const user = authService.getStoredUser()
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => item.key !== 'overrides' || user?.role === 'admin'
+  )
   const pageTitle = NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')
 
   return (
     <div className={`app-shell theme-${theme}`}>
-      <Sidebar navItems={NAV_ITEMS} activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar navItems={visibleNavItems} activePage={activePage} onNavigate={setActivePage} />
       <div className="main-wrapper">
         <Topbar
           title={pageTitle}

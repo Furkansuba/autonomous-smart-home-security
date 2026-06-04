@@ -15,7 +15,7 @@ const {
   createOverrideBodySchema,
 } = require('../validators/api.schemas');
 const router = express.Router();
-router.get('/', listOverrides);
+router.get('/', authenticate, listOverrides);
 router.post(
   '/',
   authenticate,

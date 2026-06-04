@@ -22,6 +22,9 @@ const QUICK_ACTIONS = [
 ]
 
 function OverridesPage() {
+  const storedUser = authService.getStoredUser()
+  const isAdmin = storedUser?.role === 'admin'
+
   const [overrides,    setOverrides]    = useState([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState(null)
@@ -166,102 +169,114 @@ function OverridesPage() {
         </DataTable>
       )}
 
-      {/* Command panel: quick actions + form side by side */}
-      <div className="cmd-panel">
+      {/* Command panel: admin only */}
+      {isAdmin ? (
+        <div className="cmd-panel">
 
-        <div className="cmd-quick-section">
-          <span className="cmd-section-label">Quick Actions</span>
-          <p className="cmd-quick-hint">Select a preset to populate the command form.</p>
-          <div className="cmd-quick-grid">
-            {QUICK_ACTIONS.map((qa) => (
-              <button
-                key={qa.action}
-                type="button"
-                className="cmd-quick-btn"
-                onClick={() => applyQuickAction(qa.actuator, qa.action)}
-                disabled={submitting}
-              >
-                {qa.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="cmd-form-card">
-          <div className="cmd-form-hdr">
-            <span className="cmd-form-title">Issue Command Override</span>
-            <span className="cmd-form-badge">Manual Control</span>
-          </div>
-          <p className="cmd-form-helper">Specify the target device, actuator, action, and a reason for the audit log.</p>
-          <form className="cmd-form" onSubmit={handleSubmit}>
-            <div className="cmd-form-grid">
-              <div className="cmd-form-field">
-                <label className="cmd-form-label">Device ID</label>
-                <input
-                  className="override-form-input"
-                  type="text"
-                  value={formDevice}
-                  onChange={(e) => setFormDevice(e.target.value)}
-                  disabled={submitting}
-                  required
-                />
-              </div>
-              <div className="cmd-form-field">
-                <label className="cmd-form-label">Actuator ID</label>
-                <input
-                  className="override-form-input"
-                  type="text"
-                  value={formActuator}
-                  onChange={(e) => setFormActuator(e.target.value)}
-                  disabled={submitting}
-                  required
-                />
-              </div>
-            </div>
-            <div className="cmd-form-grid">
-              <div className="cmd-form-field">
-                <label className="cmd-form-label">Action</label>
-                <select
-                  className="override-form-select"
-                  value={formAction}
-                  onChange={(e) => setFormAction(e.target.value)}
+          <div className="cmd-quick-section">
+            <span className="cmd-section-label">Quick Actions</span>
+            <p className="cmd-quick-hint">Select a preset to populate the command form.</p>
+            <div className="cmd-quick-grid">
+              {QUICK_ACTIONS.map((qa) => (
+                <button
+                  key={qa.action}
+                  type="button"
+                  className="cmd-quick-btn"
+                  onClick={() => applyQuickAction(qa.actuator, qa.action)}
                   disabled={submitting}
                 >
-                  {OVERRIDE_ACTIONS_LIST.map((a) => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="cmd-form-field">
-                <label className="cmd-form-label">Reason</label>
-                <input
-                  className="override-form-input"
-                  type="text"
-                  value={formReason}
-                  onChange={(e) => setFormReason(e.target.value)}
-                  disabled={submitting}
-                  maxLength={240}
-                />
-              </div>
+                  {qa.label}
+                </button>
+              ))}
             </div>
-            <div className="cmd-form-footer">
-              <button
-                className="btn-override-submit"
-                type="submit"
-                disabled={submitting}
-              >
-                {submitting ? 'Submitting…' : 'Submit Override'}
-              </button>
-              {submitMsg && (
-                <span className={`override-submit-msg${submitMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
-                  {submitMsg.text}
-                </span>
-              )}
-            </div>
-          </form>
-        </div>
+          </div>
 
-      </div>
+          <div className="cmd-form-card">
+            <div className="cmd-form-hdr">
+              <span className="cmd-form-title">Issue Command Override</span>
+              <span className="cmd-form-badge">Manual Control</span>
+            </div>
+            <p className="cmd-form-helper">Specify the target device, actuator, action, and a reason for the audit log.</p>
+            <form className="cmd-form" onSubmit={handleSubmit}>
+              <div className="cmd-form-grid">
+                <div className="cmd-form-field">
+                  <label className="cmd-form-label">Device ID</label>
+                  <input
+                    className="override-form-input"
+                    type="text"
+                    value={formDevice}
+                    onChange={(e) => setFormDevice(e.target.value)}
+                    disabled={submitting}
+                    required
+                  />
+                </div>
+                <div className="cmd-form-field">
+                  <label className="cmd-form-label">Actuator ID</label>
+                  <input
+                    className="override-form-input"
+                    type="text"
+                    value={formActuator}
+                    onChange={(e) => setFormActuator(e.target.value)}
+                    disabled={submitting}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="cmd-form-grid">
+                <div className="cmd-form-field">
+                  <label className="cmd-form-label">Action</label>
+                  <select
+                    className="override-form-select"
+                    value={formAction}
+                    onChange={(e) => setFormAction(e.target.value)}
+                    disabled={submitting}
+                  >
+                    {OVERRIDE_ACTIONS_LIST.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cmd-form-field">
+                  <label className="cmd-form-label">Reason</label>
+                  <input
+                    className="override-form-input"
+                    type="text"
+                    value={formReason}
+                    onChange={(e) => setFormReason(e.target.value)}
+                    disabled={submitting}
+                    maxLength={240}
+                  />
+                </div>
+              </div>
+              <div className="cmd-form-footer">
+                <button
+                  className="btn-override-submit"
+                  type="submit"
+                  disabled={submitting}
+                >
+                  {submitting ? 'Submitting…' : 'Submit Override'}
+                </button>
+                {submitMsg && (
+                  <span className={`override-submit-msg${submitMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                    {submitMsg.text}
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
+
+        </div>
+      ) : (
+        <div className="cmd-panel">
+          <div className="cmd-form-card">
+            <div className="cmd-form-hdr">
+              <span className="cmd-form-title">Override Controls</span>
+              <span className="cmd-form-badge">Admin Role Required</span>
+            </div>
+            <p className="cmd-form-helper">Manual override controls are restricted to admin accounts.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
