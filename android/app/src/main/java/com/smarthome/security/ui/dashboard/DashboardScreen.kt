@@ -884,7 +884,7 @@ private fun relativeTime(isoTimestamp: String): String {
     return try {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("UTC")
-        val then = sdf.parse(isoTimestamp.substringBefore(".")) ?: return shortTime(isoTimestamp)
+        val then = sdf.parse(isoTimestamp.substringBefore(".").trimEnd('Z')) ?: return shortTime(isoTimestamp)
         val diffMin = ((System.currentTimeMillis() - then.time) / 60_000L).toInt()
         when {
             diffMin < 1 -> "just now"

@@ -196,6 +196,7 @@ fun OverridesScreen(
                         if (userRole == "admin") {
                             SilenceAlarmActionCard(
                                 silenceState = silenceState,
+                                adminEmail = adminEmail,
                                 onSilenceClick = { showConfirmDialog = true },
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
@@ -227,10 +228,12 @@ fun OverridesScreen(
 @Composable
 private fun SilenceAlarmActionCard(
     silenceState: SilenceAlarmState,
+    adminEmail: String,
     onSilenceClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isSending = silenceState is SilenceAlarmState.Sending
+    val emailMissing = adminEmail.isBlank()
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -250,7 +253,7 @@ private fun SilenceAlarmActionCard(
             )
             Button(
                 onClick = onSilenceClick,
-                enabled = !isSending,
+                enabled = !isSending && !emailMissing,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
@@ -278,6 +281,13 @@ private fun SilenceAlarmActionCard(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
+            }
+            if (emailMissing) {
+                Text(
+                    text = "Admin email missing. Please sign in again.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }

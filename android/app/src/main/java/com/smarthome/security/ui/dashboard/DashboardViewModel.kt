@@ -49,9 +49,13 @@ class DashboardViewModel(
             )
         }
         viewModelScope.launch {
-            eventsRepository.getEvents().onSuccess { events ->
-                _recentEvents.value = events.take(3)
-            }
+            eventsRepository.getEvents()
+                .onSuccess { events -> _recentEvents.value = events.take(3) }
+                .onFailure { error ->
+                    if (error is SessionExpiredException) {
+                        _uiState.value = DashboardUiState.SessionExpired
+                    }
+                }
         }
     }
 }
