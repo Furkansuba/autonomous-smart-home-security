@@ -625,19 +625,19 @@ private fun deriveDynamicSummary(readings: List<TelemetrySummary>): String {
     readings.firstOrNull { it.flameDetected == true }?.let { r ->
         return "Flame detected in ${r.roomId?.let { formatRoomId(it) } ?: r.deviceId}"
     }
-    readings.firstOrNull { it.motionDetected == true }?.let { r ->
-        return "Motion detected in ${r.roomId?.let { formatRoomId(it) } ?: r.deviceId}"
-    }
     readings.firstOrNull { it.reedOpen == true }?.let { r ->
         return "Door open in ${r.roomId?.let { formatRoomId(it) } ?: r.deviceId}"
+    }
+    readings.firstOrNull { it.motionDetected == true }?.let { r ->
+        return "Motion detected in ${r.roomId?.let { formatRoomId(it) } ?: r.deviceId}"
     }
     return "All sensors clear"
 }
 
 private fun derivePrimaryStatus(t: TelemetrySummary): String = when {
     t.flameDetected == true -> "Flame detected"
-    t.motionDetected == true -> "Motion detected"
     t.reedOpen == true -> "Door / window open"
+    t.motionDetected == true -> "Motion detected"
     t.gasRaw != null || t.coRaw != null -> "Air reading"
     else -> "Normal reading"
 }
