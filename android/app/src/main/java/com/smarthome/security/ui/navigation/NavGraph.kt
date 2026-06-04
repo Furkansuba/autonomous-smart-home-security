@@ -223,6 +223,8 @@ fun NavGraph() {
                 )
                 OverridesScreen(
                     viewModel = overridesViewModel,
+                    userRole = sessionManager.getRole() ?: "",
+                    adminEmail = sessionManager.getEmail() ?: "",
                     onNavigateBack = { navController.popBackStack() },
                     onSessionExpired = onSessionExpired,
                 )

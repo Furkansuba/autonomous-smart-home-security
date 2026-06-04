@@ -18,9 +18,20 @@ sealed class OverridesUiState {
     object SessionExpired : OverridesUiState()
 }
 
+sealed class SilenceAlarmState {
+    object Idle : SilenceAlarmState()
+    object Sending : SilenceAlarmState()
+    object Success : SilenceAlarmState()
+    data class Error(val message: String) : SilenceAlarmState()
+    object SessionExpired : SilenceAlarmState()
+}
+
 class OverridesViewModel(private val repository: OverridesRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<OverridesUiState>(OverridesUiState.Loading)
     val uiState: StateFlow<OverridesUiState> = _uiState.asStateFlow()
+
+    private val _silenceState = MutableStateFlow<SilenceAlarmState>(SilenceAlarmState.Idle)
+    val silenceState: StateFlow<SilenceAlarmState> = _silenceState.asStateFlow()
 
     init {
         loadOverrides()
@@ -40,6 +51,30 @@ class OverridesViewModel(private val repository: OverridesRepository) : ViewMode
                 },
             )
         }
+    }
+
+    fun silenceAlarm(adminEmail: String) {
+        if (_silenceState.value is SilenceAlarmState.Sending) return
+        _silenceState.value = SilenceAlarmState.Sending
+        viewModelScope.launch {
+            val result = repository.silenceAlarm(adminEmail)
+            _silenceState.value = result.fold(
+                onSuccess = { SilenceAlarmState.Success },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        SilenceAlarmState.SessionExpired
+                    else
+                        SilenceAlarmState.Error(error.message ?: "Unknown error.")
+                },
+            )
+            if (result.isSuccess) {
+                loadOverrides()
+            }
+        }
+    }
+
+    fun resetSilenceState() {
+        _silenceState.value = SilenceAlarmState.Idle
     }
 }
 

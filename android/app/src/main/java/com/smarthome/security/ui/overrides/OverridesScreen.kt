@@ -25,9 +25,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.HistoryToggleOff
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +40,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -63,12 +69,58 @@ import com.smarthome.security.ui.theme.AppColors
 @Composable
 fun OverridesScreen(
     viewModel: OverridesViewModel,
+    userRole: String,
+    adminEmail: String,
     onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val silenceState by viewModel.silenceState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(silenceState) {
+        when (val s = silenceState) {
+            is SilenceAlarmState.Success -> {
+                snackbarHostState.showSnackbar("Silence command sent.")
+                viewModel.resetSilenceState()
+            }
+            is SilenceAlarmState.Error -> {
+                snackbarHostState.showSnackbar(s.message)
+                viewModel.resetSilenceState()
+            }
+            is SilenceAlarmState.SessionExpired -> onSessionExpired()
+            else -> Unit
+        }
+    }
+
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Silence Alarm") },
+            text = {
+                Text("Send a buzzer_off command to esp32_home_01. This action will be logged in override history.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showConfirmDialog = false
+                        viewModel.silenceAlarm(adminEmail)
+                    },
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -140,10 +192,31 @@ fun OverridesScreen(
                     LaunchedEffect(Unit) { onSessionExpired() }
                 }
                 is OverridesUiState.Success -> {
-                    if (state.overrides.isEmpty()) {
-                        EmptyOverridesState(modifier = Modifier.align(Alignment.Center))
-                    } else {
-                        OverridesFeed(overrides = state.overrides)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (userRole == "admin") {
+                            SilenceAlarmActionCard(
+                                silenceState = silenceState,
+                                onSilenceClick = { showConfirmDialog = true },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp),
+                            )
+                        }
+                        if (state.overrides.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                EmptyOverridesState()
+                            }
+                        } else {
+                            OverridesFeed(
+                                overrides = state.overrides,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }
@@ -152,14 +225,73 @@ fun OverridesScreen(
 }
 
 @Composable
-private fun OverridesFeed(overrides: List<OverrideRequest>) {
+private fun SilenceAlarmActionCard(
+    silenceState: SilenceAlarmState,
+    onSilenceClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSending = silenceState is SilenceAlarmState.Sending
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.30f),
+        ),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "Admin Action",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onSilenceClick,
+                enabled = !isSending,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                if (isSending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onError,
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sending...")
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.NotificationsOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Silence Alarm / Buzzer Off",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverridesFeed(overrides: List<OverrideRequest>, modifier: Modifier = Modifier) {
     val requestedCount = overrides.count { it.status == "requested" }
     val executedCount = overrides.count { it.status == "executed" }
     val failedCount = overrides.count { it.status == "failed" }
     val blockedCount = overrides.count { it.status == "blocked" }
 
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
