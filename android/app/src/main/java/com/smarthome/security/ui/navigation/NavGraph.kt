@@ -29,6 +29,7 @@ import com.smarthome.security.data.repository.AuthRepository
 import com.smarthome.security.data.repository.DashboardRepository
 import com.smarthome.security.data.repository.DevicesRepository
 import com.smarthome.security.data.repository.EventsRepository
+import com.smarthome.security.data.repository.OverridesRepository
 import com.smarthome.security.data.repository.TelemetryRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
 import com.smarthome.security.ui.dashboard.DashboardViewModel
@@ -42,6 +43,9 @@ import com.smarthome.security.ui.events.EventsViewModelFactory
 import com.smarthome.security.ui.login.LoginScreen
 import com.smarthome.security.ui.login.LoginViewModel
 import com.smarthome.security.ui.login.LoginViewModelFactory
+import com.smarthome.security.ui.overrides.OverridesScreen
+import com.smarthome.security.ui.overrides.OverridesViewModel
+import com.smarthome.security.ui.overrides.OverridesViewModelFactory
 import com.smarthome.security.ui.profile.ProfileScreen
 import com.smarthome.security.ui.telemetry.TelemetryScreen
 import com.smarthome.security.ui.telemetry.TelemetryViewModel
@@ -54,6 +58,7 @@ object Routes {
     const val EVENTS = "events"
     const val TELEMETRY = "telemetry"
     const val PROFILE = "profile"
+    const val OVERRIDES = "overrides"
 }
 
 private data class BottomNavItem(
@@ -88,6 +93,7 @@ fun NavGraph() {
     val devicesRepository = remember { DevicesRepository(RetrofitClient.devicesApi, sessionManager) }
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
     val telemetryRepository = remember { TelemetryRepository(RetrofitClient.telemetryApi, sessionManager) }
+    val overridesRepository = remember { OverridesRepository(RetrofitClient.overridesApi, sessionManager) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -163,6 +169,9 @@ fun NavGraph() {
                             restoreState = true
                         }
                     },
+                    onNavigateToOverrides = {
+                        navController.navigate(Routes.OVERRIDES)
+                    },
                     onSessionExpired = onSessionExpired,
                 )
             }
@@ -206,6 +215,16 @@ fun NavGraph() {
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                )
+            }
+            composable(Routes.OVERRIDES) {
+                val overridesViewModel: OverridesViewModel = viewModel(
+                    factory = OverridesViewModelFactory(overridesRepository),
+                )
+                OverridesScreen(
+                    viewModel = overridesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSessionExpired = onSessionExpired,
                 )
             }
         }

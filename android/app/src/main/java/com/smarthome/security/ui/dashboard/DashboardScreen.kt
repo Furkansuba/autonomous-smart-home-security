@@ -72,6 +72,7 @@ fun DashboardScreen(
     fullName: String,
     onNavigateToDevices: () -> Unit,
     onNavigateToEvents: () -> Unit,
+    onNavigateToOverrides: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -115,6 +116,7 @@ fun DashboardScreen(
                             summary = cached,
                             onNavigateToDevices = onNavigateToDevices,
                             onNavigateToEvents = onNavigateToEvents,
+                            onNavigateToOverrides = onNavigateToOverrides,
                         )
                     } else {
                         Box(
@@ -164,6 +166,7 @@ fun DashboardScreen(
                         summary = state.summary,
                         onNavigateToDevices = onNavigateToDevices,
                         onNavigateToEvents = onNavigateToEvents,
+                        onNavigateToOverrides = onNavigateToOverrides,
                     )
                 }
                 is DashboardUiState.SessionExpired -> {
@@ -204,6 +207,7 @@ private fun DashboardContent(
     summary: DashboardSummary,
     onNavigateToDevices: () -> Unit,
     onNavigateToEvents: () -> Unit,
+    onNavigateToOverrides: () -> Unit,
 ) {
     val hero = deriveHeroStatus(summary)
 
@@ -213,7 +217,7 @@ private fun DashboardContent(
     ) {
         HeroStatusCard(hero = hero, summary = summary)
 
-        StatTilesGrid(summary = summary)
+        StatTilesGrid(summary = summary, onNavigateToOverrides = onNavigateToOverrides)
 
         DeviceHealthCard(summary = summary)
 
@@ -416,7 +420,7 @@ private fun SecurityStatusRing(
 }
 
 @Composable
-private fun StatTilesGrid(summary: DashboardSummary) {
+private fun StatTilesGrid(summary: DashboardSummary, onNavigateToOverrides: () -> Unit) {
     val critical = summary.events.recentCritical24hCount
     val pending = summary.overrides.pendingCount
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -458,6 +462,7 @@ private fun StatTilesGrid(summary: DashboardSummary) {
                 label = "Pending\nOverrides",
                 accentColor = if (pending > 0) AppColors.statusDegraded
                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = if (pending > 0) onNavigateToOverrides else null,
             )
         }
     }
@@ -470,38 +475,52 @@ private fun StatTile(
     value: String,
     label: String,
     accentColor: Color,
+    onClick: (() -> Unit)? = null,
 ) {
     Card(
-        modifier = modifier,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = accentColor,
-                modifier = Modifier.size(22.dp),
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = accentColor,
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (onClick != null) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 8.dp, bottom = 8.dp)
+                        .size(14.dp),
+                    tint = accentColor.copy(alpha = 0.55f),
+                )
+            }
         }
     }
 }
