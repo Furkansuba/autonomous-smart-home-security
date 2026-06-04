@@ -66,7 +66,6 @@ import com.smarthome.security.data.model.Event
 @Composable
 fun EventsScreen(
     viewModel: EventsViewModel,
-    onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

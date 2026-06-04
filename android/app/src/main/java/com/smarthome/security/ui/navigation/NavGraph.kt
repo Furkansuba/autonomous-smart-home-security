@@ -163,20 +163,6 @@ fun NavGraph() {
                             restoreState = true
                         }
                     },
-                    onNavigateToTelemetry = {
-                        navController.navigate(Routes.TELEMETRY) {
-                            popUpTo(Routes.DASHBOARD) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onNavigateToProfile = {
-                        navController.navigate(Routes.PROFILE) {
-                            popUpTo(Routes.DASHBOARD) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
                     onSessionExpired = onSessionExpired,
                 )
             }
@@ -197,7 +183,6 @@ fun NavGraph() {
                 )
                 EventsScreen(
                     viewModel = eventsViewModel,
-                    onNavigateBack = { navController.popBackStack() },
                     onSessionExpired = onSessionExpired,
                 )
             }
@@ -207,7 +192,6 @@ fun NavGraph() {
                 )
                 TelemetryScreen(
                     viewModel = telemetryViewModel,
-                    onNavigateBack = { navController.popBackStack() },
                     onSessionExpired = onSessionExpired,
                 )
             }

@@ -57,7 +57,6 @@ import com.smarthome.security.ui.theme.AppColors
 @Composable
 fun TelemetryScreen(
     viewModel: TelemetryViewModel,
-    onNavigateBack: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

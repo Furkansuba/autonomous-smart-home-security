@@ -72,8 +72,6 @@ fun DashboardScreen(
     fullName: String,
     onNavigateToDevices: () -> Unit,
     onNavigateToEvents: () -> Unit,
-    onNavigateToTelemetry: () -> Unit,
-    onNavigateToProfile: () -> Unit,
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
