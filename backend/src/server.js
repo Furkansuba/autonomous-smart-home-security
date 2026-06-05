@@ -17,6 +17,7 @@ const telemetryRoutes = require('./routes/telemetry.routes');
 const overridesRoutes = require('./routes/overrides.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const usersRoutes = require('./routes/users.routes');
+const notificationLogsRoutes = require('./routes/notificationLogs.routes');
 const { startDeviceStatusMonitor } = require('./services/deviceStatusMonitor.service');
 const {
   notFoundHandler,
@@ -47,6 +48,7 @@ app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/overrides', overridesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/notification-logs', notificationLogsRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 async function handleIncomingMqttMessage(topic, messageBuffer) {

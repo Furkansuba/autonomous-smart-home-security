@@ -11,6 +11,7 @@ import AccessLogsPage from './pages/AccessLogsPage.jsx'
 import TelemetryPage from './pages/TelemetryPage.jsx'
 import OverridesPage from './pages/OverridesPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
+import NotificationLogsPage from './pages/NotificationLogsPage.jsx'
 
 const NAV_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard'   },
@@ -18,7 +19,8 @@ const NAV_ITEMS = [
   { key: 'events',      label: 'Events'      },
   { key: 'access-logs', label: 'Access Logs' },
   { key: 'telemetry',   label: 'Telemetry'   },
-  { key: 'overrides',   label: 'Overrides'   },
+  { key: 'overrides',          label: 'Overrides'   },
+  { key: 'notification-logs', label: 'Notif. Logs' },
 ]
 
 const SECTION_META = {}
@@ -42,8 +44,9 @@ function PageContent({ page }) {
   if (page === 'events')      return <EventsPage />
   if (page === 'access-logs') return <AccessLogsPage />
   if (page === 'telemetry')   return <TelemetryPage />
-  if (page === 'overrides')   return <OverridesPage />
-  if (page === 'profile')     return <ProfilePage />
+  if (page === 'overrides')          return <OverridesPage />
+  if (page === 'notification-logs') return <NotificationLogsPage />
+  if (page === 'profile')           return <ProfilePage />
   return <SectionPlaceholder page={page} />
 }
 
@@ -72,8 +75,9 @@ function App() {
   }
 
   const user = authService.getStoredUser()
+  const ADMIN_ONLY_PAGES = new Set(['overrides', 'notification-logs'])
   const visibleNavItems = NAV_ITEMS.filter(
-    (item) => item.key !== 'overrides' || user?.role === 'admin'
+    (item) => !ADMIN_ONLY_PAGES.has(item.key) || user?.role === 'admin'
   )
   const pageTitle = NAV_ITEMS.find((i) => i.key === activePage)?.label ?? (activePage === 'profile' ? 'Profile' : '')
 
