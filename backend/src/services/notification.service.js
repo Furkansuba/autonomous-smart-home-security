@@ -63,12 +63,32 @@ async function getActiveTokenHolders() {
 }
 
 async function dispatchToUsers(users, title, body, context) {
+  const seenTokens = new Set();
   const results = [];
   for (const user of users) {
-    if (!user.fcm_token || user.fcm_token.trim().length === 0) {
+    const token = user.fcm_token ? user.fcm_token.trim() : '';
+    if (!token) {
       continue;
     }
-    const sendResult = await sendToToken(user.fcm_token, title, body);
+    if (seenTokens.has(token)) {
+      await NotificationLog.create({
+        notification_id: makeNotificationId(),
+        device_id: context.device_id || 'unknown',
+        event_id: context.event_id || null,
+        recipient_user_id: user.user_id,
+        channel: 'fcm',
+        title,
+        body,
+        severity: context.severity || 'warning',
+        status: 'skipped',
+        error_message: 'duplicate_token',
+        sent_at: null,
+      });
+      results.push({ user_id: user.user_id, sent: false, skipped: true, reason: 'duplicate_token' });
+      continue;
+    }
+    seenTokens.add(token);
+    const sendResult = await sendToToken(token, title, body);
     let status;
     if (sendResult.sent) {
       status = 'sent';
