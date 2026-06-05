@@ -23,5 +23,5 @@ router.post(
   validateBody(createOverrideBodySchema),
   createOverride
 );
-router.get('/:overrideId', getOverrideById);
+router.get('/:overrideId', authenticate, getOverrideById);
 module.exports = router;
