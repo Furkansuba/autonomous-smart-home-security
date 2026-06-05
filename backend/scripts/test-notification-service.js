@@ -1,6 +1,11 @@
-// Pure-logic tests for notification.service — no DB or Firebase required
+// Pure-logic tests for notification.service — no DB, Firebase, or Twilio required
 process.env.FCM_ENABLED = 'false';
 process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 = '';
+process.env.SMS_ENABLED = 'false';
+process.env.TWILIO_ACCOUNT_SID = '';
+process.env.TWILIO_AUTH_TOKEN = '';
+process.env.TWILIO_FROM_NUMBER = '';
+process.env.SMS_ALERT_TO = '';
 
 const {
   NOTIFIABLE_EVENT_TYPES,
@@ -8,6 +13,8 @@ const {
   buildEventMessage,
   buildOfflineMessage,
 } = require('../src/services/notification.service');
+
+const { getSmsStatus } = require('../src/services/sms.service');
 
 function assert(condition, message) {
   if (!condition) throw new Error('ASSERT FAILED: ' + message);
@@ -66,6 +73,12 @@ function main() {
   assert(typeof offlineMsg.title === 'string' && offlineMsg.title.length > 0, 'offline message must have title');
   assert(offlineMsg.body.includes('esp32_home_01'), 'offline body must mention device_id');
   console.log('[OK] buildOfflineMessage');
+
+  // SMS service — disabled state
+  const smsStatus = getSmsStatus();
+  assert(smsStatus.enabled === false, 'SMS must be disabled when SMS_ENABLED=false');
+  assert(smsStatus.initialized === false, 'Twilio must not initialize when SMS_ENABLED=false');
+  console.log('[OK] SMS service — disabled when SMS_ENABLED=false');
 
   console.log('Notification service logic tests passed.');
 }

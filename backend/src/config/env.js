@@ -37,6 +37,11 @@ const env = {
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   fcmEnabled: toBoolean(process.env.FCM_ENABLED, false),
   firebaseServiceAccountBase64: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '',
+  smsEnabled: toBoolean(process.env.SMS_ENABLED, false),
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
+  twilioFromNumber: process.env.TWILIO_FROM_NUMBER || '',
+  smsAlertTo: process.env.SMS_ALERT_TO || '',
 };
 function isMongoConfigured() {
   return Boolean(
@@ -62,6 +67,10 @@ function getSafeEnvSummary() {
     corsOrigin: env.corsOrigin,
     fcmEnabled: env.fcmEnabled,
     fcmConfigured: Boolean(env.firebaseServiceAccountBase64),
+    smsEnabled: env.smsEnabled,
+    smsConfigured: Boolean(
+      env.twilioAccountSid && env.twilioAuthToken && env.twilioFromNumber && env.smsAlertTo
+    ),
   };
 }
 module.exports = {

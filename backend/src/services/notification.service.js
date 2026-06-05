@@ -1,5 +1,7 @@
 const { User, NotificationLog } = require('../models');
 const { sendToToken } = require('./fcm.service');
+const { sendSmsToNumber } = require('./sms.service');
+const { env } = require('../config/env');
 
 const NOTIFIABLE_EVENT_TYPES = [
   'fire_detected',
@@ -137,18 +139,65 @@ async function sendEventNotification(eventData) {
   }
 }
 
+async function sendSmsOfflineNotification(deviceId) {
+  const { title, body } = buildOfflineMessage(deviceId);
+  if (!env.smsEnabled) {
+    await NotificationLog.create({
+      notification_id: makeNotificationId(),
+      device_id: deviceId,
+      event_id: null,
+      recipient_user_id: null,
+      channel: 'sms',
+      title,
+      body,
+      severity: 'warning',
+      status: 'skipped',
+      error_message: 'sms_disabled',
+      sent_at: null,
+    });
+    return { sent: false, skipped: true, reason: 'sms_disabled' };
+  }
+  const sendResult = await sendSmsToNumber(env.smsAlertTo, title + ': ' + body);
+  const status = sendResult.sent ? 'sent' : (sendResult.skipped ? 'skipped' : 'failed');
+  await NotificationLog.create({
+    notification_id: makeNotificationId(),
+    device_id: deviceId,
+    event_id: null,
+    recipient_user_id: null,
+    channel: 'sms',
+    title,
+    body,
+    severity: 'warning',
+    status,
+    error_message: sendResult.error || sendResult.reason || null,
+    sent_at: sendResult.sent ? new Date() : null,
+  });
+  return { dispatched: true, ...sendResult };
+}
+
 async function sendDeviceOfflineNotification(deviceId) {
   try {
     const { title, body } = buildOfflineMessage(deviceId);
     const users = await getActiveTokenHolders();
+
+    // FCM dispatch
+    let fcmResult;
     if (users.length === 0) {
-      return { sent: false, skipped: true, reason: 'no_registered_tokens' };
+      fcmResult = { sent: false, skipped: true, reason: 'no_registered_tokens' };
+    } else {
+      const results = await dispatchToUsers(users, title, body, {
+        device_id: deviceId,
+        severity: 'warning',
+      });
+      fcmResult = { dispatched: true, count: results.length, results };
     }
-    const results = await dispatchToUsers(users, title, body, {
-      device_id: deviceId,
-      severity: 'warning',
+
+    // SMS dispatch — always runs independently, always auditable via NotificationLog
+    sendSmsOfflineNotification(deviceId).catch((err) => {
+      console.error('[SMS] offline notification failed for ' + deviceId + ': ' + err.message);
     });
-    return { dispatched: true, count: results.length, results };
+
+    return fcmResult;
   } catch (error) {
     console.error('[NOTIFICATION] sendDeviceOfflineNotification failed: ' + error.message);
     return { sent: false, skipped: false, error: error.message };
@@ -161,5 +210,6 @@ module.exports = {
   buildEventMessage,
   buildOfflineMessage,
   sendEventNotification,
+  sendSmsOfflineNotification,
   sendDeviceOfflineNotification,
 };
