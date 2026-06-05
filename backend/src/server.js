@@ -17,6 +17,7 @@ const telemetryRoutes = require('./routes/telemetry.routes');
 const overridesRoutes = require('./routes/overrides.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const usersRoutes = require('./routes/users.routes');
+const { startDeviceStatusMonitor } = require('./services/deviceStatusMonitor.service');
 const {
   notFoundHandler,
   errorHandler,
@@ -85,4 +86,5 @@ app.listen(env.port, async () => {
   } else {
     console.error('MQTT client failed: ' + mqttResult.reason);
   }
+  startDeviceStatusMonitor();
 });
