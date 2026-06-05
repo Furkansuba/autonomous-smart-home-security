@@ -1,6 +1,7 @@
 const { Device } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
 const { refreshAllDeviceStatuses } = require('../services/deviceStatus.service');
+const { sendDeviceOfflineNotification } = require('../services/notification.service');
 const {
   getPagination,
   buildPaginatedResponse,
@@ -81,6 +82,15 @@ async function refreshDeviceStatuses(req, res) {
   }
   try {
     const result = await refreshAllDeviceStatuses();
+    if (result.refreshed && Array.isArray(result.results)) {
+      for (const entry of result.results) {
+        if (entry.changed && entry.current_status === 'offline' && entry.previous_status !== 'offline') {
+          sendDeviceOfflineNotification(entry.device_id).catch((notifError) => {
+            console.error('[DEVICES] offline notification failed for ' + entry.device_id + ': ' + notifError.message);
+          });
+        }
+      }
+    }
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({

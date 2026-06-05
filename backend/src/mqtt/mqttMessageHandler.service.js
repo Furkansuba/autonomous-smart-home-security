@@ -1,5 +1,6 @@
 const { ingestMqttMessage } = require('../services/ingestion.service');
 const { persistAcceptedIngestion } = require('../services/persistence.service');
+const { sendEventNotification } = require('../services/notification.service');
 function parseMqttMessagePayload(messageBuffer) {
   try {
     const raw =
@@ -62,6 +63,11 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
     };
   }
   const persistence = await persistAcceptedIngestion(ingestion);
+  if (ingestion.payload_type === 'event' && persistence.saved) {
+    sendEventNotification(ingestion.data).catch((notifError) => {
+      console.error('[MQTT] notification dispatch failed: ' + notifError.message);
+    });
+  }
   return {
     handled: true,
     accepted: true,

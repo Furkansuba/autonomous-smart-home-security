@@ -88,7 +88,7 @@ fun NavGraph() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
-    val authRepository = remember { AuthRepository(RetrofitClient.api, sessionManager) }
+    val authRepository = remember { AuthRepository(RetrofitClient.api, sessionManager, RetrofitClient.usersApi) }
     val dashboardRepository = remember { DashboardRepository(RetrofitClient.dashboardApi, sessionManager) }
     val devicesRepository = remember { DevicesRepository(RetrofitClient.devicesApi, sessionManager) }
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }

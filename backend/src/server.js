@@ -16,6 +16,7 @@ const accessLogsRoutes = require('./routes/accessLogs.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const overridesRoutes = require('./routes/overrides.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const usersRoutes = require('./routes/users.routes');
 const {
   notFoundHandler,
   errorHandler,
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     database: getDatabaseStatus(),
     mqtt: getMqttStatus(),
+    fcm: require('./services/fcm.service').getFcmStatus(),
   });
 });
 app.use('/api/auth', authRoutes);
@@ -43,6 +45,7 @@ app.use('/api/access-logs', accessLogsRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/overrides', overridesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/users', usersRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 async function handleIncomingMqttMessage(topic, messageBuffer) {

@@ -336,7 +336,89 @@ Running `npm run mqtt:publish:mock` multiple times during the same demo session 
 
 ---
 
-## 11. Troubleshooting
+## 11. FCM Push Notification Setup
+
+This section covers what must be in place before push notifications work end-to-end. The backend service and Android integration are implemented; what is missing is your project-specific Firebase config that cannot be committed to the repository.
+
+### 11.1 Prerequisites
+
+- A Firebase project with Android app registered (`com.smarthome.security`)
+- `google-services.json` downloaded from the Firebase Console
+- A Firebase Admin SDK service account JSON key (generated under **Project Settings → Service Accounts → Generate new private key**)
+
+### 11.2 Backend configuration
+
+Place these two lines in `backend/.env`:
+
+```
+FCM_ENABLED=true
+FIREBASE_SERVICE_ACCOUNT_BASE64=<base64-encoded content of your service account JSON>
+```
+
+Encode the service account file:
+
+```bash
+# macOS / Linux
+base64 -i service-account.json | tr -d '\n'
+
+# Windows PowerShell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account.json"))
+```
+
+Paste the output as the value of `FIREBASE_SERVICE_ACCOUNT_BASE64`. Restart the backend.
+
+Verify:
+
+```
+GET http://localhost:5000/health
+```
+
+Expected: `"fcm": { "enabled": true, "initialized": true }`
+
+**Do not commit the service account JSON file or the base64 string.**
+
+### 11.3 Android configuration
+
+Copy `google-services.json` into `android/app/`:
+
+```
+android/app/google-services.json   ← place here, do not commit
+```
+
+The file is listed in `.gitignore` and will not be staged. Rebuild the app in Android Studio after placing the file.
+
+**Do not commit google-services.json.**
+
+### 11.4 Verify token registration
+
+1. Log in with either account on the Android app.
+2. After login, the app fetches the FCM device token and sends it to `POST /api/users/fcm-token`.
+3. Confirm via:
+
+```
+GET http://localhost:5000/api/auth/me   (with your JWT)
+```
+
+The user document in Atlas will have `fcm_token` set.
+
+### 11.5 Trigger a push notification
+
+With the backend running and `FCM_ENABLED=true`:
+
+```bash
+cd backend
+npm run mqtt:publish:mock
+```
+
+The mock publisher fires a `fire_detected` event. The backend persists it, calls `sendEventNotification`, and dispatches a Firebase push to all users with registered tokens.
+
+Expected notification on device:
+- **Title:** `Fire Detected`
+- **Body:** `Fire detected in kitchen. Immediate action required.`
+
+---
+
+## 12. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -350,7 +432,7 @@ Running `npm run mqtt:publish:mock` multiple times during the same demo session 
 
 ---
 
-## 12. Capstone Requirement Coverage
+## 13. Capstone Requirement Coverage
 
 This section maps each objective from the capstone proposal (§1.3, §7.2) to the current state of the software repository. Items are marked honestly — the evaluation panel should treat partial items and known gaps as-is rather than as claimed complete.
 
@@ -364,7 +446,7 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 | Detect fire, gas, vibration/intrusion, NFC access events | **Partially done** | Backend pipeline handles all event types with correct severity routing. Seeded data demonstrates the full flow. Real hardware sensor triggers require ESP32 firmware — `firmware/` is empty in this repo. |
 | NFC door access control — record all access attempts | **Partially done** | Access log data model, REST API, admin-web Access Logs page, and Android Alerts tab are all complete. Seeded records include granted and denied entries. Live RC522 hardware integration is MCH/firmware scope. |
 | Complete software system — user registration, RBAC, dashboards, audit logging | **Done** | JWT auth, admin/resident RBAC, all 7 admin-web pages, all Android screens (Login, Dashboard, Devices, Alerts, Sensors, Overrides, Profile), both roles fully working. |
-| Real-time alerting ≤ 5–10 s + heartbeat offline detection | **Partially done** | Heartbeat offline detection is fully implemented (0–60 s: online, 61–90 s: degraded, > 90 s: offline). FCM push notifications are not implemented; alert delivery time cannot be measured without live hardware and FCM. |
+| Real-time alerting ≤ 5–10 s + heartbeat offline detection | **Partially done** | Heartbeat offline detection is fully implemented (0–60 s: online, 61–90 s: degraded, > 90 s: offline). FCM push notifications are implemented and wired; end-to-end delivery time requires live hardware and a configured Firebase project. |
 | Automatic + manual safety responses — authorized override path | **Partially done** | Manual override is fully implemented with RBAC (admin only), gas/CO pump lockout enforced (seeded blocked record), and override history logged. Automatic fire suppression (pump + valve activation) requires firmware. |
 
 ---
@@ -375,7 +457,7 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 |---|---|---|
 | Events transmitted, processed, stored, and displayed end-to-end | **Done** (via seeded data path) | All event types stored in MongoDB, surfaced via REST API, displayed in both apps. Live MQTT path is implemented but `MQTT_ENABLED=false` by default; no live broker is configured. |
 | Heartbeat timeout → device marked offline → logged | **Done** | Backend calculates device status from `last_heartbeat_at`. `POST /api/devices/refresh-status` forces recalculation. All three status states demonstrated by seeded devices. |
-| Critical events → push notification to mobile | **Not done** | FCM is not implemented. `android/app/build.gradle.kts` has no Firebase dependencies. No `google-services.json` is present. This is a known gap. |
+| Critical events → push notification to mobile | **Implemented** | FCM is fully wired: backend dispatches on `fire_detected`, `gas_detected`, `co_detected`, `intrusion_detected`; Android receives and shows notifications. Requires `google-services.json` (not committed) and `FCM_ENABLED=true` with a service account in `.env`. See Section 11. |
 | Connectivity loss → SMS notification | **Not done** | SMS notifications are not implemented anywhere in the repo. This is a known gap. |
 | Authentication and authorization prevent unauthorized actions | **Done** | JWT required on all write endpoints. RBAC enforced: resident blocked from POST `/api/overrides` (403) and `POST /api/devices/refresh-status` (401). Client-provided roles are never trusted. |
 | Mobile app and admin panel show clear, readable status and logs | **Done** | Both apps show device status badges, event severity, access log outcomes, override status, and telemetry readings with clear labels. |
@@ -393,6 +475,6 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 | Kotlin Android (Jetpack Compose, MVVM) | **Done** | All screens implemented. Repository pattern. Observable state via ViewModel. |
 | Biometric unlock (Android) | **Done — stored-session only** | Convenience unlock using stored JWT. Not a standalone biometric authentication flow. |
 | React admin web | **Done** | All 7 pages implemented. Light/dark theme. RBAC gating on Overrides page. |
-| Firebase Cloud Messaging (FCM) | **Not implemented** | No Firebase dependency in Android. No FCM send logic in backend. |
+| Firebase Cloud Messaging (FCM) | **Implemented** | Firebase BoM + messaging-ktx in Android. Backend FCM Admin SDK initialized from `FIREBASE_SERVICE_ACCOUNT_BASE64`. Token registration endpoint `POST /api/users/fcm-token`. Push triggered on all critical event types. Requires `google-services.json` placed locally (not committed). |
 | AWS EC2 deployment | **Not deployed** | Backend runs locally. No EC2 instance configured. |
 | ESP32 firmware | **Not in repo** | `firmware/` directory contains only `.gitkeep`. Firmware is MCH team scope. |

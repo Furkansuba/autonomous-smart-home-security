@@ -35,6 +35,8 @@ const env = {
       'home/+/heartbeat,home/+/telemetry,home/+/event,home/+/access,home/+/override/result'
   ),
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  fcmEnabled: toBoolean(process.env.FCM_ENABLED, false),
+  firebaseServiceAccountBase64: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '',
 };
 function isMongoConfigured() {
   return Boolean(
@@ -58,6 +60,8 @@ function getSafeEnvSummary() {
     mqttClientId: env.mqttClientId,
     mqttSubscribeTopics: env.mqttSubscribeTopics,
     corsOrigin: env.corsOrigin,
+    fcmEnabled: env.fcmEnabled,
+    fcmConfigured: Boolean(env.firebaseServiceAccountBase64),
   };
 }
 module.exports = {

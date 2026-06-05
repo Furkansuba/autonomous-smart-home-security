@@ -24,4 +24,5 @@ object RetrofitClient {
     val eventsApi: EventsApi = retrofit.create(EventsApi::class.java)
     val telemetryApi: TelemetryApi = retrofit.create(TelemetryApi::class.java)
     val overridesApi: OverridesApi = retrofit.create(OverridesApi::class.java)
+    val usersApi: UsersApi = retrofit.create(UsersApi::class.java)
 }

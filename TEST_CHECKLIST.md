@@ -259,17 +259,50 @@ npm run test:backend
 
 ## 11. Push Notifications / FCM
 
-**Status: FCM is not yet implemented in this repository.**
+**Setup:** `FCM_ENABLED=true` in `backend/.env`, `FIREBASE_SERVICE_ACCOUNT_BASE64` set, `google-services.json` placed in `android/app/` (not committed), app rebuilt and deployed on a physical or emulator device with Google Play Services.
 
-Firebase Cloud Messaging is listed as a capstone requirement but is not currently present in the Android project (`android/app/build.gradle.kts` has no Firebase dependencies and no `google-services.json`). The items below are listed for evaluation transparency and cannot be verified until FCM is integrated.
+Run the FCM logic tests (no Firebase or DB required):
 
-- [ ] FCM dependency added to `android/app/build.gradle.kts`
-- [ ] `google-services.json` present in `android/app/`
-- [ ] Backend sends FCM notification on `fire_detected` event
-- [ ] Backend sends FCM notification on `gas_detected` event
-- [ ] Backend sends FCM notification on `co_detected` event
-- [ ] Backend sends FCM notification on `device_offline` state change
-- [ ] Android device receives push notification within ≤ 10 seconds of event
+```bash
+cd backend
+npm run test:fcm         # FCM disabled-mode safety
+npm run test:notification # notification decision logic
+```
+
+### 11.1 Backend service tests
+
+- [ ] `npm run test:fcm` passes — all FCM disabled-mode assertions pass
+- [ ] `npm run test:notification` passes — all decision logic and message-building assertions pass
+
+### 11.2 FCM token registration
+
+- [ ] `POST /api/users/fcm-token` with no token returns 401
+- [ ] `POST /api/users/fcm-token` with a resident or admin JWT and valid `fcm_token` body returns `{ "updated": true }`
+- [ ] `GET /health` returns `"fcm": { "enabled": true, "initialized": true }` when `FCM_ENABLED=true` and `FIREBASE_SERVICE_ACCOUNT_BASE64` is set
+- [ ] `GET /health` returns `"fcm": { "enabled": false, "initialized": false }` when `FCM_ENABLED=false`
+
+### 11.3 Backend notification dispatch (requires FCM_ENABLED=true + Atlas)
+
+- [ ] After publishing `fire_detected` via `npm run mqtt:publish:mock`, backend logs show notification dispatch attempt
+- [ ] `NotificationLog` collection contains a record with `event_type`-derived title and `status: sent` (or `status: skipped` if no tokens registered)
+- [ ] Publishing `gas_detected` event results in a `NotificationLog` entry
+- [ ] Publishing `co_detected` event results in a `NotificationLog` entry
+- [ ] Publishing `intrusion_detected` event results in a `NotificationLog` entry
+- [ ] `heartbeat` and `telemetry` messages do NOT produce `NotificationLog` entries
+
+### 11.4 Device offline push
+
+- [ ] `POST /api/devices/refresh-status` (admin token) — when a device transitions to `offline`, backend calls `sendDeviceOfflineNotification`
+- [ ] `NotificationLog` entry created with `title: "Device Offline"` and correct `device_id`
+
+### 11.5 Android FCM receive (requires physical device or emulator with Play Services)
+
+- [ ] App builds successfully with Firebase dependencies in `android/app/build.gradle.kts`
+- [ ] After login, FCM token is registered via `POST /api/users/fcm-token`
+- [ ] When `fire_detected` event is published, push notification appears on the device within ≤ 10 s
+- [ ] Notification title matches `"Fire Detected"` and body mentions the room name
+- [ ] Tapping the notification opens the app
+- [ ] `gas_detected`, `co_detected`, and `intrusion_detected` events also produce push notifications
 
 ---
 
@@ -334,7 +367,7 @@ These items are part of the capstone proposal but are outside the scope of the s
 | Physical home model and sensor wiring | Hardware scope | MCH team |
 | Real sensor events via live MQTT | Runnable locally via `npm run mqtt:broker` + `npm run mqtt:publish:mock` (see Section 12). Live hardware events require ESP32 firmware — MCH scope. | Both teams |
 | AWS EC2 deployment | Not deployed — backend runs locally on `localhost:5000` | CMP / infra |
-| Firebase Cloud Messaging (FCM) | Not implemented in Android | CMP |
+| Firebase Cloud Messaging (FCM) | Implemented — requires `google-services.json` in `android/app/` (not committed) and `FCM_ENABLED=true` + `FIREBASE_SERVICE_ACCOUNT_BASE64` in `backend/.env` | CMP |
 | SMS connectivity-loss notifications | Not implemented anywhere | CMP |
 | NFC hardware trigger → access log pipeline | Access logs seeded and visible; RC522 hardware integration is firmware scope | MCH team |
 | Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |

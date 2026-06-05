@@ -38,6 +38,8 @@
     "test:rbac": "node scripts/test-rbac-middleware.js",
     "test:request-validation": "node scripts/test-request-validation.js",
     "test:error-handlers": "node scripts/test-error-handlers.js",
+    "test:fcm": "node scripts/test-fcm-service.js",
+    "test:notification": "node scripts/test-notification-service.js",
     "test:backend": "node scripts/run-backend-checks.js"
   },
   "keywords": [],
@@ -55,6 +57,7 @@
     "mongoose": "^9.6.3",
     "morgan": "^1.10.1",
     "mqtt": "^5.15.1",
+    "firebase-admin": "^12.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
