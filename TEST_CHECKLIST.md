@@ -290,12 +290,36 @@ npm run test:notification # notification decision logic
 - [ ] Publishing `intrusion_detected` event results in a `NotificationLog` entry
 - [ ] `heartbeat` and `telemetry` messages do NOT produce `NotificationLog` entries
 
-### 11.4 Device offline push
+### 11.4 Device offline push — FCM
 
-- [ ] `POST /api/devices/refresh-status` (admin token) — when a device transitions to `offline`, backend calls `sendDeviceOfflineNotification`
-- [ ] `NotificationLog` entry created with `title: "Device Offline"` and correct `device_id`
+Verified on EC2 via controlled offline transition test (heartbeat → monitor → `degraded→offline`).
 
-### 11.5 Android FCM receive (requires physical device or emulator with Play Services)
+- [x] When a device transitions from `degraded` to `offline`, backend calls `sendDeviceOfflineNotification`
+- [x] `NotificationLog` entry with `channel: fcm`, `status: sent`, `title: "Device Offline"`, `severity: warning` is created
+- [x] If the same FCM token is registered to more than one user, a second `NotificationLog` entry with `status: skipped`, `error_message: duplicate_token` is created — the token is sent to only once
+- [x] No FCM notification is generated for the `online→degraded` transition — only `degraded→offline` triggers dispatch
+
+---
+
+### 11.5 Device offline push — SMS
+
+**Setup:** `SMS_ENABLED=true` in `backend/.env`, Twilio credentials configured, recipient country geo permissions enabled in Twilio Console.
+
+Backend SMS dispatch path and Twilio provider acceptance verified on EC2 (clean systemd restart, Twilio Turkey geo permission enabled). Handset delivery not yet confirmed.
+
+- [x] Offline transition calls `sendSmsOfflineNotification` — backend SMS path exercised
+- [x] `NotificationLog` entry with `channel: sms`, `status: sent`, `sent_at` populated, `error_message: null` is created — Twilio accepted the request
+- [x] Twilio Message Log shows `Outgoing API` / `Sent` for the dispatched message
+- [x] Exactly one SMS log entry per offline transition — no duplicates
+- [x] If `SMS_ENABLED=false`, a `NotificationLog` entry with `channel: sms`, `status: skipped`, `error_message: sms_disabled` is created (no Twilio call made)
+- [x] If Twilio returns an error, `error_message` is stored with E.164 phone numbers masked (e.g., `+90****20`) — not stored verbatim
+- [ ] Phone receives the SMS / Twilio Message Log status becomes `Delivered`
+
+**Controlled test procedure:** See DEMO_RUNBOOK.md §12.4 for the full step-by-step.
+
+---
+
+### 11.6 Android FCM receive (requires physical device or emulator with Play Services)
 
 - [ ] App builds successfully with Firebase dependencies in `android/app/build.gradle.kts`
 - [ ] After login, FCM token is registered via `POST /api/users/fcm-token`
@@ -366,8 +390,71 @@ These items are part of the capstone proposal but are outside the scope of the s
 | ESP32 firmware | Not implemented — `firmware/` is empty | MCH team |
 | Physical home model and sensor wiring | Hardware scope | MCH team |
 | Real sensor events via live MQTT | Runnable locally via `npm run mqtt:broker` + `npm run mqtt:publish:mock` (see Section 12). Live hardware events require ESP32 firmware — MCH scope. | Both teams |
-| AWS EC2 deployment | Not deployed — backend runs locally on `localhost:5000` | CMP / infra |
-| Firebase Cloud Messaging (FCM) | Implemented — requires `google-services.json` in `android/app/` (not committed) and `FCM_ENABLED=true` + `FIREBASE_SERVICE_ACCOUNT_BASE64` in `backend/.env` | CMP |
-| SMS connectivity-loss notifications | Not implemented anywhere | CMP |
+| AWS EC2 deployment | **Deployed.** Backend runs on EC2, PM2 + systemd auto-start verified, `/health` returns 200. | CMP / infra |
+| Firebase Cloud Messaging (FCM) | **Implemented and verified.** FCM offline push confirmed on EC2 (NotificationLog: `sent` + `skipped/duplicate_token`). Requires `google-services.json` in `android/app/` (not committed) and `FCM_ENABLED=true` + `FIREBASE_SERVICE_ACCOUNT_BASE64` in `backend/.env`. | CMP |
+| SMS connectivity-loss notifications | **Backend/provider dispatch verified; handset delivery still needs final verification.** NotificationLog `channel=sms status=sent` confirmed on EC2; Twilio Message Log shows `Sent`. SMS did not arrive on phone and Twilio has not shown `Delivered`. See DEMO_RUNBOOK.md §12.5 troubleshooting. | CMP |
 | NFC hardware trigger → access log pipeline | Access logs seeded and visible; RC522 hardware integration is firmware scope | MCH team |
 | Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |
+
+---
+
+## 14. EC2 Deployment Verification
+
+**Purpose:** Confirm that the production backend on AWS EC2 is deployed, healthy, and auto-restarts correctly.
+
+### 14.1 Health check
+
+- [x] `GET /health` on EC2 returns HTTP 200 with `status: ok`, `fcm.enabled: true`, `db.status: connected`
+- [x] SMS initialization verified from PM2 startup logs — `[SMS] Twilio client initialized` appears at boot (`/health` does not include an SMS field)
+
+### 14.2 PM2 / systemd auto-start
+
+- [x] PM2 process `smart-home-backend` is listed as `online` after a cold system boot
+- [x] `systemctl status pm2-ec2-user` shows `Active: active (running)`
+- [x] Startup log confirms `[SMS] Twilio client initialized` — SMS vars loaded from `.env` at boot
+
+### 14.3 Correct restart procedure
+
+**Do NOT use `pm2 restart --update-env`** — this strips `.env` vars from the process environment, causing `sms_disabled` at runtime. Use instead:
+
+```bash
+# Clean restart — preserves .env vars from the saved PM2 dump
+pm2 save
+pm2 kill
+sudo systemctl reset-failed pm2-ec2-user.service
+sudo systemctl restart pm2-ec2-user
+pm2 logs --lines 20
+```
+
+- [x] After clean restart: `[SMS] Twilio client initialized` appears in startup logs
+
+### 14.4 Deploying a new backend version
+
+```bash
+git pull origin main
+cd backend && npm install --omit=dev
+pm2 save
+pm2 restart smart-home-backend   # plain restart — no --update-env
+pm2 logs --lines 20
+```
+
+- [ ] `git pull` shows the expected commit hash
+- [ ] `npm install` completes without errors
+- [ ] PM2 restarts and `/health` returns 200 within 10 s
+
+### 14.5 Controlled offline notification test
+
+See DEMO_RUNBOOK.md §12.4 for the full step-by-step procedure.
+
+Expected `NotificationLog` entries after one `online → degraded → offline` cycle:
+
+| channel | status | notes |
+|---|---|---|
+| `fcm` | `sent` | First FCM token — push dispatched |
+| `fcm` | `skipped` | `error_message: duplicate_token` — same token on second user |
+| `sms` | `sent` | Twilio accepted the request; `sent_at` populated. Handset delivery not yet confirmed. |
+
+- [x] FCM `sent` entry confirmed on EC2
+- [x] FCM `skipped / duplicate_token` entry confirmed on EC2
+- [x] NotificationLog `channel=sms status=sent` confirmed on EC2; Twilio Message Log shows `Sent`
+- [ ] Phone receives the SMS / Twilio status becomes `Delivered`
