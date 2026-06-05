@@ -32,6 +32,8 @@ class AuthRepository(
         }
     }
 
+    fun hasStoredSession(): Boolean = sessionManager.hasValidSession()
+
     fun logout() {
         sessionManager.clearSession()
     }
