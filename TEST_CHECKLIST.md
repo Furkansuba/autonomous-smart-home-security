@@ -263,7 +263,58 @@ Firebase Cloud Messaging is listed as a capstone requirement but is not currentl
 
 ---
 
-## 12. Known Gaps for Evaluator Reference
+## 12. MQTT Live Pipeline
+
+**Setup:** Local broker running (`npm run mqtt:broker`), backend started with `MQTT_ENABLED=true`, `seed:demo-admin` executed, Android app and admin-web open.
+
+```bash
+# Terminal 1
+cd backend && npm run mqtt:broker
+
+# .env: set MQTT_ENABLED=true, restart backend
+# Terminal 2
+cd backend && npm start
+
+# Terminal 3 — run after /health confirms mqtt.connected: true
+cd backend && npm run mqtt:publish:mock
+```
+
+### 12.1 Backend health and connection
+
+- [ ] `GET /health` returns `"mqtt": { "enabled": true, "connected": true }`
+- [ ] Backend Terminal 2 prints `[MQTT] handled home/esp32_home_01/heartbeat as heartbeat for esp32_home_01`
+- [ ] Backend Terminal 2 prints `[MQTT] handled home/esp32_home_01/telemetry as telemetry for esp32_home_01`
+- [ ] Backend Terminal 2 prints `[MQTT] handled home/esp32_home_01/event as event for esp32_home_01`
+- [ ] Backend Terminal 2 prints `[MQTT] handled home/esp32_home_01/access as access for esp32_home_01`
+- [ ] Backend Terminal 2 prints `[MQTT] handled home/esp32_home_01/override/result as override_result for esp32_home_01`
+
+### 12.2 Persistence — REST verification
+
+- [ ] `GET /api/devices` shows `esp32_home_01` with `status: online` and a recent `last_heartbeat_at`
+- [ ] `GET /api/telemetry` includes a new kitchen entry with a current timestamp (not `2026-06-01`)
+- [ ] `GET /api/events` includes a new `fire_detected` event with `severity: critical` and a current timestamp
+- [ ] `GET /api/access-logs` includes a new `granted` NFC entry with a current timestamp
+- [ ] `GET /api/overrides` includes a record with `status: executed` created by the publisher run
+
+### 12.3 UI visibility
+
+- [ ] New `fire_detected` event appears in the Android Alerts tab with current timestamp and critical color
+- [ ] New `fire_detected` event appears in the admin-web Events page
+- [ ] New kitchen telemetry reading appears in the admin-web Telemetry page All Records table
+- [ ] New `granted` access log entry appears in the admin-web Access Logs page
+- [ ] Publisher-created override with `status: executed` appears in the admin-web Overrides page
+- [ ] Publisher-created override with `status: executed` appears in the Android Overrides screen
+
+### 12.4 Repeat-run safety
+
+- [ ] Running `npm run mqtt:publish:mock` a second time completes without errors
+- [ ] Second run produces a new event with a different `event_id` and current timestamp
+- [ ] No duplicate key errors appear in backend Terminal 2
+- [ ] Second run creates a second `executed` override record (not a conflict with the first)
+
+---
+
+## 13. Known Gaps for Evaluator Reference
 
 These items are part of the capstone proposal but are outside the scope of the software repository in its current state. They are recorded here so the evaluation panel can account for them.
 
@@ -271,7 +322,7 @@ These items are part of the capstone proposal but are outside the scope of the s
 |---|---|---|
 | ESP32 firmware | Not implemented — `firmware/` is empty | MCH team |
 | Physical home model and sensor wiring | Hardware scope | MCH team |
-| Real sensor events via live MQTT | `MQTT_ENABLED=false` by default; no live broker configured | Both teams |
+| Real sensor events via live MQTT | Runnable locally via `npm run mqtt:broker` + `npm run mqtt:publish:mock` (see Section 12). Live hardware events require ESP32 firmware — MCH scope. | Both teams |
 | AWS EC2 deployment | Not deployed — backend runs locally on `localhost:5000` | CMP / infra |
 | Firebase Cloud Messaging (FCM) | Not implemented in Android | CMP |
 | SMS connectivity-loss notifications | Not implemented anywhere | CMP |

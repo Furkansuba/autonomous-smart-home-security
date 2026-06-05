@@ -193,7 +193,150 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 
 ---
 
-## 10. Troubleshooting
+## 10. Live MQTT Demo
+
+This section demonstrates the full backend MQTT ingestion pipeline using a local Aedes broker and the mock publisher. All five message types are published to the running backend and persisted to MongoDB. Results appear in real time in both the Android app and admin-web without relying on seeded data.
+
+### 10.1 Prerequisites
+
+- `npm install` completed in `backend/`
+- Atlas cluster reachable and IP whitelisted — verify first with `npm run test:db`
+- `seed:demo-admin` executed so the admin account exists (`admin@smarthome.local`)
+- `backend/.env` has valid `MONGODB_URI` and `JWT_SECRET`
+- Port `1883` is free on localhost
+
+---
+
+### 10.2 Step-by-step
+
+**Terminal 1 — start local MQTT broker:**
+
+```bash
+cd backend
+npm run mqtt:broker
+```
+
+Expected output:
+```
+[BROKER] local MQTT broker listening on port 1883
+```
+
+Keep this terminal open throughout the demo.
+
+---
+
+**Edit `backend/.env` — enable MQTT:**
+
+```
+MQTT_ENABLED=true
+```
+
+> If the backend is already running with `MQTT_ENABLED=false`, stop it and restart after this change. The flag is read once at startup.
+
+---
+
+**Terminal 2 — start backend:**
+
+```bash
+cd backend
+npm start
+```
+
+Expected startup output:
+```
+Backend server running on port 5000
+MongoDB connected: ...
+MQTT client started.
+```
+
+Confirm MQTT is live:
+
+```
+GET http://localhost:5000/health
+```
+
+Expected: `"mqtt": { "enabled": true, "connected": true }`
+
+---
+
+**Terminal 3 — run mock publisher:**
+
+```bash
+cd backend
+npm run mqtt:publish:mock
+```
+
+Expected output:
+```
+[PUBLISHER] admin login successful
+[PUBLISHER] pending override created: ovr_...
+[PUBLISHER] connected to mqtt://localhost:1883
+[PUBLISHER] published home/esp32_home_01/heartbeat
+[PUBLISHER] published home/esp32_home_01/telemetry
+[PUBLISHER] published home/esp32_home_01/event
+[PUBLISHER] published home/esp32_home_01/access
+[PUBLISHER] published home/esp32_home_01/override/result
+[PUBLISHER] disconnected
+```
+
+---
+
+### 10.3 What gets written to MongoDB
+
+| MQTT topic | Collection | Operation |
+|---|---|---|
+| `home/esp32_home_01/heartbeat` | `devices` | Upsert — updates `status`, `last_heartbeat_at`, `wifi_rssi` |
+| `home/esp32_home_01/telemetry` | `telemetry_summaries` | Insert — new reading with current timestamp |
+| `home/esp32_home_01/event` | `events` | Insert — `fire_detected / critical` with unique run-scoped `event_id` |
+| `home/esp32_home_01/access` | `access_logs` | Insert — `granted` NFC entry with unique run-scoped `access_id` |
+| `home/esp32_home_01/override/result` | `override_requests` | Update — sets `result: executed` on the override created by the publisher |
+
+Each run generates a unique `event_id` and `access_id` (based on `Date.now()`). The publisher creates a real pending override via `POST /api/overrides` before publishing the result, so the override/result leg always finds a matching record.
+
+---
+
+### 10.4 Verifying results
+
+**Backend Terminal 2** — each accepted message logs:
+```
+[MQTT] handled home/esp32_home_01/<topic> as <type> for esp32_home_01
+```
+
+**Android app:**
+- **Dashboard** — Recent Activity updates with the new fire event
+- **Alerts tab** — new `fire_detected` entry at the top with the current timestamp and critical color coding
+- **Sensors tab** — kitchen row shows fresh readings
+- **Overrides screen** — new override record with `status: executed`
+- **Devices tab** — `esp32_home_01` shows `online`
+
+**Admin-web:**
+- **Events page** — new `fire_detected` row at the top of the table
+- **Telemetry page** — new kitchen reading in the All Records table
+- **Access Logs page** — new granted NFC entry at the top
+- **Overrides page** — new override record with status `executed`
+- **Devices page → Refresh Status** — `esp32_home_01` shows `online`
+
+---
+
+### 10.5 Re-running the publisher
+
+Running `npm run mqtt:publish:mock` multiple times during the same demo session is safe. Each run generates new unique IDs and uses current timestamps, so no duplicate key errors occur and each run produces a clearly timestamped new entry in all four collections.
+
+---
+
+### 10.6 Troubleshooting (MQTT-specific)
+
+| Symptom | Fix |
+|---|---|
+| `[PUBLISHER] admin login failed` | Backend is not running, or `seed:demo-admin` has not been executed. Run `npm run seed:demo-admin` then restart the backend. |
+| `[PUBLISHER] failed to create pending override` | Admin user exists but the backend returned an error. Check Terminal 2 logs for details. |
+| `[PUBLISHER] connected` but no `[MQTT] handled` lines in Terminal 2 | `MQTT_ENABLED` is still `false` in `.env`. Stop backend, set `MQTT_ENABLED=true`, restart. |
+| `/health` shows `"connected": false` | Broker is not running. Start it in Terminal 1 with `npm run mqtt:broker` before starting the backend. |
+| `Error: listen EADDRINUSE :::1883` | Another process holds port 1883. Stop it or set `LOCAL_MQTT_PORT=<other>` for the broker and `MQTT_BROKER_URL=mqtt://localhost:<other>` in `.env`. |
+
+---
+
+## 11. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -207,7 +350,7 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 
 ---
 
-## 11. Capstone Requirement Coverage
+## 12. Capstone Requirement Coverage
 
 This section maps each objective from the capstone proposal (§1.3, §7.2) to the current state of the software repository. Items are marked honestly — the evaluation panel should treat partial items and known gaps as-is rather than as claimed complete.
 
