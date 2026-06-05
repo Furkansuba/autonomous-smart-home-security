@@ -1,4 +1,4 @@
-const { OverrideRequest } = require('../models');
+const { OverrideRequest, Event } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
 const {
   OVERRIDE_ACTIONS,
@@ -10,6 +10,9 @@ const {
   getPagination,
   buildPaginatedResponse,
 } = require('../utils/pagination');
+const PUMP_ACTIONS = ['pump_on'];
+const GAS_CO_HAZARD_TYPES = ['gas_detected', 'co_detected'];
+const HAZARD_WINDOW_MS = 24 * 60 * 60 * 1000;
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -116,6 +119,39 @@ async function createOverride(req, res) {
     });
   }
   try {
+    if (PUMP_ACTIONS.includes(action)) {
+      const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
+      const activeHazard = await Event.findOne({
+        device_id,
+        event_type: { $in: GAS_CO_HAZARD_TYPES },
+        occurred_at: { $gte: hazardCutoff },
+      });
+      if (activeHazard) {
+        const blocked = await OverrideRequest.create({
+          override_id: override_id || createOverrideId(),
+          device_id,
+          requested_by,
+          actuator_id,
+          action,
+          reason,
+          status: 'blocked',
+          blocked_reason:
+            'Gas or CO hazard is active for this device. Pump activation is not permitted.',
+          requested_at: new Date(),
+          result_at: new Date(),
+        });
+        return res.status(201).json({
+          created: true,
+          blocked: true,
+          override: blocked,
+          mqtt_publish: {
+            published: false,
+            skipped: true,
+            reason: 'pump_lockout_gas_co',
+          },
+        });
+      }
+    }
     const override = await OverrideRequest.create({
       override_id: override_id || createOverrideId(),
       device_id,

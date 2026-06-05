@@ -54,14 +54,24 @@ npm run test:backend
 
 ## 3. Safety Logic — Gas/CO Pump Lockout
 
-**Context:** The capstone proposal (§1.3, §8) mandates that a `pump_on` override must be blocked while a gas or CO event is active. This is a safety-critical requirement.
+**Context:** The capstone proposal (§1.3, §8) mandates that a `pump_on` override must be blocked while a gas or CO event is active. This is a safety-critical requirement. The rule is enforced in `backend/src/controllers/overrides.controller.js`: when `pump_on` is requested and a `gas_detected` or `co_detected` event exists for the same device within the last 24 hours, the override is saved with `status: blocked` and the MQTT command is not published.
 
-**Note:** Firmware-level enforcement on the ESP32 is MCH scope and is not in this repo. The software-layer check is demonstrated through the `blocked` status in the override record.
+**Note:** Firmware-level enforcement on the ESP32 is MCH scope and is not in this repo.
 
-- [ ] `GET /api/overrides` includes a record with `action: pump_on` and `status: blocked`
+### Live enforcement (backend code)
+
+- [ ] `POST /api/overrides` with `action: pump_on` while a `gas_detected` or `co_detected` event is active returns `201` with `created: true` and `blocked: true`
+- [ ] Response `override.status` is `"blocked"`
+- [ ] Response `override.blocked_reason` is non-empty and describes the gas/CO lockout
+- [ ] Response `mqtt_publish.published` is `false` — no MQTT command is sent to the device
+- [ ] `npm run test:override-api` passes including the gas/CO lockout test case
+
+### Seeded demo records (UI verification)
+
+- [ ] `GET /api/overrides` includes the seeded record with `action: pump_on` and `status: blocked`
 - [ ] The blocked override record is visible in the Android Overrides screen
 - [ ] The blocked override record is visible in the admin-web Overrides page
-- [ ] The `reason` field of the blocked override correctly describes the gas/CO lockout
+- [ ] The `blocked_reason` field of the seeded override correctly describes the gas/CO lockout
 
 ---
 
