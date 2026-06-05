@@ -8,6 +8,11 @@ function maskPhone(num) {
   return num.slice(0, 3) + '****' + num.slice(-2);
 }
 
+function sanitizeProviderError(msg) {
+  if (!msg || typeof msg !== 'string') return msg;
+  return msg.replace(/\+\d{7,15}/g, (num) => maskPhone(num));
+}
+
 function initTwilio() {
   if (!env.smsEnabled) {
     return;
@@ -51,8 +56,9 @@ async function sendSmsToNumber(to, body) {
     });
     return { sent: true, skipped: false };
   } catch (error) {
-    console.error('[SMS] Send to ' + maskPhone(to) + ' failed: ' + error.message);
-    return { sent: false, skipped: false, error: error.message };
+    const safeError = sanitizeProviderError(error.message);
+    console.error('[SMS] Send to ' + maskPhone(to) + ' failed: ' + safeError);
+    return { sent: false, skipped: false, error: safeError };
   }
 }
 
