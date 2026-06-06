@@ -30,8 +30,13 @@ const createOverrideBodySchema = z.object({
   action: z.enum(OVERRIDE_ACTIONS),
   reason: z.string().min(1).optional(),
 });
+// Promotion-only — demotion deferred; any role other than 'admin' is rejected at schema level
+const updateRoleBodySchema = z.object({
+  role: z.enum(['admin']),
+}).strict();
 module.exports = {
   loginBodySchema,
   registerBodySchema,
   createOverrideBodySchema,
+  updateRoleBodySchema,
 };
