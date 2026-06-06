@@ -42,6 +42,8 @@ const env = {
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
   twilioFromNumber: process.env.TWILIO_FROM_NUMBER || '',
   smsAlertTo: process.env.SMS_ALERT_TO || '',
+  overrideDemoAutoAck: toBoolean(process.env.OVERRIDE_DEMO_AUTO_ACK, false),
+  overrideDemoAutoAckDelayMs: toNumber(process.env.OVERRIDE_DEMO_AUTO_ACK_DELAY_MS, 500),
 };
 function isMongoConfigured() {
   return Boolean(
@@ -71,6 +73,7 @@ function getSafeEnvSummary() {
     smsConfigured: Boolean(
       env.twilioAccountSid && env.twilioAuthToken && env.twilioFromNumber && env.smsAlertTo
     ),
+    overrideDemoAutoAck: env.overrideDemoAutoAck,
   };
 }
 module.exports = {

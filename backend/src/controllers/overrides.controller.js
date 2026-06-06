@@ -1,5 +1,6 @@
 const { OverrideRequest, Event } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
+const { env } = require('../config/env');
 const {
   OVERRIDE_ACTIONS,
 } = require('../validators/contract.constants');
@@ -10,9 +11,12 @@ const {
   getPagination,
   buildPaginatedResponse,
 } = require('../utils/pagination');
+const { persistMappedOperation } = require('../services/persistence.service');
 const PUMP_ACTIONS = ['pump_on'];
 const GAS_CO_HAZARD_TYPES = ['gas_detected', 'co_detected'];
 const HAZARD_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DEMO_AUTO_ACK_SAFE_ACTIONS = new Set(['buzzer_off', 'buzzer_on', 'pump_off', 'valve_close']);
+const SAFETY_HAZARD_TYPES = ['fire_detected', 'gas_detected', 'co_detected'];
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -21,6 +25,40 @@ function sendDatabaseUnavailable(res) {
     error: 'Database is not connected.',
     database: getDatabaseStatus(),
   });
+}
+async function autoAckDemoOverride(override, delayMs) {
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
+  const activeHazard = await Event.findOne({
+    device_id: override.device_id,
+    event_type: { $in: SAFETY_HAZARD_TYPES },
+    occurred_at: { $gte: hazardCutoff },
+  }).lean();
+  if (activeHazard) {
+    console.log(
+      '[AUTO_ACK] ' + override.override_id + ': alarm silenced — SAFETY HAZARD STILL ACTIVE: ' +
+      activeHazard.event_type + ' on ' + override.device_id + '. Hazard NOT resolved by this action.'
+    );
+  }
+  const result = await persistMappedOperation({
+    kind: 'update',
+    model: 'OverrideRequest',
+    filter: { override_id: override.override_id, status: 'requested' },
+    update: {
+      $set: {
+        status: 'executed',
+        result: 'executed',
+        blocked_reason: null,
+        result_at: new Date(),
+      },
+    },
+    options: { returnDocument: 'after' },
+  });
+  if (result.saved) {
+    console.log('[AUTO_ACK] ' + override.override_id + ' → executed (demo-simulated, no real hardware)');
+  } else {
+    console.log('[AUTO_ACK] No-op for ' + override.override_id + ': ' + (result.reason || 'already resolved'));
+  }
 }
 function buildOverrideFilter(query) {
   const filter = {};
@@ -163,6 +201,14 @@ async function createOverride(req, res) {
       requested_at: new Date(),
     });
     const mqttPublish = await publishOverrideCommand(override);
+    if (env.overrideDemoAutoAck && DEMO_AUTO_ACK_SAFE_ACTIONS.has(action)) {
+      autoAckDemoOverride(
+        override.toObject ? override.toObject() : override,
+        env.overrideDemoAutoAckDelayMs
+      ).catch((err) =>
+        console.error('[AUTO_ACK] Error for ' + override.override_id + ': ' + err.message)
+      );
+    }
     return res.status(201).json({
       created: true,
       override,

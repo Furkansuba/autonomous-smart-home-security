@@ -8,6 +8,8 @@ const {
   getOverrideById,
   createOverride,
 } = require('../src/controllers/overrides.controller');
+const { env } = require('../src/config/env');
+const { persistMappedOperation } = require('../src/services/persistence.service');
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -30,6 +32,9 @@ function createMockRes() {
 function makeRunId() {
   return String(Date.now());
 }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 async function cleanup(prefix) {
   await OverrideRequest.deleteMany({
     override_id: {
@@ -49,6 +54,10 @@ async function main() {
   const overrideId = prefix + '_buzzer_off_01';
   const lockoutPrefix = 'ovr_lockout_test_' + runId;
   const lockoutEventId = 'evt_lockout_test_' + runId;
+  const autoAckPrefix = 'ovr_autoack_test_' + runId;
+  const autoAckHazardEventId = 'evt_autoack_hazard_' + runId;
+  const origAutoAck = env.overrideDemoAutoAck;
+  const origDelay = env.overrideDemoAutoAckDelayMs;
   try {
     await cleanup(prefix);
     const createReq = {
@@ -139,13 +148,159 @@ async function main() {
       'blocked pump_on should not publish MQTT command'
     );
     console.log('[OK] pump_on blocked by gas/CO lockout');
+
+    // Test: auto-ack disabled — buzzer_off stays requested
+    env.overrideDemoAutoAck = false;
+    env.overrideDemoAutoAckDelayMs = 50;
+    const noAckId = autoAckPrefix + '_disabled_01';
+    const noAckReq = {
+      body: {
+        override_id: noAckId,
+        device_id: 'esp32_home_01',
+        requested_by: 'usr_admin_001',
+        actuator_id: 'buzzer_01',
+        action: 'buzzer_off',
+        reason: 'Auto-ack disabled test.',
+      },
+    };
+    const noAckRes = createMockRes();
+    await createOverride(noAckReq, noAckRes);
+    assert(noAckRes.statusCode === 201, 'auto-ack disabled: should return 201');
+    assert(noAckRes.body.override.status === 'requested', 'auto-ack disabled: initial status must be requested');
+    await sleep(200);
+    const noAckRecord = await OverrideRequest.findOne({ override_id: noAckId }).lean();
+    assert(noAckRecord !== null, 'auto-ack disabled: override record must exist');
+    assert(noAckRecord.status === 'requested', 'auto-ack disabled: status must remain requested');
+    console.log('[OK] auto-ack disabled: buzzer_off stays requested');
+
+    // Test: auto-ack enabled — buzzer_off becomes executed after delay
+    env.overrideDemoAutoAck = true;
+    env.overrideDemoAutoAckDelayMs = 50;
+    const ackId = autoAckPrefix + '_enabled_01';
+    const ackReq = {
+      body: {
+        override_id: ackId,
+        device_id: 'esp32_home_01',
+        requested_by: 'usr_admin_001',
+        actuator_id: 'buzzer_01',
+        action: 'buzzer_off',
+        reason: 'Auto-ack enabled test.',
+      },
+    };
+    const ackRes = createMockRes();
+    await createOverride(ackReq, ackRes);
+    assert(ackRes.statusCode === 201, 'auto-ack enabled: should return 201');
+    assert(ackRes.body.override.status === 'requested', 'auto-ack enabled: initial response must be requested');
+    await sleep(300);
+    const ackRecord = await OverrideRequest.findOne({ override_id: ackId }).lean();
+    assert(ackRecord !== null, 'auto-ack enabled: override record must exist');
+    assert(ackRecord.status === 'executed', 'auto-ack enabled: status must be executed after delay');
+    assert(ackRecord.result === 'executed', 'auto-ack enabled: result must be executed');
+    assert(ackRecord.result_at instanceof Date, 'auto-ack enabled: result_at must be set');
+    console.log('[OK] auto-ack enabled: buzzer_off becomes executed after delay');
+
+    // Test: active hazard + buzzer_off — override executes as alarm ack; hazard event unchanged
+    env.overrideDemoAutoAck = true;
+    env.overrideDemoAutoAckDelayMs = 50;
+    await Event.create({
+      event_id: autoAckHazardEventId,
+      device_id: 'esp32_home_01',
+      room_id: 'kitchen',
+      event_type: 'fire_detected',
+      severity: 'critical',
+      message: 'Auto-ack hazard test: fire detected.',
+      confirmed: true,
+      occurred_at: new Date(),
+      received_at: new Date(),
+    });
+    const hazardAckId = autoAckPrefix + '_hazard_01';
+    const hazardAckReq = {
+      body: {
+        override_id: hazardAckId,
+        device_id: 'esp32_home_01',
+        requested_by: 'usr_admin_001',
+        actuator_id: 'buzzer_01',
+        action: 'buzzer_off',
+        reason: 'Hazard active alarm silence test.',
+      },
+    };
+    const hazardAckRes = createMockRes();
+    await createOverride(hazardAckReq, hazardAckRes);
+    await sleep(300);
+    const hazardAckRecord = await OverrideRequest.findOne({ override_id: hazardAckId }).lean();
+    assert(hazardAckRecord !== null, 'hazard auto-ack: override record must exist');
+    assert(hazardAckRecord.status === 'executed', 'hazard auto-ack: buzzer_off must execute as alarm ack');
+    const hazardEventStillExists = await Event.findOne({ event_id: autoAckHazardEventId }).lean();
+    assert(hazardEventStillExists !== null, 'hazard auto-ack: fire_detected event must remain in Events collection');
+    console.log('[OK] auto-ack hazard: buzzer_off executes as alarm ack; fire_detected event unchanged');
+
+    // Test: excluded action door_unlock stays requested regardless of auto-ack
+    env.overrideDemoAutoAck = true;
+    env.overrideDemoAutoAckDelayMs = 50;
+    const excludedId = autoAckPrefix + '_excluded_01';
+    const excludedReq = {
+      body: {
+        override_id: excludedId,
+        device_id: 'esp32_home_01',
+        requested_by: 'usr_admin_001',
+        actuator_id: 'door_01',
+        action: 'door_unlock',
+        reason: 'Excluded action test.',
+      },
+    };
+    const excludedRes = createMockRes();
+    await createOverride(excludedReq, excludedRes);
+    assert(excludedRes.statusCode === 201, 'excluded action: should return 201');
+    await sleep(200);
+    const excludedRecord = await OverrideRequest.findOne({ override_id: excludedId }).lean();
+    assert(excludedRecord !== null, 'excluded action: override record must exist');
+    assert(excludedRecord.status === 'requested', 'excluded action: door_unlock must stay requested');
+    console.log('[OK] auto-ack excluded: door_unlock stays requested');
+
+    // Test: already-resolved override — auto-ack is a no-op (status guard prevents double-update)
+    const resolvedId = autoAckPrefix + '_resolved_01';
+    await OverrideRequest.create({
+      override_id: resolvedId,
+      device_id: 'esp32_home_01',
+      requested_by: 'usr_admin_001',
+      actuator_id: 'buzzer_01',
+      action: 'buzzer_off',
+      reason: 'Already-resolved no-op test.',
+      status: 'executed',
+      result: 'executed',
+      result_at: new Date(),
+      requested_at: new Date(),
+    });
+    const noOpResult = await persistMappedOperation({
+      kind: 'update',
+      model: 'OverrideRequest',
+      filter: { override_id: resolvedId, status: 'requested' },
+      update: {
+        $set: { status: 'executed', result: 'executed', result_at: new Date() },
+      },
+      options: { returnDocument: 'after' },
+    });
+    assert(noOpResult.saved === false, 'no-op: persistMappedOperation must return saved=false for already-resolved');
+    assert(noOpResult.reason === 'target_not_found', 'no-op: reason must be target_not_found');
+    const resolvedRecord = await OverrideRequest.findOne({ override_id: resolvedId }).lean();
+    assert(resolvedRecord.status === 'executed', 'no-op: already-executed record must remain executed');
+    console.log('[OK] auto-ack no-op: already-resolved override unchanged');
+
+    env.overrideDemoAutoAck = origAutoAck;
+    env.overrideDemoAutoAckDelayMs = origDelay;
     console.log('Override API controller tests passed.');
   } finally {
+    env.overrideDemoAutoAck = origAutoAck;
+    env.overrideDemoAutoAckDelayMs = origDelay;
     await cleanup(prefix);
     await Event.deleteMany({ event_id: lockoutEventId });
     await OverrideRequest.deleteMany({
       override_id: { $regex: '^' + lockoutPrefix },
     });
+    await OverrideRequest.deleteMany({
+      override_id: { $regex: '^' + autoAckPrefix },
+    });
+    await Event.deleteMany({ event_id: autoAckHazardEventId });
     await disconnectDatabase();
   }
 }
