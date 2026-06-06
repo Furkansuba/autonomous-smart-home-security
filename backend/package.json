@@ -47,7 +47,8 @@
     "test:user-management-api": "node scripts/test-user-management-api.js",
     "test:recovery-api": "node scripts/test-recovery-api.js",
     "seed:recovery-backfill": "node scripts/seed-recovery-backfill.js",
-    "seed:logical-devices": "node scripts/seed-logical-devices.js"
+    "seed:logical-devices": "node scripts/seed-logical-devices.js",
+    "test:device-status-monitor": "node scripts/test-device-status-monitor.js"
   },
   "keywords": [],
   "author": "",

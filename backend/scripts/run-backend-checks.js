@@ -22,6 +22,7 @@ const checks = [
   'test:db',
   'test:persistence',
   'test:device-status',
+  'test:device-status-monitor',
   'test:device-api',
   'test:event-api',
   'test:access-log-api',
