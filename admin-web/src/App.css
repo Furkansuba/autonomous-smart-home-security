@@ -3256,3 +3256,269 @@
   background: rgba(6, 78, 59, 0.22);
   border-color: #065f46;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Users page
+   ═══════════════════════════════════════════════════════════ */
+
+.users-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* State messages */
+.users-loading,
+.users-error,
+.users-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.9rem;
+}
+
+.users-error {
+  color: #dc2626;
+}
+
+/* Table container */
+.users-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card-bg, #fff);
+}
+
+.users-table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.users-table-wrap::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+/* Table */
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.users-table th {
+  background: var(--table-head-bg, #f9fafb);
+  color: var(--text-muted, #6b7280);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  white-space: nowrap;
+}
+
+.users-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color, #f3f4f6);
+  color: var(--text-main, #111827);
+  vertical-align: middle;
+}
+
+.users-table tr:last-child td {
+  border-bottom: none;
+}
+
+.users-table tr:hover td {
+  background: var(--row-hover, #f9fafb);
+}
+
+/* Column sizing */
+.users-col-name  { min-width: 140px; font-weight: 500; }
+.users-col-email { min-width: 180px; color: var(--text-muted, #6b7280); }
+.users-col-ts    { white-space: nowrap; color: var(--text-muted, #6b7280); font-size: 0.8rem; }
+
+/* Role badge */
+.user-role-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.user-role-badge--admin {
+  color: #7c3aed;
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+.user-role-badge--resident {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+/* Active / inactive badge */
+.user-active-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.user-active-badge--active {
+  color: #065f46;
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.user-active-badge--inactive {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+/* Promote button */
+.btn-promote {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #7c3aed;
+  background: transparent;
+  color: #7c3aed;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-promote:hover:not(:disabled) {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.btn-promote:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Promote feedback banner */
+.users-promote-msg {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.users-promote-msg--ok {
+  color: #065f46;
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+}
+
+.users-promote-msg--err {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+/* No-action placeholder */
+.users-action-none {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.85rem;
+}
+
+/* ── Dark mode: users page ─────────────────────────────── */
+
+.theme-dark .users-loading,
+.theme-dark .users-empty {
+  color: #9ca3af;
+}
+
+.theme-dark .users-error {
+  color: #f87171;
+}
+
+.theme-dark .users-table-wrap {
+  border-color: #374151;
+  background: #1f2937;
+}
+
+.theme-dark .users-table-wrap::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.theme-dark .users-table th {
+  background: #111827;
+  color: #9ca3af;
+  border-bottom-color: #374151;
+}
+
+.theme-dark .users-table td {
+  color: #f3f4f6;
+  border-bottom-color: #374151;
+}
+
+.theme-dark .users-table tr:hover td {
+  background: #374151;
+}
+
+.theme-dark .users-col-email,
+.theme-dark .users-col-ts {
+  color: #9ca3af;
+}
+
+.theme-dark .user-role-badge--admin {
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.18);
+  border-color: #7c3aed;
+}
+
+.theme-dark .user-role-badge--resident {
+  color: #93c5fd;
+  background: rgba(29, 78, 216, 0.18);
+  border-color: #1d4ed8;
+}
+
+.theme-dark .user-active-badge--active {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.22);
+  border-color: #065f46;
+}
+
+.theme-dark .user-active-badge--inactive {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.22);
+  border-color: #92400e;
+}
+
+.theme-dark .btn-promote {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+.theme-dark .btn-promote:hover:not(:disabled) {
+  background: #a78bfa;
+  color: #1f2937;
+}
+
+.theme-dark .users-promote-msg--ok {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.22);
+  border-color: #065f46;
+}
+
+.theme-dark .users-promote-msg--err {
+  color: #fca5a5;
+  background: rgba(153, 27, 27, 0.22);
+  border-color: #991b1b;
+}
+
+.theme-dark .users-action-none {
+  color: #6b7280;
+}

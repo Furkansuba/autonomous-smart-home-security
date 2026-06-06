@@ -12,8 +12,9 @@ import TelemetryPage from './pages/TelemetryPage.jsx'
 import OverridesPage from './pages/OverridesPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import NotificationLogsPage from './pages/NotificationLogsPage.jsx'
+import UsersPage from './pages/UsersPage.jsx'
 
-const ADMIN_ONLY_PAGES = new Set(['overrides', 'notification-logs'])
+const ADMIN_ONLY_PAGES = new Set(['overrides', 'notification-logs', 'users'])
 
 const NAV_ITEMS = [
   { key: 'dashboard',   label: 'Dashboard'   },
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { key: 'telemetry',   label: 'Telemetry'   },
   { key: 'overrides',          label: 'Overrides'   },
   { key: 'notification-logs', label: 'Notif. Logs' },
+  { key: 'users',             label: 'Users'        },
 ]
 
 const SECTION_META = {}
@@ -48,6 +50,7 @@ function PageContent({ page }) {
   if (page === 'telemetry')   return <TelemetryPage />
   if (page === 'overrides')          return <OverridesPage />
   if (page === 'notification-logs') return <NotificationLogsPage />
+  if (page === 'users')             return <UsersPage />
   if (page === 'profile')           return <ProfilePage />
   return <SectionPlaceholder page={page} />
 }
