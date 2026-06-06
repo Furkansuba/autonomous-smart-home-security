@@ -3,9 +3,8 @@ package com.smarthome.security.ui.login
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.PromptInfo
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -15,11 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,9 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -50,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smarthome.security.R
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
@@ -80,31 +78,14 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Shield,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "Smart Home Security",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+        Image(
+            painter = painterResource(id = R.drawable.smart_home_security_logo),
+            contentDescription = "Smart Home Security",
+            modifier = Modifier.fillMaxWidth(0.55f),
+            contentScale = ContentScale.Fit,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Secure home access",

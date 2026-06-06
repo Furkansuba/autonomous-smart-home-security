@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 18dp top/bottom inset keeps the 3:2 logo at its natural ratio inside the 108dp canvas -->
+    <item
+        android:top="18dp"
+        android:bottom="18dp"
+        android:drawable="@drawable/smart_home_security_logo" />
+</layer-list>
