@@ -420,7 +420,7 @@ These items are part of the capstone proposal but are outside the scope of the s
 | Real ESP32 heartbeat via MQTT | Device status (online/degraded/offline) displayed from seeded `last_heartbeat_at` values; backend offline monitor verified via controlled EC2 test (§14.5). Live MQTT heartbeat from real ESP32 NOT tested. | MCH + CMP |
 | NFC hardware trigger → access log pipeline | Access logs seeded and visible; real RC522 NFC card scan and door unlock NOT tested — RC522 hardware integration is firmware scope | MCH team |
 | Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |
-| AWS EC2 deployment | **Deployed.** Backend runs on EC2, PM2 + systemd auto-start verified, `/health` returns 200. | CMP / infra |
+| AWS EC2 deployment | **Deployed with HTTPS.** Backend runs on EC2 behind Nginx (TLS termination). PM2 + systemd auto-start verified. Public endpoint: `https://smarthome-capstone.duckdns.org`. Port 5000 closed externally. See §15 for full HTTPS verification checklist. | CMP / infra |
 | Firebase Cloud Messaging (FCM) | **Implemented and verified.** FCM offline push confirmed on EC2 (NotificationLog: `sent` + `skipped/duplicate_token`). Requires `google-services.json` in `android/app/` (not committed) and `FCM_ENABLED=true` + `FIREBASE_SERVICE_ACCOUNT_BASE64` in `backend/.env`. | CMP |
 | SMS connectivity-loss notifications | **Backend/provider dispatch verified; handset delivery still needs final verification.** NotificationLog `channel=sms status=sent` confirmed on EC2; Twilio Message Log shows `Sent`. SMS did not arrive on phone and Twilio has not shown `Delivered`. See DEMO_RUNBOOK.md §12.5 troubleshooting. | CMP |
 
@@ -487,3 +487,68 @@ Expected `NotificationLog` entries after one `online → degraded → offline` c
 - [x] FCM `skipped / duplicate_token` entry confirmed on EC2
 - [x] NotificationLog `channel=sms status=sent` confirmed on EC2; Twilio Message Log shows `Sent`
 - [ ] Phone receives the SMS / Twilio status becomes `Delivered`
+
+---
+
+## 15. Public HTTPS Deployment Verification
+
+**Purpose:** Confirm that the public HTTPS deployment is functional, port hardening is in effect, and Android connects over HTTPS.
+
+### 15.1 Architecture and Public URL
+
+- [x] Admin-web SPA served at `https://smarthome-capstone.duckdns.org/`
+- [x] Backend API proxied at `https://smarthome-capstone.duckdns.org/api/`
+- [x] HTTP → HTTPS redirect enforced (301)
+- [x] HSTS header present (`Strict-Transport-Security: max-age=63072000`)
+
+### 15.2 AWS Security Group State
+
+| Port | Status | Purpose |
+|---|---|---|
+| 22 | Open (restricted) | SSH access |
+| 80 | Open | HTTP → HTTPS redirect |
+| 443 | Open | HTTPS (Nginx TLS termination) |
+| 1883 | Open | MQTT — intentionally open for future ESP32 connectivity |
+| 5000 | **Closed** | Backend port hardened; internal only via Nginx proxy |
+
+**MQTT 1883 note:** Port 1883 is open intentionally for future ESP32 MQTT connectivity. Do not close unless the MQTT broker is being retired.
+
+### 15.3 Android HTTPS Migration
+
+- [x] `android/app/build.gradle.kts:18` — `BASE_URL` = `"https://smarthome-capstone.duckdns.org/"` (commit `5b1cdbf`)
+- [x] `android/app/src/main/res/xml/network_security_config.xml` — `cleartextTrafficPermitted="false"` (commit `5b1cdbf`)
+- [x] `compileDebugKotlin` passed after both changes
+- [x] Physical phone test — admin login via HTTPS passed
+- [x] Physical phone test — all screens accessible (Dashboard, Devices, Alerts, Sensors, Overrides)
+- [x] Physical phone test — safe override (`buzzer_off`) submitted, confirmed `status: executed` in ~500 ms
+- [x] Physical phone test — resident login passed, Admin Actions card absent
+
+### 15.4 HTTPS Endpoint Verification
+
+Verified from external network (local Windows) and from EC2 (`curl localhost`):
+
+- [x] `GET https://smarthome-capstone.duckdns.org/` — 200, React SPA loads
+- [x] `GET https://smarthome-capstone.duckdns.org/health` — 200, `{"status":"ok","database":{"connected":true}}`
+- [x] `GET https://smarthome-capstone.duckdns.org/api/events` — 200, event array
+- [x] `GET http://smarthome-capstone.duckdns.org/` — 301 redirect to HTTPS
+- [x] `GET http://18.184.39.188:5000/` — connection refused (port closed externally)
+- [x] `GET http://localhost:5000/health` from EC2 — 200 (internal only, via Nginx)
+
+### 15.5 Browser Admin/Resident Tests (via Public HTTPS URL)
+
+- [x] Admin login at `https://smarthome-capstone.duckdns.org/` — authenticated
+- [x] Dashboard, Devices, Events, Telemetry, Access Logs, Overrides pages — all load
+- [x] Resident login — authenticated, Overrides page shows locked panel (Admin Role Required)
+
+### 15.6 Override Execution via HTTPS
+
+- [x] Submitted `buzzer_off` (Silence Alarm) from admin-web Overrides page via HTTPS
+- [x] With `OVERRIDE_DEMO_AUTO_ACK=true`, override status became `executed` in ~500 ms
+- [x] Override record visible in both admin-web and Android Overrides screen after HTTPS submission
+
+### 15.7 Port Hardening Confirmation
+
+- [x] Port 5000 inbound rule removed from AWS Security Group
+- [x] External `http://18.184.39.188:5000` — connection refused/timeout (confirmed from local Windows)
+- [x] `curl http://localhost:5000/health` on EC2 — 200 (backend still reachable internally)
+- [x] All HTTPS endpoints remain fully functional after port 5000 removal

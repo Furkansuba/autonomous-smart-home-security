@@ -81,15 +81,9 @@ Admin web runs at `http://localhost:5173`.
 
 Open the `android/` directory in Android Studio and run on an emulator or physical device.
 
-**Emulator:** No changes needed. `BASE_URL` defaults to `http://10.0.2.2:5000/` which routes to the host machine.
+**Physical phone:** No code change needed. `BASE_URL` is set to `https://smarthome-capstone.duckdns.org/` (committed in `5b1cdbf`). The app connects to the public EC2 backend over HTTPS. Physical phone test result: admin login, all screens (Dashboard, Devices, Alerts, Sensors, Overrides), safe override execution (`buzzer_off` → `executed`), and resident RBAC (Admin Actions card absent) — all verified.
 
-**Physical phone:** Change `BASE_URL` in `android/app/build.gradle.kts` line 17 to your PC's LAN IP before building:
-
-```kotlin
-buildConfigField("String", "BASE_URL", "\"http://192.168.x.x:5000/\"")
-```
-
-Rebuild the app after changing it.
+**Emulator:** The emulator cannot reach the HTTPS public domain by default. For local emulator testing, temporarily change `BASE_URL` in `android/app/build.gradle.kts:18` to `http://10.0.2.2:5000/` and run a local backend. Revert to the HTTPS URL before physical device testing.
 
 ---
 
@@ -173,7 +167,7 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 
 ### 9.1 Admin Web Demo — Admin Account
 
-1. Open `http://localhost:5173` and log in as `admin@smarthome.local`.
+1. Open `http://localhost:5173` (local dev) or `https://smarthome-capstone.duckdns.org` (public production) and log in as `admin@smarthome.local`.
 2. **Dashboard:** Security status banner (Low / Elevated / High Risk), KPI cards (Active Devices, Critical Events, Pending Overrides, Latest Telemetry), latest sensor snapshot tiles, risk assessment panel.
 3. **Devices:** Table with three seeded devices and status badges. The **Refresh Status** button recalculates statuses from heartbeat timestamps.
 4. **Events:** Fire, gas, intrusion, and motion events. Use the severity filter to narrow to `critical` events only.
@@ -431,7 +425,7 @@ The backend is deployed to AWS EC2 (Amazon Linux 2023) and managed by PM2 with s
 |---|---|
 | Backend process | PM2 (`smart-home-backend`), fork mode, `pm2-ec2-user.service` enabled. Verified commits: `e46f599` (demo override auto-ack), `30153a1` (safe admin override actions UI). |
 | Auto-start | `sudo systemctl enable pm2-ec2-user` — survives reboot |
-| Health endpoint | `http://<EC2_PUBLIC_IP>/health` → `status: ok` |
+| Health endpoint | `https://smarthome-capstone.duckdns.org/health` → `status: ok`. HTTP on port 80 redirects to HTTPS (301). |
 | MongoDB | Connected to Atlas (`autonomous_smart_home`) |
 | MQTT | Connected to local Mosquitto broker on EC2 |
 | FCM | Initialized — `FCM_ENABLED=true`, `FIREBASE_SERVICE_ACCOUNT_BASE64` set in `.env`. All four critical event types (fire/gas/CO/intrusion) verified end-to-end to physical phone. |
@@ -615,7 +609,7 @@ Restart the backend normally — plain `pm2 restart smart-home-backend` (no `--u
 | Backend exits on start or `/health` returns `database.connected: false` | `MONGODB_URI` in `backend/.env` is missing or contains placeholder text. Verify the Atlas connection string. |
 | Atlas connection refused | Your current IP is not in the Atlas Network Access whitelist. Add it at **Atlas → Network Access → Add IP Address**. |
 | Android emulator shows "Unable to connect" | Verify the backend is running and reachable at `http://localhost:5000/health` on the host. The default `BASE_URL` (`10.0.2.2:5000`) is correct for the Android emulator. |
-| Physical phone shows "Unable to connect" | Change `BASE_URL` in `android/app/build.gradle.kts:17` to your PC's LAN IP (e.g., `http://192.168.1.x:5000/`) and rebuild. |
+| Physical phone shows "Unable to connect" | `BASE_URL` is `https://smarthome-capstone.duckdns.org/` — verify the phone has active internet access. Switch to mobile data if on a restricted Wi-Fi network. |
 | Biometric prompt does not appear | The device has no enrolled fingerprint, or there is no stored session. Enroll a fingerprint at **Android Settings → Security → Fingerprint**, then log in once via password. The biometric prompt appears only on subsequent launches with a stored session. |
 | Admin Actions card missing on Android | The session is logged in as `resident`. Log out and log back in as `admin@smarthome.local`. |
 | Seed scripts fail with a connection error | Run `npm run test:db` from `backend/` first to verify Atlas connectivity before seeding. |
@@ -669,5 +663,80 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 | React admin web | **Done** | All 7 pages implemented. Light/dark theme. RBAC gating on Overrides page. |
 | Firebase Cloud Messaging (FCM) | **Implemented and verified** | Firebase BoM + messaging-ktx in Android. Backend FCM Admin SDK initialized from `FIREBASE_SERVICE_ACCOUNT_BASE64`. Token registration endpoint `POST /api/users/fcm-token`. Push triggered on all critical event types and on device offline transitions. FCM token deduplication active — shared tokens produce one `sent` + one `skipped/duplicate_token` NotificationLog entry. Requires `google-services.json` placed locally (not committed). |
 | SMS offline notifications | **Implemented; provider dispatch verified** | Twilio SMS via `sms.service.js`. Fires on `degraded→offline` transition. `NotificationLog` entry written for every dispatch (including `sms_disabled` and `failed` states). Provider error messages sanitized — E.164 phone numbers masked before storage. Backend path and Twilio acceptance verified on EC2 (NotificationLog: `channel=sms status=sent`, Twilio Message Log: `Sent`). Handset delivery not yet confirmed. |
-| AWS EC2 deployment | **Deployed** | Backend running on EC2 (Amazon Linux 2023). PM2 (`smart-home-backend`) managed by systemd (`pm2-ec2-user.service`, enabled on boot). MongoDB Atlas connected, MQTT connected, FCM and SMS both initialized. Health endpoint reachable via public IP. See Section 12 for deploy and restart procedures. |
+| AWS EC2 deployment | **Deployed with HTTPS** | Backend running on EC2 (Amazon Linux 2023) behind Nginx 1.30.1 with TLS termination. PM2 (`smart-home-backend`) managed by systemd (`pm2-ec2-user.service`, enabled on boot). MongoDB Atlas connected, MQTT connected, FCM and SMS both initialized. Public endpoint: `https://smarthome-capstone.duckdns.org` (Let's Encrypt cert, auto-renewed via cronie). Port 5000 closed externally. See §12 for deploy/restart procedures and §15 for full HTTPS deployment details. |
 | ESP32 firmware | **Not in repo** | `firmware/` directory contains only `.gitkeep`. Firmware is MCH team scope. |
+
+---
+
+## 15. Public HTTPS Deployment
+
+The backend and admin-web are publicly accessible over HTTPS at `https://smarthome-capstone.duckdns.org`. Port 5000 is closed externally; MQTT port 1883 remains open for future ESP32 connectivity.
+
+### 15.1 Architecture
+
+```
+Browser / Android app
+       │  HTTPS (443)
+       ▼
+  Nginx 1.30.1  (EC2, Amazon Linux 2023)
+  ├─ GET /        → /var/www/admin-web  (React SPA, built with VITE_API_BASE_URL=https://smarthome-capstone.duckdns.org)
+  ├─ /api/*       → proxy_pass http://localhost:5000
+  └─ /health      → proxy_pass http://localhost:5000/health
+       │  HTTP localhost only
+       ▼
+  Express backend (port 5000, internal only)
+       │
+       ▼
+  MongoDB Atlas
+```
+
+HTTP on port 80 → 301 redirect to HTTPS. HSTS enforced (`max-age=63072000`).
+
+### 15.2 DNS and TLS
+
+| Item | Value |
+|---|---|
+| Domain | `smarthome-capstone.duckdns.org` |
+| DNS provider | DuckDNS (free subdomain) |
+| Points to | EC2 public IP `18.184.39.188` |
+| TLS certificate | Let's Encrypt (certbot 4.2.0, nginx plugin, HTTP-01 challenge) |
+| Certificate path | `/etc/letsencrypt/live/smarthome-capstone.duckdns.org/` |
+| Expiry | 2026-09-04 |
+| Auto-renewal | cronie — `/etc/cron.d/certbot-renew`: `0 0,12 * * * root /opt/certbot/bin/certbot renew --quiet --nginx` |
+| Renewal dry-run | `All simulated renewals succeeded` |
+
+### 15.3 AWS Security Group State
+
+| Port | Protocol | Source | Status | Purpose |
+|---|---|---|---|---|
+| 22 | TCP | Restricted IP | Open | SSH access |
+| 80 | TCP | 0.0.0.0/0 | Open | HTTP → HTTPS redirect |
+| 443 | TCP | 0.0.0.0/0 | Open | HTTPS (Nginx TLS termination) |
+| 1883 | TCP | 0.0.0.0/0 | Open | MQTT — intentionally open for future ESP32 |
+| 5000 | TCP | — | **Closed** | Backend hardened to localhost-only via Nginx |
+
+> **MQTT 1883 note:** Port 1883 is open intentionally. The ESP32 firmware publishes MQTT messages directly to this broker port. Do not close it unless the MQTT broker is being retired.
+
+### 15.4 Android HTTPS Migration
+
+Committed in `5b1cdbf` (`chore(android): use HTTPS API endpoint`):
+
+| Change | File |
+|---|---|
+| `BASE_URL` → `"https://smarthome-capstone.duckdns.org/"` | `android/app/build.gradle.kts:18` |
+| `cleartextTrafficPermitted="false"` | `android/app/src/main/res/xml/network_security_config.xml` |
+
+Physical phone test passed after migration: admin login, all screens (Dashboard, Devices, Alerts, Sensors, Overrides), safe override execution (`buzzer_off` → `executed` in ~500 ms with auto-ack), resident login and RBAC (Admin Actions card absent).
+
+### 15.5 Verified HTTPS Endpoints
+
+Verified from external network (local Windows) and from within EC2 (`curl localhost`):
+
+| Request | Result |
+|---|---|
+| `GET https://smarthome-capstone.duckdns.org/` | 200 — admin-web React SPA |
+| `GET https://smarthome-capstone.duckdns.org/health` | 200 — `{"status":"ok","database":{"connected":true}}` |
+| `GET https://smarthome-capstone.duckdns.org/api/events` | 200 — event array |
+| `GET http://smarthome-capstone.duckdns.org/` | 301 redirect → HTTPS |
+| `GET http://18.184.39.188:5000/` | Connection refused (port closed externally) |
+| `GET http://localhost:5000/health` (from EC2) | 200 — internal only |
