@@ -32,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +68,12 @@ fun DevicesScreen(
     showBackButton: Boolean = true,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        viewModel.startAutoRefresh()
+        onDispose { viewModel.stopAutoRefresh() }
+    }
 
     Scaffold(
         topBar = {
@@ -142,10 +150,16 @@ fun DevicesScreen(
                 }
 
                 is DevicesUiState.Success -> {
-                    if (state.devices.isEmpty()) {
-                        EmptyDevicesState(modifier = Modifier.align(Alignment.Center))
-                    } else {
-                        DeviceRoster(devices = state.devices)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.devices.isEmpty()) {
+                            EmptyDevicesState(modifier = Modifier.align(Alignment.Center))
+                        } else {
+                            DeviceRoster(devices = state.devices)
+                        }
                     }
                 }
             }

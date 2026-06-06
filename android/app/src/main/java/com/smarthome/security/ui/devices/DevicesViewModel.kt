@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.Device
 import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.DevicesRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,24 +24,56 @@ class DevicesViewModel(private val repository: DevicesRepository) : ViewModel() 
     private val _uiState = MutableStateFlow<DevicesUiState>(DevicesUiState.Loading)
     val uiState: StateFlow<DevicesUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private var autoRefreshJob: Job? = null
+
     init {
         loadDevices()
     }
 
     fun loadDevices() {
         _uiState.value = DevicesUiState.Loading
+        viewModelScope.launch { fetchAndProcess() }
+    }
+
+    fun refresh() {
+        if (_isRefreshing.value) return
         viewModelScope.launch {
-            val result = repository.getDevices()
-            _uiState.value = result.fold(
-                onSuccess = { DevicesUiState.Success(it) },
-                onFailure = { error ->
-                    if (error is SessionExpiredException)
-                        DevicesUiState.SessionExpired
-                    else
-                        DevicesUiState.Error(error.message ?: "Unknown error.")
-                },
-            )
+            _isRefreshing.value = true
+            try {
+                fetchAndProcess()
+            } finally {
+                _isRefreshing.value = false
+            }
         }
+    }
+
+    fun startAutoRefresh() {
+        stopAutoRefresh()
+        autoRefreshJob = viewModelScope.launch {
+            while (true) {
+                delay(30_000)
+                fetchAndProcess()
+            }
+        }
+    }
+
+    fun stopAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
+    }
+
+    private suspend fun fetchAndProcess() {
+        val result = repository.getDevices()
+        _uiState.value = result.fold(
+            onSuccess = { devices -> DevicesUiState.Success(devices) },
+            onFailure = { error ->
+                if (error is SessionExpiredException) DevicesUiState.SessionExpired
+                else DevicesUiState.Error(error.message ?: "Unknown error.")
+            },
+        )
     }
 }
 
