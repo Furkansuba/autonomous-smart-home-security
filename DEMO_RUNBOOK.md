@@ -94,6 +94,8 @@ Open the `android/` directory in Android Studio and run on an emulator or physic
 | Admin    | `admin@smarthome.local`      | `Admin123!`    |
 | Resident | `resident@smarthome.local`   | `Resident123!` |
 
+> Both accounts have password recovery configured. Recovery answers are not stored in this document.
+
 ---
 
 ## 8. Android Demo Flow
@@ -163,6 +165,33 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 
 ---
 
+### 8.4 Android Demo Flow — Registration and Recovery
+
+**Registration with security question:**
+
+1. From the Login screen tap **Create account** — the Register screen opens.
+2. Fill in Full Name, Email, Password, and Confirm Password.
+3. Tap the **Security Question** dropdown — six fixed options appear via `ExposedDropdownMenuBox`. Select one.
+4. Enter a **Security Answer** in the field below.
+5. Leave Admin Key blank for a resident account, or enter the admin key to register as admin.
+6. The **Create Account** button stays disabled until all required fields (including security question and answer) are non-blank.
+7. Tap **Create Account** — the account is created and the app navigates directly to the Dashboard.
+8. The selected question is stored on the server. The security answer is never stored in plaintext; it is transmitted over HTTPS during registration and recovery reset, and verified against a bcrypt hash on the server.
+
+**Forgot password (account recovery):**
+
+1. From the Login screen tap **Forgot password?** below the Create account button.
+2. The **Account Recovery** screen opens.
+3. **Step 1 — Email:** Enter the registered email address and tap **Find My Security Question**.
+4. The backend returns the registered question (HTTP 200 regardless of whether the email exists — no account enumeration).
+5. **Step 2 — Answer:** The security question is displayed in a read-only card. Enter the security answer, a new password (≥ 8 characters, one uppercase letter, one digit), and confirm it.
+6. Tap **Reset Password** — on success the screen shows "Password updated. Please sign in."
+7. The app does NOT log in automatically. Tap **← Back to Sign In** and sign in with the new password.
+8. The old password no longer works after a successful reset.
+9. **← Back** on Step 2 returns to the email entry step.
+
+---
+
 ## 9. Admin Web Demo Flow
 
 ### 9.1 Admin Web Demo — Admin Account
@@ -187,6 +216,29 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
     > *"Admin Role Required — Manual override controls are restricted to admin accounts."*
 
 12. All other pages (Dashboard, Devices, Events, Telemetry, Access Logs) remain accessible in read-only mode.
+
+---
+
+### 9.3 Admin Web Demo — Registration and Recovery
+
+**Registration with security question:**
+
+1. Click **Sign Up** on the login page — the Register page opens.
+2. Fill in Full Name, Email, Password, Confirm Password.
+3. Select a security question from the **Security Question** dropdown — six fixed options.
+4. Enter a **Security Answer**. Both the question and answer fields are required; the form blocks submission if either is empty.
+5. Leave Admin Key blank for a resident account.
+6. Click **Create Account** — the account is created and the dashboard loads.
+
+**Forgot password (account recovery):**
+
+1. From the login page, click **Forgot password?**
+2. **Step 1 — Email:** Enter the registered email and click **Find My Question**.
+3. The registered security question is displayed below the email field.
+4. **Step 2 — Answer:** Enter the security answer and a new password (≥ 8 characters, one uppercase letter, one digit). Click **Reset Password**.
+5. On success the page shows the static message: "Password updated. Please sign in."
+6. The page does NOT log in automatically and does NOT store a token in `localStorage`. Click **Back to Sign In** and sign in with the new password.
+7. The old password no longer works after a successful reset.
 
 ---
 
@@ -423,7 +475,7 @@ The backend is deployed to AWS EC2 (Amazon Linux 2023) and managed by PM2 with s
 
 | Component | Status |
 |---|---|
-| Backend process | PM2 (`smart-home-backend`), fork mode, `pm2-ec2-user.service` enabled. Verified commits: `e46f599` (demo override auto-ack), `30153a1` (safe admin override actions UI). |
+| Backend process | PM2 (`smart-home-backend`), fork mode, `pm2-ec2-user.service` enabled. Verified commits: `e46f599` (demo override auto-ack), `30153a1` (safe admin override actions UI), `7ac1230` (security question recovery API), `6b5e5bc` (admin-web recovery UI), `1dfef86` (android recovery UI). |
 | Auto-start | `sudo systemctl enable pm2-ec2-user` — survives reboot |
 | Health endpoint | `https://smarthome-capstone.duckdns.org/health` → `status: ok`. HTTP on port 80 redirects to HTTPS (301). |
 | MongoDB | Connected to Atlas (`autonomous_smart_home`) |
@@ -656,7 +708,7 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 |---|---|---|
 | Node.js + Express backend | **Done** | Running on port 5000. All REST endpoints implemented. |
 | MongoDB Atlas | **Done** | Mongoose models for all collections. Seed scripts provided. |
-| JWT + RBAC authentication | **Done** | Login, `/api/auth/me`, RBAC middleware on admin-only routes. |
+| JWT + RBAC authentication | **Done** | Login, `/api/auth/me`, RBAC middleware on admin-only routes. Password recovery via security question (`POST /api/auth/recovery/question`, `POST /api/auth/recovery/reset`) — answer bcrypt-hashed, no JWT issued on reset, old password invalidated. Registration security question dropdown and two-step forgot-password flow implemented on both admin-web and Android. |
 | MQTT event ingestion (backend) | **Implemented; unverified live** | `MQTT_ENABLED=false` by default. Backend MQTT router and ingestion logic are present. Live end-to-end requires a running broker and ESP32 firmware. |
 | Kotlin Android (Jetpack Compose, MVVM) | **Done** | All screens implemented. Repository pattern. Observable state via ViewModel. |
 | Biometric unlock (Android) | **Done — stored-session only** | Convenience unlock using stored JWT. Not a standalone biometric authentication flow. |

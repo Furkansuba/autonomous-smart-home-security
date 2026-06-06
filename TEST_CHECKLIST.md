@@ -23,8 +23,8 @@ npm run test:backend
 
 - [x] All backend regression checks pass
   - Expected final output: `All backend regression checks passed.`
-  - Covers: config, contracts, request validation, error handling, auth, RBAC, MQTT router, ingestion, persistence, all REST controllers, dashboard, MQTT E2E
-  - **Verified:** 26/26 checks pass, including 5 new override auto-ack test cases (disabled stays requested, enabled becomes executed, hazard-active alarm silence, excluded action stays requested, already-resolved no-op).
+  - Covers: config, contracts, request validation, error handling, auth, RBAC, MQTT router, ingestion, persistence, all REST controllers, dashboard, MQTT E2E, security question recovery
+  - **Verified:** 29/29 checks pass. Includes 5 override auto-ack test cases (disabled stays requested, enabled becomes executed, hazard-active alarm silence, excluded action stays requested, already-resolved no-op) and 16 recovery API test cases (registration with/without recovery, both-or-neither schema, enum enforcement, question lookup configured/unconfigured/nonexistent, reset with correct/wrong answer/weak password/normalization).
 
 ---
 
@@ -51,6 +51,26 @@ npm run test:backend
 - [x] `POST /api/devices/refresh-status` with **no token** returns 401
 - [x] `POST /api/devices/refresh-status` with **admin token** succeeds
 - **Verified:** All 13 live RBAC API test cases passed on EC2. Open-read endpoints (GET /api/events, GET /api/devices, GET /api/overrides) are intentional design — no auth required to read.
+
+### Registration — security question
+
+- [x] `POST /api/auth/register` with security question + answer creates account; question and answer hash stored server-side
+- [x] `GET /api/auth/me` never returns `security_question` or `security_answer_hash` — fields are `select: false` in Mongoose
+- [x] `POST /api/auth/register` omitting both security fields is accepted — recovery configured as `false`
+- [x] `POST /api/auth/register` providing question without answer (or vice versa) returns 400 — both-or-neither rule enforced by Zod `.refine()`
+- [x] `POST /api/auth/register` with a security question not in the six-item enum returns 400
+
+### Password Recovery
+
+- [x] `POST /api/auth/recovery/question` returns `{ configured: true, question: "..." }` for an account with recovery set up
+- [x] `POST /api/auth/recovery/question` for a non-existent email returns HTTP 200 `{ configured: false }` — account enumeration prevented
+- [x] `POST /api/auth/recovery/question` for a registered account without recovery configured returns HTTP 200 `{ configured: false }`
+- [x] `POST /api/auth/recovery/reset` with correct answer resets password — HTTP 200 `{ success: true, message: "Password updated. Please sign in." }`; no JWT token issued
+- [x] `POST /api/auth/recovery/reset` with wrong answer returns 400
+- [x] `POST /api/auth/recovery/reset` with a new password failing strength rules returns 400
+- [x] Answer normalization: mixed-case and extra-whitespace variants of the registered answer resolve correctly
+- [x] Old password returns 401 after a successful reset; new password authenticates
+- **Verified:** All 16 recovery API test cases pass as part of the 29/29 backend suite. Anti-enumeration, normalization, strength rejection, and no-token-on-reset also confirmed against live EC2 HTTPS endpoints (9 live tests).
 
 ---
 
@@ -220,14 +240,36 @@ npm run test:backend
 - [x] Override history is visible (read-only)
 - [x] Admin Actions card is **not rendered**
 
+### Registration — security question
+
+- [x] Tap **Create account** → Register screen loads
+- [x] Security Question `ExposedDropdownMenuBox` shows all six fixed options
+- [x] Selecting a question populates the field; Security Answer `OutlinedTextField` is required
+- [x] **Create Account** button is disabled until Full Name, Email, Password, Confirm Password, Security Question, and Security Answer are all non-blank
+- [x] Successful registration navigates to the Dashboard without requiring a separate sign-in step
+- [x] Omitting Admin Key registers as resident; entering a valid Admin Key registers as admin
+
+### Forgot Password
+
+- [x] **Forgot password?** `TextButton` visible on the Login screen below **Create account**
+- [x] Tapping navigates to `ForgotPasswordScreen` (Account Recovery)
+- [x] Step 1 (Email): entering email and tapping **Find My Security Question** fetches and displays the registered question
+- [x] Step 2 (Answer): registered question shown in a read-only `Surface` card; answer, new password, and confirm fields present
+- [x] Tapping **Reset Password** with correct answer and valid new password transitions to the Success step
+- [x] Success step shows "Password updated. Please sign in." — no auto-login
+- [x] **← Back to Sign In** navigates back to the Login screen
+- [x] **← Back** on Step 2 returns to Step 1 (email entry)
+- [x] Old password returns an invalid-credentials error after a successful reset; new password authenticates
+- **Verified:** Physical phone test passed — all 12 behaviors confirmed. Commit `1dfef86`.
+
 ---
 
 ## 10. Admin Web
 
-**Note:** Admin-web verified at `http://localhost:5173` (local dev server) connecting to EC2 backend (`http://18.184.39.188:5000`). CORS configured on EC2 with `CORS_ORIGIN=http://localhost:5173`.
+**Note:** Admin-web verified at `https://smarthome-capstone.duckdns.org` (deployed production on EC2). Port 5000 is closed externally; all browser traffic goes through the Nginx HTTPS proxy. For local development, run a local backend and configure `VITE_API_BASE_URL` accordingly.
 
 ### Login
-- [x] Login page loads at `http://localhost:5173`
+- [x] Login page loads at `https://smarthome-capstone.duckdns.org` (public production); `http://localhost:5173` for local dev
 - [x] Login with admin credentials succeeds
 - [x] Invalid credentials show an inline error (no crash, no blank page)
 - [x] Logout clears the session and returns to the login page
@@ -277,6 +319,26 @@ npm run test:backend
 - [x] Overrides page shows history (read-only)
 - [x] Override command form is replaced with the "Admin Role Required" locked panel
 - [x] No override command can be submitted
+
+### Registration — security question
+
+- [x] Click **Sign Up** → Register page loads
+- [x] Security question `<select>` dropdown shows all six fixed options
+- [x] Security Answer input is required — form validation blocks submission if either field is empty
+- [x] Submitting with all fields valid creates the account and loads the dashboard
+- [x] Omitting Admin Key registers as resident; entering a valid Admin Key registers as admin
+
+### Forgot Password
+
+- [x] **Forgot password?** link visible on the Login page
+- [x] Clicking opens `ForgotPasswordPage` (two-step flow)
+- [x] Step 1 (Email): entering email and clicking **Find My Question** fetches the registered question; question displayed below the email field
+- [x] Step 2 (Answer): entering correct answer and valid new password, clicking **Reset Password** → success message "Password updated. Please sign in."
+- [x] No automatic login after reset — page shows static success message; user clicks **Back to Sign In**
+- [x] No token written to `localStorage` during or after reset
+- [x] **Back to Sign In** returns to the login page and resets `authView` state
+- [x] Old password fails after reset; new password authenticates successfully
+- **Verified:** Browser test at `https://smarthome-capstone.duckdns.org` — all 11 behaviors confirmed. Commit `6b5e5bc`.
 
 ---
 
