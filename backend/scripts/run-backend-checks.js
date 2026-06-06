@@ -10,6 +10,7 @@ const checks = [
   'test:rbac',
   'test:mqtt-client',
   'test:mqtt-message-handler',
+  'test:mock-mqtt-notification',
   'test:mqtt-command-publisher',
   'test:mqtt-router',
   'test:ingestion',
