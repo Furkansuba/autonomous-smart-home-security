@@ -15,6 +15,7 @@ const checks = [
   'test:mqtt-message-handler',
   'test:mock-mqtt-notification',
   'test:mqtt-command-publisher',
+  'test:payload-schema',
   'test:mqtt-router',
   'test:ingestion',
   'test:ingestion-mapper',

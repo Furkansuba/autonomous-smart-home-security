@@ -35,8 +35,52 @@ Can:
 - garage
 - hallway
 - main_door
-## 4. Main Device ID
+## 4. Device IDs
+### Main controller
 - esp32_home_01
+  Name: Main ESP32 Controller
+  Location: Prototype Home
+### Logical component devices
+One physical ESP32 may publish heartbeat messages on behalf of the logical component device IDs
+below. Each heartbeat payload must carry the device_id matching the MQTT topic segment.
+Hardware note: the physical suppression design uses a distributed 4-pump topology (one 5V
+submersible pump per room zone on a 4-channel relay board). There are NO solenoid valves.
+valve_01 does not exist and must never be seeded or published.
+| device_id         | Name                       | Location                          |
+|-------------------|----------------------------|-----------------------------------|
+| pcf8574_01        | I2C Expander / Digital Bus | Prototype Home                    |
+| flame_sensor_01   | Flame Sensor Group         | Multi-room Flame Zones            |
+| mq2_sensor_01     | MQ-2 Gas Sensor            | Kitchen                           |
+| mq7_sensor_01     | MQ-7 CO Sensor             | Garage                            |
+| dht_sensor_01     | DHT Climate Sensor         | Prototype Home                    |
+| pir_sensor_01     | PIR Motion Sensor Group    | Hallway / Garage / Living Room    |
+| impact_sensor_01  | Impact Sensor Group        | Garage / Hallway                  |
+| reed_sensor_01    | Reed Switch Group          | Bedroom 1 / Bedroom 2 / Kitchen   |
+| door_controller_01| Door Controller            | Main Door                         |
+| pump_rm1_01       | Bedroom 1 Pump             | Bedroom 1                         |
+| pump_rm2_01       | Bedroom 2 Pump             | Bedroom 2                         |
+| pump_kit_01       | Kitchen Pump               | Kitchen                           |
+| pump_liv_01       | Living Room Pump           | Living Room                       |
+| buzzer_01         | Alarm Buzzer               | Hallway                           |
+### Device ID naming rule
+device_id must match: ^[a-z][a-z0-9_]+_[0-9]+$
+Rules:
+- Starts with a lowercase letter
+- Contains only lowercase letters, digits, and underscores
+- Ends with an underscore followed by one or more digits
+- Minimum 3 characters, maximum 80 characters
+- No uppercase, hyphens, slashes, or spaces
+Examples of valid IDs: esp32_home_01, flame_sensor_01, pump_rm1_01, mq2_sensor_01
+Examples of invalid IDs: Pump_01, pump-01, valve_01 (no valves exist), pump (no numeric suffix)
+### Component health model — v1
+- Each logical device_id has its own heartbeat, offline detection, and status (online/degraded/offline).
+- Offline detection is based on missed heartbeats per device_id; thresholds are unchanged:
+  degraded threshold: 60 seconds; offline threshold: 90 seconds.
+- Component-level fault status (sensor_fault, actuator_fault) is NOT implemented in v1.
+  A broken or unavailable component is represented by missed heartbeat → degraded/offline.
+  sensor_fault and actuator_fault events are reserved as future enhancements.
+- Phase B notification policy (deferred): controller offline sends FCM; logical component offline
+  is UI-visible only (logged as skipped in NotificationLog). Not yet implemented.
 ## 5. Event Types
 Safety:
 - fire_detected
@@ -128,10 +172,10 @@ No push notification by default:
 ## 12. Safety Rule
 Safety overrides security.
 If fire is detected:
-- activate pump
-- open related room valve
+- activate the zone pump for the affected room (pump_rm1_01, pump_rm2_01, pump_kit_01, or pump_liv_01)
 - trigger alarm
 - publish critical event
+Note: hardware uses distributed 4-pump topology; there are no valves.
 If gas or CO is detected:
 - trigger alarm
 - lock out pump

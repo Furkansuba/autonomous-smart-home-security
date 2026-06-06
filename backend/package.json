@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "validate:contracts": "node scripts/validate-contract-examples.js",
+    "test:payload-schema": "node scripts/test-payload-schema.js",
     "test:mqtt-router": "node scripts/test-mqtt-router.js",
     "test:ingestion": "node scripts/test-ingestion-service.js",
     "check:config": "node scripts/check-config.js",
@@ -45,7 +46,8 @@
     "test:register-api": "node scripts/test-register-api.js",
     "test:user-management-api": "node scripts/test-user-management-api.js",
     "test:recovery-api": "node scripts/test-recovery-api.js",
-    "seed:recovery-backfill": "node scripts/seed-recovery-backfill.js"
+    "seed:recovery-backfill": "node scripts/seed-recovery-backfill.js",
+    "seed:logical-devices": "node scripts/seed-logical-devices.js"
   },
   "keywords": [],
   "author": "",

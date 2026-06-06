@@ -17,7 +17,7 @@ const deviceId = z
   .string()
   .min(3)
   .max(80)
-  .regex(/^esp32_[a-z0-9_]+_[0-9]+$/);
+  .regex(/^[a-z][a-z0-9_]+_[0-9]+$/);
 const heartbeatSchema = z.object({
   device_id: deviceId,
   status: z.enum(DEVICE_STATUSES),
