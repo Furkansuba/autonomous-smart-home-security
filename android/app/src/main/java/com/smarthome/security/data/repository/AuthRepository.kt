@@ -6,6 +6,10 @@ import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.FcmTokenRequest
 import com.smarthome.security.data.model.LoginRequest
 import com.smarthome.security.data.model.LoginResponse
+import com.smarthome.security.data.model.RecoveryQuestionRequest
+import com.smarthome.security.data.model.RecoveryQuestionResponse
+import com.smarthome.security.data.model.RecoveryResetRequest
+import com.smarthome.security.data.model.RecoveryResetResponse
 import com.smarthome.security.data.model.RegisterRequest
 import com.smarthome.security.data.remote.AuthApi
 import com.smarthome.security.data.remote.UsersApi
@@ -45,6 +49,8 @@ class AuthRepository(
         email: String,
         password: String,
         adminKey: String,
+        securityQuestion: String,
+        securityAnswer: String,
     ): Result<LoginResponse> {
         return try {
             val request = RegisterRequest(
@@ -52,6 +58,8 @@ class AuthRepository(
                 email = email,
                 password = password,
                 adminKey = adminKey.ifBlank { null },
+                securityQuestion = securityQuestion,
+                securityAnswer = securityAnswer,
             )
             val response = api.register(request)
             if (response.isSuccessful) {
@@ -67,6 +75,45 @@ class AuthRepository(
             } else {
                 val message = parseErrorMessage(response.errorBody()?.string())
                     ?: "Registration failed (${response.code()})"
+                Result.failure(Exception(message))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Cannot reach server. Check your connection."))
+        }
+    }
+
+    suspend fun getRecoveryQuestion(email: String): Result<RecoveryQuestionResponse> {
+        return try {
+            val response = api.getRecoveryQuestion(RecoveryQuestionRequest(email))
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                val message = parseErrorMessage(response.errorBody()?.string())
+                    ?: "Failed to look up recovery question (${response.code()})"
+                Result.failure(Exception(message))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Cannot reach server. Check your connection."))
+        }
+    }
+
+    suspend fun resetPassword(
+        email: String,
+        answer: String,
+        newPassword: String,
+    ): Result<RecoveryResetResponse> {
+        return try {
+            val request = RecoveryResetRequest(
+                email = email,
+                securityAnswer = answer,
+                newPassword = newPassword,
+            )
+            val response = api.resetPassword(request)
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                val message = parseErrorMessage(response.errorBody()?.string())
+                    ?: "Password reset failed (${response.code()})"
                 Result.failure(Exception(message))
             }
         } catch (e: Exception) {

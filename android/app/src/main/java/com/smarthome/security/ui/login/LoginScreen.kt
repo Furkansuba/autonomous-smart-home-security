@@ -50,7 +50,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.R
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
+fun LoginScreen(
+    viewModel: LoginViewModel,
+    onLoginSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -192,6 +197,10 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
 
         TextButton(onClick = onNavigateToRegister) {
             Text("Create account")
+        }
+
+        TextButton(onClick = onNavigateToForgotPassword) {
+            Text("Forgot password?")
         }
     }
 }

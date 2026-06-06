@@ -41,6 +41,9 @@ import com.smarthome.security.ui.devices.DevicesViewModelFactory
 import com.smarthome.security.ui.events.EventsScreen
 import com.smarthome.security.ui.events.EventsViewModel
 import com.smarthome.security.ui.events.EventsViewModelFactory
+import com.smarthome.security.ui.forgotpassword.ForgotPasswordScreen
+import com.smarthome.security.ui.forgotpassword.ForgotPasswordViewModel
+import com.smarthome.security.ui.forgotpassword.ForgotPasswordViewModelFactory
 import com.smarthome.security.ui.login.LoginScreen
 import com.smarthome.security.ui.login.LoginViewModel
 import com.smarthome.security.ui.login.LoginViewModelFactory
@@ -61,6 +64,7 @@ import com.smarthome.security.ui.users.UsersViewModelFactory
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val FORGOT_PASSWORD = "forgot_password"
     const val DASHBOARD = "dashboard"
     const val DEVICES = "devices"
     const val EVENTS = "events"
@@ -158,6 +162,22 @@ fun NavGraph() {
                     },
                     onNavigateToRegister = {
                         navController.navigate(Routes.REGISTER)
+                    },
+                    onNavigateToForgotPassword = {
+                        navController.navigate(Routes.FORGOT_PASSWORD)
+                    },
+                )
+            }
+            composable(Routes.FORGOT_PASSWORD) {
+                val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel(
+                    factory = ForgotPasswordViewModelFactory(authRepository),
+                )
+                ForgotPasswordScreen(
+                    viewModel = forgotPasswordViewModel,
+                    onNavigateToLogin = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
                     },
                 )
             }

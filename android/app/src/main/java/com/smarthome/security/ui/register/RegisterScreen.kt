@@ -17,6 +17,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -39,6 +44,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.R
 
+private val SECURITY_QUESTION_OPTIONS = listOf(
+    "What is the name of your first pet?",
+    "What city were you born in?",
+    "What was the name of your first school?",
+    "What was the name of the street you grew up on?",
+    "What is your mother's maiden name?",
+    "What was the make and model of your first car?",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel,
@@ -49,9 +64,12 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var securityQuestion by remember { mutableStateOf("") }
+    var securityAnswer by remember { mutableStateOf("") }
     var adminKey by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var questionDropdownExpanded by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
@@ -162,6 +180,61 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = questionDropdownExpanded,
+                    onExpandedChange = { questionDropdownExpanded = it },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    OutlinedTextField(
+                        value = if (securityQuestion.isEmpty()) "" else securityQuestion,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Security Question") },
+                        placeholder = { Text("Select a security question…", fontSize = 13.sp) },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = questionDropdownExpanded)
+                        },
+                        isError = uiState.securityQuestionError != null,
+                        supportingText = {
+                            Text(uiState.securityQuestionError ?: "Select a question you can answer from memory.")
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth(),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = questionDropdownExpanded,
+                        onDismissRequest = { questionDropdownExpanded = false },
+                    ) {
+                        SECURITY_QUESTION_OPTIONS.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option, fontSize = 13.sp) },
+                                onClick = {
+                                    securityQuestion = option
+                                    questionDropdownExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = securityAnswer,
+                    onValueChange = { securityAnswer = it },
+                    label = { Text("Security Answer") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    isError = uiState.securityAnswerError != null,
+                    supportingText = {
+                        Text(uiState.securityAnswerError ?: "Used to recover your account if you forget your password.")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 OutlinedTextField(
                     value = adminKey,
                     onValueChange = { adminKey = it },
@@ -202,12 +275,16 @@ fun RegisterScreen(
                     password = password,
                     confirmPassword = confirmPassword,
                     adminKey = adminKey.trim(),
+                    securityQuestion = securityQuestion,
+                    securityAnswer = securityAnswer,
                     onSuccess = onRegisterSuccess,
                 )
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = fullName.isNotBlank() && email.isNotBlank() &&
-                password.isNotBlank() && confirmPassword.isNotBlank() && !uiState.isLoading,
+                password.isNotBlank() && confirmPassword.isNotBlank() &&
+                securityQuestion.isNotBlank() && securityAnswer.isNotBlank() &&
+                !uiState.isLoading,
             contentPadding = PaddingValues(vertical = 14.dp),
         ) {
             if (uiState.isLoading) {

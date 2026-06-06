@@ -16,6 +16,8 @@ data class RegisterUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val confirmPasswordError: String? = null,
+    val securityQuestionError: String? = null,
+    val securityAnswerError: String? = null,
 )
 
 class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
@@ -28,6 +30,8 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
         password: String,
         confirmPassword: String,
         adminKey: String,
+        securityQuestion: String,
+        securityAnswer: String,
         onSuccess: () -> Unit,
     ) {
         val trimmedName = fullName.trim()
@@ -55,20 +59,33 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
             confirmPassword != password -> "Passwords do not match."
             else -> null
         }
+        val securityQuestionError = if (securityQuestion.isBlank()) "Please select a security question." else null
+        val securityAnswerError = if (securityAnswer.isBlank()) "Please enter a security answer." else null
 
-        if (fullNameError != null || emailError != null || passwordError != null || confirmPasswordError != null) {
+        if (fullNameError != null || emailError != null || passwordError != null ||
+            confirmPasswordError != null || securityQuestionError != null || securityAnswerError != null
+        ) {
             _uiState.value = RegisterUiState(
                 fullNameError = fullNameError,
                 emailError = emailError,
                 passwordError = passwordError,
                 confirmPasswordError = confirmPasswordError,
+                securityQuestionError = securityQuestionError,
+                securityAnswerError = securityAnswerError,
             )
             return
         }
 
         _uiState.value = RegisterUiState(isLoading = true)
         viewModelScope.launch {
-            val result = repository.register(trimmedName, trimmedEmail, password, adminKey)
+            val result = repository.register(
+                fullName = trimmedName,
+                email = trimmedEmail,
+                password = password,
+                adminKey = adminKey,
+                securityQuestion = securityQuestion,
+                securityAnswer = securityAnswer.trim(),
+            )
             result.fold(
                 onSuccess = {
                     _uiState.value = RegisterUiState()
