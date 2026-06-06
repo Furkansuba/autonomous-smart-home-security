@@ -18,20 +18,23 @@ sealed class OverridesUiState {
     object SessionExpired : OverridesUiState()
 }
 
-sealed class SilenceAlarmState {
-    object Idle : SilenceAlarmState()
-    object Sending : SilenceAlarmState()
-    object Success : SilenceAlarmState()
-    data class Error(val message: String) : SilenceAlarmState()
-    object SessionExpired : SilenceAlarmState()
+sealed class OverrideActionState {
+    object Idle : OverrideActionState()
+    object Sending : OverrideActionState()
+    object Success : OverrideActionState()
+    data class Error(val message: String) : OverrideActionState()
+    object SessionExpired : OverrideActionState()
 }
 
 class OverridesViewModel(private val repository: OverridesRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<OverridesUiState>(OverridesUiState.Loading)
     val uiState: StateFlow<OverridesUiState> = _uiState.asStateFlow()
 
-    private val _silenceState = MutableStateFlow<SilenceAlarmState>(SilenceAlarmState.Idle)
-    val silenceState: StateFlow<SilenceAlarmState> = _silenceState.asStateFlow()
+    private val _overrideActionState = MutableStateFlow<OverrideActionState>(OverrideActionState.Idle)
+    val overrideActionState: StateFlow<OverrideActionState> = _overrideActionState.asStateFlow()
+
+    private val _activeAction = MutableStateFlow<String?>(null)
+    val activeAction: StateFlow<String?> = _activeAction.asStateFlow()
 
     init {
         loadOverrides()
@@ -53,28 +56,28 @@ class OverridesViewModel(private val repository: OverridesRepository) : ViewMode
         }
     }
 
-    fun silenceAlarm(adminEmail: String) {
-        if (_silenceState.value is SilenceAlarmState.Sending) return
-        _silenceState.value = SilenceAlarmState.Sending
+    fun sendSafeAction(action: String, actuatorId: String, adminEmail: String) {
+        if (_overrideActionState.value is OverrideActionState.Sending) return
+        _overrideActionState.value = OverrideActionState.Sending
+        _activeAction.value = action
         viewModelScope.launch {
-            val result = repository.silenceAlarm(adminEmail)
-            _silenceState.value = result.fold(
-                onSuccess = { SilenceAlarmState.Success },
+            val result = repository.sendSafeAction(action, actuatorId, adminEmail)
+            _overrideActionState.value = result.fold(
+                onSuccess = { OverrideActionState.Success },
                 onFailure = { error ->
                     if (error is SessionExpiredException)
-                        SilenceAlarmState.SessionExpired
+                        OverrideActionState.SessionExpired
                     else
-                        SilenceAlarmState.Error(error.message ?: "Unknown error.")
+                        OverrideActionState.Error(error.message ?: "Unknown error.")
                 },
             )
-            if (result.isSuccess) {
-                loadOverrides()
-            }
+            _activeAction.value = null
+            if (result.isSuccess) loadOverrides()
         }
     }
 
-    fun resetSilenceState() {
-        _silenceState.value = SilenceAlarmState.Idle
+    fun resetOverrideActionState() {
+        _overrideActionState.value = OverrideActionState.Idle
     }
 }
 

@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.HistoryToggleOff
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -75,44 +74,45 @@ fun OverridesScreen(
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val silenceState by viewModel.silenceState.collectAsStateWithLifecycle()
+    val overrideActionState by viewModel.overrideActionState.collectAsStateWithLifecycle()
+    val activeAction by viewModel.activeAction.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showConfirmDialog by remember { mutableStateOf(false) }
+    var pendingConfirm by remember { mutableStateOf<Triple<String, String, String>?>(null) }
 
-    LaunchedEffect(silenceState) {
-        when (val s = silenceState) {
-            is SilenceAlarmState.Success -> {
-                snackbarHostState.showSnackbar("Silence command sent.")
-                viewModel.resetSilenceState()
+    LaunchedEffect(overrideActionState) {
+        when (val s = overrideActionState) {
+            is OverrideActionState.Success -> {
+                snackbarHostState.showSnackbar("Command sent.")
+                viewModel.resetOverrideActionState()
             }
-            is SilenceAlarmState.Error -> {
+            is OverrideActionState.Error -> {
                 snackbarHostState.showSnackbar(s.message)
-                viewModel.resetSilenceState()
+                viewModel.resetOverrideActionState()
             }
-            is SilenceAlarmState.SessionExpired -> onSessionExpired()
+            is OverrideActionState.SessionExpired -> onSessionExpired()
             else -> Unit
         }
     }
 
-    if (showConfirmDialog) {
+    pendingConfirm?.let { (action, actuatorId, label) ->
         AlertDialog(
-            onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Silence Alarm") },
+            onDismissRequest = { pendingConfirm = null },
+            title = { Text(label) },
             text = {
-                Text("Send a buzzer_off command to esp32_home_01. This action will be logged in override history.")
+                Text("Send $action to esp32_home_01. This action will be logged in override history. Active hazards are not resolved by this command.")
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showConfirmDialog = false
-                        viewModel.silenceAlarm(adminEmail)
+                        pendingConfirm = null
+                        viewModel.sendSafeAction(action, actuatorId, adminEmail)
                     },
                 ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showConfirmDialog = false }) {
+                TextButton(onClick = { pendingConfirm = null }) {
                     Text("Cancel")
                 }
             },
@@ -194,10 +194,13 @@ fun OverridesScreen(
                 is OverridesUiState.Success -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         if (userRole == "admin") {
-                            SilenceAlarmActionCard(
-                                silenceState = silenceState,
+                            AdminActionsCard(
+                                overrideActionState = overrideActionState,
+                                activeAction = activeAction,
                                 adminEmail = adminEmail,
-                                onSilenceClick = { showConfirmDialog = true },
+                                onActionClick = { action, actuatorId, label ->
+                                    pendingConfirm = Triple(action, actuatorId, label)
+                                },
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
                                     .padding(top = 8.dp),
@@ -225,14 +228,24 @@ fun OverridesScreen(
     }
 }
 
+private data class SafeActionDef(val action: String, val actuatorId: String, val label: String)
+
+private val SAFE_ACTIONS = listOf(
+    SafeActionDef("buzzer_off",  "buzzer_01", "Silence Alarm"),
+    SafeActionDef("buzzer_on",   "buzzer_01", "Test Buzzer"),
+    SafeActionDef("pump_off",    "pump_01",   "Stop Pump"),
+    SafeActionDef("valve_close", "valve_01",  "Close Valve"),
+)
+
 @Composable
-private fun SilenceAlarmActionCard(
-    silenceState: SilenceAlarmState,
+private fun AdminActionsCard(
+    overrideActionState: OverrideActionState,
+    activeAction: String?,
     adminEmail: String,
-    onSilenceClick: () -> Unit,
+    onActionClick: (action: String, actuatorId: String, label: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isSending = silenceState is SilenceAlarmState.Sending
+    val isSending = overrideActionState is OverrideActionState.Sending
     val emailMissing = adminEmail.isBlank()
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -246,40 +259,54 @@ private fun SilenceAlarmActionCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "Admin Action",
+                text = "Admin Actions",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
-                onClick = onSilenceClick,
-                enabled = !isSending && !emailMissing,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                ),
-                shape = RoundedCornerShape(10.dp),
-            ) {
-                if (isSending) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onError,
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sending...")
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.NotificationsOff,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Silence Alarm / Buzzer Off",
-                        fontWeight = FontWeight.SemiBold,
-                    )
+            listOf(SAFE_ACTIONS.take(2), SAFE_ACTIONS.drop(2)).forEach { rowActions ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowActions.forEach { def ->
+                        val isThisLoading = isSending && activeAction == def.action
+                        val isAlarmAction = def.action.startsWith("buzzer")
+                        Button(
+                            onClick = { onActionClick(def.action, def.actuatorId, def.label) },
+                            enabled = !isSending && !emailMissing,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isAlarmAction)
+                                    MaterialTheme.colorScheme.error
+                                else
+                                    MaterialTheme.colorScheme.secondary,
+                                contentColor = if (isAlarmAction)
+                                    MaterialTheme.colorScheme.onError
+                                else
+                                    MaterialTheme.colorScheme.onSecondary,
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                        ) {
+                            if (isThisLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    color = if (isAlarmAction)
+                                        MaterialTheme.colorScheme.onError
+                                    else
+                                        MaterialTheme.colorScheme.onSecondary,
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Text(
+                                    text = def.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
                 }
             }
             if (emailMissing) {

@@ -28,15 +28,18 @@ class OverridesRepository(
         }
     }
 
-    suspend fun silenceAlarm(adminEmail: String): Result<Unit> {
+    suspend fun silenceAlarm(adminEmail: String): Result<Unit> =
+        sendSafeAction("buzzer_off", "buzzer_01", adminEmail)
+
+    suspend fun sendSafeAction(action: String, actuatorId: String, adminEmail: String): Result<Unit> {
         val token = sessionManager.getToken()
             ?: return Result.failure(Exception("Session not found. Please log in again."))
         val body = CreateOverrideRequest(
             deviceId = "esp32_home_01",
             requestedBy = adminEmail,
-            actuatorId = "buzzer_01",
-            action = "buzzer_off",
-            reason = "Admin silenced alarm",
+            actuatorId = actuatorId,
+            action = action,
+            reason = "Admin override: $action",
         )
         return try {
             val response = api.createOverride("Bearer $token", body)

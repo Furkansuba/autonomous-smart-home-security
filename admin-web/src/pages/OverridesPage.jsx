@@ -8,17 +8,12 @@ import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
 
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
-const OVERRIDE_ACTIONS_LIST = [
-  'pump_on', 'pump_off',
-  'valve_open', 'valve_close',
-  'buzzer_on', 'buzzer_off',
-  'door_unlock', 'system_reset',
-]
 
 const QUICK_ACTIONS = [
-  { label: 'Buzzer Off',  actuator: 'buzzer_01', action: 'buzzer_off'  },
-  { label: 'Buzzer On',   actuator: 'buzzer_01', action: 'buzzer_on'   },
-  { label: 'Door Unlock', actuator: 'door_01',   action: 'door_unlock' },
+  { label: 'Silence Alarm', actuator: 'buzzer_01', action: 'buzzer_off'  },
+  { label: 'Test Buzzer',   actuator: 'buzzer_01', action: 'buzzer_on'   },
+  { label: 'Stop Pump',     actuator: 'pump_01',   action: 'pump_off'    },
+  { label: 'Close Valve',   actuator: 'valve_01',  action: 'valve_close' },
 ]
 
 function OverridesPage() {
@@ -175,7 +170,7 @@ function OverridesPage() {
 
           <div className="cmd-quick-section">
             <span className="cmd-section-label">Quick Actions</span>
-            <p className="cmd-quick-hint">Select a preset to populate the command form.</p>
+            <p className="cmd-quick-hint">Select a preset to populate the command form. Safe actions auto-complete in demo mode. Hazard events are not cleared by overrides.</p>
             <div className="cmd-quick-grid">
               {QUICK_ACTIONS.map((qa) => (
                 <button
@@ -231,9 +226,18 @@ function OverridesPage() {
                     onChange={(e) => setFormAction(e.target.value)}
                     disabled={submitting}
                   >
-                    {OVERRIDE_ACTIONS_LIST.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
+                    <optgroup label="Safe — auto-acked in demo">
+                      <option value="buzzer_off">buzzer_off</option>
+                      <option value="buzzer_on">buzzer_on</option>
+                      <option value="pump_off">pump_off</option>
+                      <option value="valve_close">valve_close</option>
+                    </optgroup>
+                    <optgroup label="Advanced — requires device confirmation">
+                      <option value="pump_on">pump_on</option>
+                      <option value="valve_open">valve_open</option>
+                      <option value="door_unlock">door_unlock</option>
+                      <option value="system_reset">system_reset</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div className="cmd-form-field">
