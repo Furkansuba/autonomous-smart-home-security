@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import * as authService from '../services/authService.js'
 
+const SECURITY_QUESTION_OPTIONS = [
+  'What is the name of your first pet?',
+  'What city were you born in?',
+  'What was the name of your first school?',
+  'What was the name of the street you grew up on?',
+  "What is your mother's maiden name?",
+  'What was the make and model of your first car?',
+]
+
 function mapError(msg) {
   if (
     !msg ||
@@ -11,7 +20,7 @@ function mapError(msg) {
   return msg
 }
 
-function validate(fullName, email, password, confirmPassword) {
+function validate(fullName, email, password, confirmPassword, securityQuestion, securityAnswer) {
   const errs = {}
   const name = fullName.trim()
 
@@ -38,23 +47,33 @@ function validate(fullName, email, password, confirmPassword) {
     errs.confirmPassword = 'Passwords do not match.'
   }
 
+  if (!securityQuestion) {
+    errs.securityQuestion = 'Please select a security question.'
+  }
+
+  if (!securityAnswer.trim()) {
+    errs.securityAnswer = 'Please enter a security answer.'
+  }
+
   return errs
 }
 
 export default function RegisterPage({ onRegisterSuccess, onBackToLogin }) {
-  const [fullName,        setFullName]        = useState('')
-  const [email,           setEmail]           = useState('')
-  const [password,        setPassword]        = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [adminKey,        setAdminKey]        = useState('')
-  const [loading,         setLoading]         = useState(false)
-  const [error,           setError]           = useState('')
-  const [fieldErrors,     setFieldErrors]     = useState({})
+  const [fullName,         setFullName]         = useState('')
+  const [email,            setEmail]            = useState('')
+  const [password,         setPassword]         = useState('')
+  const [confirmPassword,  setConfirmPassword]  = useState('')
+  const [securityQuestion, setSecurityQuestion] = useState('')
+  const [securityAnswer,   setSecurityAnswer]   = useState('')
+  const [adminKey,         setAdminKey]         = useState('')
+  const [loading,          setLoading]          = useState(false)
+  const [error,            setError]            = useState('')
+  const [fieldErrors,      setFieldErrors]      = useState({})
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    const errs = validate(fullName, email, password, confirmPassword)
+    const errs = validate(fullName, email, password, confirmPassword, securityQuestion, securityAnswer)
     setFieldErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -65,6 +84,8 @@ export default function RegisterPage({ onRegisterSuccess, onBackToLogin }) {
         email.trim(),
         password,
         adminKey.trim() || undefined,
+        securityQuestion,
+        securityAnswer.trim(),
       )
       onRegisterSuccess()
     } catch (err) {
@@ -156,6 +177,42 @@ export default function RegisterPage({ onRegisterSuccess, onBackToLogin }) {
             />
             {fieldErrors.confirmPassword && (
               <span className="form-field-error">{fieldErrors.confirmPassword}</span>
+            )}
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="reg-security-question">Security Question</label>
+            <select
+              id="reg-security-question"
+              value={securityQuestion}
+              onChange={(e) => setSecurityQuestion(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Select a security question…</option>
+              {SECURITY_QUESTION_OPTIONS.map((q) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+            {fieldErrors.securityQuestion && (
+              <span className="form-field-error">{fieldErrors.securityQuestion}</span>
+            )}
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="reg-security-answer">Security Answer</label>
+            <input
+              id="reg-security-answer"
+              type="text"
+              placeholder="Your answer"
+              value={securityAnswer}
+              onChange={(e) => setSecurityAnswer(e.target.value)}
+              disabled={loading}
+              autoComplete="off"
+            />
+            {fieldErrors.securityAnswer ? (
+              <span className="form-field-error">{fieldErrors.securityAnswer}</span>
+            ) : (
+              <span className="form-field-helper">Used to recover your account if you forget your password.</span>
             )}
           </div>
 

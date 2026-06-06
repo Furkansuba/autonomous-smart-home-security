@@ -42,9 +42,13 @@ export function isAuthenticated() {
   return Boolean(getStoredToken())
 }
 
-export async function register(fullName, email, password, adminKey) {
+export async function register(fullName, email, password, adminKey, securityQuestion, securityAnswer) {
   const body = { full_name: fullName, email, password }
-  if (adminKey) body.admin_key = adminKey   // omit key entirely when empty
+  if (adminKey) body.admin_key = adminKey
+  if (securityQuestion && securityAnswer) {
+    body.security_question = securityQuestion
+    body.security_answer   = securityAnswer
+  }
 
   const data = await apiRequest('/api/auth/register', {
     method: 'POST',
@@ -55,4 +59,23 @@ export async function register(fullName, email, password, adminKey) {
   if (data.user)  localStorage.setItem(USER_KEY, JSON.stringify(data.user))
 
   return data
+}
+
+export async function getRecoveryQuestion(email) {
+  return apiRequest('/api/auth/recovery/question', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function resetPassword(email, securityAnswer, newPassword) {
+  return apiRequest('/api/auth/recovery/reset', {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      security_answer: securityAnswer,
+      new_password:    newPassword,
+    }),
+  })
+  // intentionally no token storage — caller must sign in again
 }

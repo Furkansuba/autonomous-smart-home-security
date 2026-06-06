@@ -414,6 +414,70 @@
   color: #e2e8f0;
 }
 
+.auth-nav-sep {
+  color: #4b5563;
+  font-size: 13px;
+}
+
+/* ── Form select (matches input styling) ────────────────── */
+.form-field select {
+  background: #0f1117;
+  border: 1px solid #2d3244;
+  border-radius: 6px;
+  padding: 10px 12px;
+  padding-right: 36px;
+  font-size: 14px;
+  color: #e2e8f0;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.form-field select:focus {
+  border-color: #4a5568;
+}
+
+.form-field select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-field select option {
+  background: #1a1d27;
+  color: #e2e8f0;
+}
+
+/* ── Recovery-specific styles ───────────────────────────── */
+.recovery-question-display {
+  background: #0f1117;
+  border: 1px solid #2d3244;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.recovery-success {
+  margin: 8px 0 4px;
+}
+
+.recovery-success-msg {
+  margin: 0;
+  font-size: 14px;
+  color: #68d391;
+  background: #1a2d1a;
+  border: 1px solid #276749;
+  border-radius: 6px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
 /* ── Dashboard KPI grid ───────────────────────────────── */
 .dashboard-page {
   display: flex;

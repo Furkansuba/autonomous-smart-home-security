@@ -14,6 +14,7 @@ import ProfilePage from './pages/ProfilePage.jsx'
 import NotificationLogsPage from './pages/NotificationLogsPage.jsx'
 import UsersPage from './pages/UsersPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 
 const ADMIN_ONLY_PAGES = new Set(['overrides', 'notification-logs', 'users'])
 
@@ -87,10 +88,18 @@ function App() {
         />
       )
     }
+    if (authView === 'forgot-password') {
+      return (
+        <ForgotPasswordPage
+          onBackToLogin={() => setAuthView('login')}
+        />
+      )
+    }
     return (
       <LoginPage
         onLoginSuccess={handleLoginSuccess}
         onCreateAccount={() => setAuthView('register')}
+        onForgotPassword={() => setAuthView('forgot-password')}
       />
     )
   }
