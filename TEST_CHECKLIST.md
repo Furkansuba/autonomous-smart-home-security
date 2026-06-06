@@ -21,9 +21,10 @@ Run from the `backend/` directory.
 npm run test:backend
 ```
 
-- [ ] All backend regression checks pass
+- [x] All backend regression checks pass
   - Expected final output: `All backend regression checks passed.`
   - Covers: config, contracts, request validation, error handling, auth, RBAC, MQTT router, ingestion, persistence, all REST controllers, dashboard, MQTT E2E
+  - **Verified:** 26/26 checks pass, including 5 new override auto-ack test cases (disabled stays requested, enabled becomes executed, hazard-active alarm silence, excluded action stays requested, already-resolved no-op).
 
 ---
 
@@ -32,23 +33,24 @@ npm run test:backend
 **Setup:** Backend running, `seed:demo-admin` and `seed:demo-resident` executed.
 
 ### Login — valid credentials
-- [ ] `POST /api/auth/login` with `admin@smarthome.local` / `Admin123!` returns `authenticated: true` and a JWT token
-- [ ] `POST /api/auth/login` with `resident@smarthome.local` / `Resident123!` returns `authenticated: true` and a JWT token
+- [x] `POST /api/auth/login` with `admin@smarthome.local` / `Admin123!` returns `authenticated: true` and a JWT token
+- [x] `POST /api/auth/login` with `resident@smarthome.local` / `Resident123!` returns `authenticated: true` and a JWT token
 
 ### Login — invalid credentials
-- [ ] `POST /api/auth/login` with wrong password returns 401 and `authenticated: false`
+- [x] `POST /api/auth/login` with wrong password returns 401 and `authenticated: false`
 
 ### JWT verification
-- [ ] `GET /api/auth/me` with valid admin token returns `role: admin`
-- [ ] `GET /api/auth/me` with valid resident token returns `role: resident`
-- [ ] `GET /api/auth/me` with no token returns 401
+- [x] `GET /api/auth/me` with valid admin token returns `role: admin`
+- [x] `GET /api/auth/me` with valid resident token returns `role: resident`
+- [x] `GET /api/auth/me` with no token returns 401
 
 ### RBAC — admin-only write routes
-- [ ] `POST /api/overrides` with **no token** returns `"Missing bearer token."`
-- [ ] `POST /api/overrides` with **resident token** returns 403
-- [ ] `POST /api/overrides` with **admin token** returns `created: true`
-- [ ] `POST /api/devices/refresh-status` with **no token** returns 401
-- [ ] `POST /api/devices/refresh-status` with **admin token** succeeds
+- [x] `POST /api/overrides` with **no token** returns `"Missing bearer token."` (401)
+- [x] `POST /api/overrides` with **resident token** returns 403
+- [x] `POST /api/overrides` with **admin token** returns `created: true`
+- [x] `POST /api/devices/refresh-status` with **no token** returns 401
+- [x] `POST /api/devices/refresh-status` with **admin token** succeeds
+- **Verified:** All 13 live RBAC API test cases passed on EC2. Open-read endpoints (GET /api/events, GET /api/devices, GET /api/overrides) are intentional design — no auth required to read.
 
 ---
 
@@ -60,18 +62,19 @@ npm run test:backend
 
 ### Live enforcement (backend code)
 
-- [ ] `POST /api/overrides` with `action: pump_on` while a `gas_detected` or `co_detected` event is active returns `201` with `created: true` and `blocked: true`
-- [ ] Response `override.status` is `"blocked"`
-- [ ] Response `override.blocked_reason` is non-empty and describes the gas/CO lockout
-- [ ] Response `mqtt_publish.published` is `false` — no MQTT command is sent to the device
-- [ ] `npm run test:override-api` passes including the gas/CO lockout test case
+- [x] `POST /api/overrides` with `action: pump_on` while a `gas_detected` or `co_detected` event is active returns `201` with `created: true` and `blocked: true`
+- [x] Response `override.status` is `"blocked"`
+- [x] Response `override.blocked_reason` is non-empty and describes the gas/CO lockout
+- [x] Response `mqtt_publish.published` is `false` — no MQTT command is sent to the device
+- [x] `npm run test:override-api` passes including the gas/CO lockout test case
+- **Verified on EC2:** override_id `ovr_1780705860816_18025`, status=blocked, mqtt_publish.published=false.
 
 ### Seeded demo records (UI verification)
 
-- [ ] `GET /api/overrides` includes the seeded record with `action: pump_on` and `status: blocked`
-- [ ] The blocked override record is visible in the Android Overrides screen
-- [ ] The blocked override record is visible in the admin-web Overrides page
-- [ ] The `blocked_reason` field of the seeded override correctly describes the gas/CO lockout
+- [x] `GET /api/overrides` includes the seeded record with `action: pump_on` and `status: blocked`
+- [x] The blocked override record is visible in the Android Overrides screen
+- [x] The blocked override record is visible in the admin-web Overrides page
+- [x] The `blocked_reason` field of the seeded override correctly describes the gas/CO lockout
 
 ---
 
@@ -79,10 +82,12 @@ npm run test:backend
 
 **Context:** `fire_detected` events must be stored with `severity: critical`. Automatic pump and valve activation is firmware/hardware scope; the software pipeline stores and surfaces the event.
 
-- [ ] `GET /api/events` includes a `fire_detected` event with `severity: critical`
-- [ ] Fire event has correct `room_id` (`kitchen`) and `device_id` fields
-- [ ] Fire event is visible in the Android Alerts tab with critical color coding
-- [ ] Fire event is visible in the admin-web Events page with the critical severity badge
+- [x] `GET /api/events` includes a `fire_detected` event with `severity: critical`
+- [x] Fire event has correct `room_id` (`kitchen`) and `device_id` fields
+- [x] Fire event is visible in the Android Alerts tab with critical color coding
+- [x] Fire event is visible in the admin-web Events page with the critical severity badge
+
+**Verification scope:** `fire_detected` event verified via mock MQTT (`POST /api/mock/mqtt`) and seeded data. Real flame sensor trigger, physical pump activation, and physical valve actuator response NOT tested — requires ESP32 firmware (MCH scope).
 
 ---
 
@@ -90,44 +95,48 @@ npm run test:backend
 
 **Setup:** `seed:demo` executed. Three devices are seeded with different `last_heartbeat_at` values to produce online / degraded / offline states.
 
-- [ ] `GET /api/devices` shows `esp32_demo_home_01` with `status: online`
-- [ ] `GET /api/devices` shows `esp32_demo_garage_01` with `status: degraded`
-- [ ] `GET /api/devices` shows `esp32_demo_entry_01` with `status: offline`
-- [ ] `POST /api/devices/refresh-status` (admin token) recalculates statuses without error
-- [ ] Android Devices tab shows all three status badges correctly
-- [ ] Admin-web Devices page shows all three status badges correctly
+- [x] `GET /api/devices` shows `esp32_demo_home_01` with `status: online`
+- [x] `GET /api/devices` shows `esp32_demo_garage_01` with `status: degraded`
+- [x] `GET /api/devices` shows `esp32_demo_entry_01` with `status: offline`
+- [x] `POST /api/devices/refresh-status` (admin token) recalculates statuses without error
+- [x] Android Devices tab shows all three status badges correctly
+- [x] Admin-web Devices page shows all three status badges correctly
+
+**Verification scope:** Status badges verified from seeded `last_heartbeat_at` timestamps in the Device collection. Backend offline monitor (`degraded→offline` transition) verified via controlled EC2 test — see §14.5. Real ESP32 heartbeat hardware (live MQTT heartbeat messages from device) NOT tested.
 
 ---
 
 ## 6. Event Pipeline
 
-**All events verified via `GET /api/events` or UI display.**
+**All events below are present via seeded data or mock MQTT events (`POST /api/mock/mqtt`). Real hardware sensors (PIR, flame detector, gas sensor, reed switch) NOT tested — requires ESP32 firmware (MCH scope).**
 
 ### Safety events (must be critical)
-- [ ] `fire_detected` event present — `severity: critical`
-- [ ] `gas_detected` event present — `severity: critical`
-- [ ] `intrusion_detected` event present — `severity: critical`
+- [x] `fire_detected` event present — `severity: critical`
+- [x] `gas_detected` event present — `severity: critical`
+- [x] `intrusion_detected` event present — `severity: critical`
 
 ### Security events
-- [ ] `motion_detected` (garage) present — `severity: warning`
-- [ ] `motion_detected` (entry area) present — `severity: info`
+- [x] `motion_detected` (garage) present — `severity: warning`
+- [x] `motion_detected` (entry area) present — `severity: info`
 
 ### Data integrity
-- [ ] Every event has a non-empty `event_id`, `device_id`, `room_id`, `occurred_at`
-- [ ] No fire or gas event has a severity other than `critical`
-- [ ] All events appear in the Android Alerts tab
-- [ ] All events appear in the admin-web Events page
+- [x] Every event has a non-empty `event_id`, `device_id`, `room_id`, `occurred_at`
+- [x] No fire or gas event has a severity other than `critical`
+- [x] All events appear in the Android Alerts tab
+- [x] All events appear in the admin-web Events page
 
 ---
 
 ## 7. NFC Access Logs
 
-- [ ] `GET /api/access-logs` returns seeded NFC access records
-- [ ] At least one record with `result: granted` is present
-- [ ] At least one record with `result: denied` is present
-- [ ] Admin-web Access Logs page loads all records
-- [ ] Outcome filter (All / granted / denied) correctly re-fetches
-- [ ] Denial rate card shows a non-zero value and color-codes correctly
+**Note:** All records below are seeded data. Real RC522 NFC card scan and physical door unlock NOT tested — live NFC integration requires ESP32 firmware (MCH scope). Page load, outcome filtering, and denial rate card verified against seeded records only.
+
+- [x] `GET /api/access-logs` returns seeded NFC access records
+- [x] At least one record with `result: granted` is present
+- [x] At least one record with `result: denied` is present
+- [x] Admin-web Access Logs page loads all records
+- [x] Outcome filter (All / granted / denied) correctly re-fetches
+- [x] Denial rate card shows a non-zero value and color-codes correctly
 
 ---
 
@@ -136,124 +145,138 @@ npm run test:backend
 **Admin token required for write operations.**
 
 ### Data verification
-- [ ] `GET /api/overrides` returns four seeded records
-- [ ] Status distribution: one `requested`, one `executed`, one `failed`, one `blocked`
-- [ ] All four records are visible in the admin-web Overrides page
-- [ ] All four records are visible in the Android Overrides screen
+- [x] `GET /api/overrides` returns four seeded records
+- [x] Status distribution: one `requested`, one `executed`, one `failed`, one `blocked`
+- [x] All four records are visible in the admin-web Overrides page
+- [x] All four records are visible in the Android Overrides screen
 
 ### Admin-web override submission
-- [ ] Issue Command Override form is visible when logged in as admin
-- [ ] Quick Action preset "Buzzer Off" populates the form fields
-- [ ] Submitting the form creates a new override record
-- [ ] Newly submitted record appears in the history table after submission
+- [x] Issue Command Override form is visible when logged in as admin
+- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump, Close Valve) populate the form fields
+- [x] Action dropdown groups Safe and Advanced actions with clear optgroup labels
+- [x] Submitting each safe quick action creates a new override record
+- [x] Records appear with `status: executed` after ~500 ms (OVERRIDE_DEMO_AUTO_ACK=true on EC2)
+- [x] Door Unlock is in the Advanced dropdown only — stays `requested` without real ESP32
 
-### Android Silence Alarm
-- [ ] Silence Alarm card is visible on the Overrides screen when logged in as admin
-- [ ] Tapping Silence Alarm shows a confirmation dialog
-- [ ] Confirming sends a `buzzer_off` command to `esp32_home_01`
-- [ ] New override record appears in the history list
+### Android Safe Override Actions
+- [x] Admin Actions card is visible on the Overrides screen when logged in as admin (2×2 grid)
+- [x] Each button shows a confirmation dialog with action name and hazard-not-resolved notice
+- [x] All four safe actions (buzzer_off, buzzer_on, pump_off, valve_close) submitted and executed
+- [x] New override records appear in history with `status: executed`
+- [x] Hazard events (fire/gas/CO/intrusion) remained visible after alarm silence — not cleared
+
+### Override auto-ack verification (EC2)
+- [x] `OVERRIDE_DEMO_AUTO_ACK=true`, `OVERRIDE_DEMO_AUTO_ACK_DELAY_MS=500` confirmed active (env count 16→18 at startup)
+- [x] `[AUTO_ACK] ... → executed (demo-simulated, no real hardware)` appears in PM2 logs
+- [x] `[AUTO_ACK] ... alarm silenced — SAFETY HAZARD STILL ACTIVE` logged when hazard is active
+- [x] No FCM notification triggered by override auto-ack
+- [x] Hazard events unchanged after auto-ack
 
 ---
 
 ## 9. Android App
 
 ### Login
-- [ ] Login with `admin@smarthome.local` / `Admin123!` succeeds and navigates to Dashboard
-- [ ] Login with `resident@smarthome.local` / `Resident123!` succeeds and navigates to Dashboard
-- [ ] Login with wrong credentials shows an inline error message
-- [ ] Login does not crash or hang
+- [x] Login with `admin@smarthome.local` / `Admin123!` succeeds and navigates to Dashboard
+- [x] Login with `resident@smarthome.local` / `Resident123!` succeeds and navigates to Dashboard
+- [x] Login with wrong credentials shows an inline error message
+- [x] Login does not crash or hang
 
 ### Biometric unlock (stored-session unlock)
-- [ ] After a password login, force-close the app and relaunch
-- [ ] Biometric prompt appears automatically (requires enrolled fingerprint on device)
-- [ ] Successful biometric scan navigates to Dashboard without re-entering password
-- [ ] Tapping "Use password" dismisses the prompt and shows the credential form
-- [ ] Biometric prompt does **not** appear on a fresh install (no stored session)
+- [x] After a password login, force-close the app and relaunch
+- [x] Biometric prompt appears automatically (requires enrolled fingerprint on device)
+- [x] Successful biometric scan navigates to Dashboard without re-entering password
+- [x] Tapping "Use password" dismisses the prompt and shows the credential form
+- [x] Biometric prompt does **not** appear on a fresh install (no stored session)
 
 ### Dashboard — admin account
-- [ ] Dashboard loads without error
-- [ ] Device summary cards are populated
-- [ ] Recent critical events section is populated
+- [x] Dashboard loads without error
+- [x] Device summary cards are populated
+- [x] Recent critical events section is populated
 
 ### Devices tab
-- [ ] Three seeded devices are listed
-- [ ] Status badges show online / degraded / offline
+- [x] Three seeded devices are listed
+- [x] Status badges show online / degraded / offline
 
 ### Alerts tab
-- [ ] Fire, gas, intrusion, and motion events are listed
-- [ ] Critical events have distinct color coding from warning/info
+- [x] Fire, gas, intrusion, and motion events are listed
+- [x] Critical events have distinct color coding from warning/info
 
 ### Sensors tab
-- [ ] Latest telemetry readings are shown per room
-- [ ] Temperature, humidity, gas raw, CO raw, motion, flame, reed state are present
+- [x] Latest telemetry readings are shown per room
+- [x] Temperature, humidity, gas raw, CO raw, motion, flame, reed state are present
 
 ### Override History — admin account
-- [ ] Overrides screen is accessible from the Dashboard
-- [ ] Four seeded overrides are visible
-- [ ] Silence Alarm card is rendered
-- [ ] Silence Alarm confirmation dialog functions correctly
-- [ ] `buzzer_off` command is submitted and new record appears
+- [x] Overrides screen is accessible from the Dashboard
+- [x] Four seeded overrides are visible
+- [x] Admin Actions card is rendered (four safe action buttons in 2×2 grid: Silence Alarm, Test Buzzer, Stop Pump, Close Valve)
+- [x] Confirmation dialog shows per-action text and hazard-not-resolved notice
+- [x] All four safe actions submitted and new records appear with `status: executed`
 
 ### RBAC — resident account
-- [ ] Log out and log in as `resident@smarthome.local`
-- [ ] Dashboard, Devices, Alerts, Sensors tabs are all accessible
-- [ ] Overrides screen is accessible
-- [ ] Override history is visible (read-only)
-- [ ] Silence Alarm card is **not rendered**
+- [x] Log out and log in as `resident@smarthome.local`
+- [x] Dashboard, Devices, Alerts, Sensors tabs are all accessible
+- [x] Overrides screen is accessible
+- [x] Override history is visible (read-only)
+- [x] Admin Actions card is **not rendered**
 
 ---
 
 ## 10. Admin Web
 
+**Note:** Admin-web verified at `http://localhost:5173` (local dev server) connecting to EC2 backend (`http://18.184.39.188:5000`). CORS configured on EC2 with `CORS_ORIGIN=http://localhost:5173`.
+
 ### Login
-- [ ] Login page loads at `http://localhost:5173`
-- [ ] Login with admin credentials succeeds
-- [ ] Invalid credentials show an inline error (no crash, no blank page)
-- [ ] Logout clears the session and returns to the login page
+- [x] Login page loads at `http://localhost:5173`
+- [x] Login with admin credentials succeeds
+- [x] Invalid credentials show an inline error (no crash, no blank page)
+- [x] Logout clears the session and returns to the login page
 
 ### Dashboard — admin account
-- [ ] Security status banner renders (Low / Elevated / High Risk)
-- [ ] KPI cards: Active Devices, Critical Events, Pending Overrides, Latest Telemetry
-- [ ] Latest Sensor Snapshot tiles render
-- [ ] Risk assessment panel renders
+- [x] Security status banner renders (Low / Elevated / High Risk)
+- [x] KPI cards: Active Devices, Critical Events, Pending Overrides, Latest Telemetry
+- [x] Latest Sensor Snapshot tiles render
+- [x] Risk assessment panel renders
 
 ### Devices page
-- [ ] Device table loads with three seeded devices
-- [ ] Status badges render correctly
-- [ ] Refresh Status button completes without error
+- [x] Device table loads with three seeded devices
+- [x] Status badges render correctly
+- [x] Refresh Status button completes without error
 
 ### Events page
-- [ ] Events table loads
-- [ ] Severity filter (All / info / warning / critical) re-fetches correctly
-- [ ] Top Incident panel populates with the highest-severity event
+- [x] Events table loads
+- [x] Severity filter (All / info / warning / critical) re-fetches correctly
+- [x] Top Incident panel populates with the highest-severity event
 
 ### Access Logs page
-- [ ] Access logs table loads
-- [ ] Outcome filter (All / granted / denied) works
-- [ ] Denial rate card is visible
+- [x] Access logs table loads
+- [x] Outcome filter (All / granted / denied) works
+- [x] Denial rate card is visible
 
 ### Telemetry page
-- [ ] Featured Latest Reading panel loads
-- [ ] Sensor tile grid renders
-- [ ] All Records table shows historical entries
+- [x] Featured Latest Reading panel loads
+- [x] Sensor tile grid renders
+- [x] All Records table shows historical entries
 
 ### Overrides page — admin account
-- [ ] Override history table loads
-- [ ] Status filter re-fetches correctly
-- [ ] Issue Command Override form is visible
-- [ ] Quick Action presets (Buzzer Off, Buzzer On, Door Unlock) populate the form
-- [ ] Submitting a command creates a new record
+- [x] Override history table loads
+- [x] Status filter re-fetches correctly
+- [x] Issue Command Override form is visible
+- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump, Close Valve) populate the form
+- [x] Action dropdown groups Safe and Advanced actions with clear optgroup labels
+- [x] All four safe quick action presets executed successfully (auto-acked to `executed` on EC2)
+- [x] Door Unlock is in the Advanced dropdown — stays `requested` without real ESP32 (expected by design)
 
 ### UI shell
-- [ ] Light / dark theme toggle switches and persists across reload
-- [ ] Profile page shows email, role, and user ID
-- [ ] Sidebar navigation switches pages without full reload
+- [x] Light / dark theme toggle switches and persists across reload
+- [x] Profile page shows email, role, and user ID
+- [x] Sidebar navigation switches pages without full reload
 
 ### RBAC — resident account
-- [ ] Log out and log in as `resident@smarthome.local`
-- [ ] Overrides page shows history (read-only)
-- [ ] Override command form is replaced with the "Admin Role Required" locked panel
-- [ ] No override command can be submitted
+- [x] Log out and log in as `resident@smarthome.local`
+- [x] Overrides page shows history (read-only)
+- [x] Override command form is replaced with the "Admin Role Required" locked panel
+- [x] No override command can be submitted
 
 ---
 
@@ -271,24 +294,25 @@ npm run test:notification # notification decision logic
 
 ### 11.1 Backend service tests
 
-- [ ] `npm run test:fcm` passes — all FCM disabled-mode assertions pass
-- [ ] `npm run test:notification` passes — all decision logic and message-building assertions pass
+- [x] `npm run test:fcm` passes — all FCM disabled-mode assertions pass
+- [x] `npm run test:notification` passes — all decision logic and message-building assertions pass
+- **Verified:** Both tests pass as part of the 26/26 backend regression suite.
 
 ### 11.2 FCM token registration
 
-- [ ] `POST /api/users/fcm-token` with no token returns 401
-- [ ] `POST /api/users/fcm-token` with a resident or admin JWT and valid `fcm_token` body returns `{ "updated": true }`
-- [ ] `GET /health` returns `"fcm": { "enabled": true, "initialized": true }` when `FCM_ENABLED=true` and `FIREBASE_SERVICE_ACCOUNT_BASE64` is set
-- [ ] `GET /health` returns `"fcm": { "enabled": false, "initialized": false }` when `FCM_ENABLED=false`
+- [x] `POST /api/users/fcm-token` with no token returns 401
+- [x] `POST /api/users/fcm-token` with a resident or admin JWT and valid `fcm_token` body returns `{ "updated": true }`
+- [x] `GET /health` returns `"fcm": { "enabled": true, "initialized": true }` when `FCM_ENABLED=true` and `FIREBASE_SERVICE_ACCOUNT_BASE64` is set
+- [x] `GET /health` returns `"fcm": { "enabled": false, "initialized": false }` when `FCM_ENABLED=false`
 
 ### 11.3 Backend notification dispatch (requires FCM_ENABLED=true + Atlas)
 
-- [ ] After publishing `fire_detected` via `npm run mqtt:publish:mock`, backend logs show notification dispatch attempt
-- [ ] `NotificationLog` collection contains a record with `event_type`-derived title and `status: sent` (or `status: skipped` if no tokens registered)
-- [ ] Publishing `gas_detected` event results in a `NotificationLog` entry
-- [ ] Publishing `co_detected` event results in a `NotificationLog` entry
-- [ ] Publishing `intrusion_detected` event results in a `NotificationLog` entry
-- [ ] `heartbeat` and `telemetry` messages do NOT produce `NotificationLog` entries
+- [x] After publishing `fire_detected` via mock MQTT (`POST /api/mock/mqtt`), `NotificationLog` entry with `status: sent` created for admin token, `status: skipped / duplicate_token` for resident (same physical device)
+- [x] Publishing `gas_detected` event results in a `NotificationLog` entry — confirmed on EC2
+- [x] Publishing `co_detected` event results in a `NotificationLog` entry — confirmed on EC2
+- [x] Publishing `intrusion_detected` event results in a `NotificationLog` entry — confirmed on EC2
+- [x] `heartbeat` and `telemetry` messages do NOT produce `NotificationLog` entries
+- **Verified on EC2:** All four critical event types confirmed end-to-end with physical phone notification received. FCM `duplicate_token` for resident is expected — both accounts share one physical demo device.
 
 ### 11.4 Device offline push — FCM
 
@@ -321,12 +345,13 @@ Backend SMS dispatch path and Twilio provider acceptance verified on EC2 (clean 
 
 ### 11.6 Android FCM receive (requires physical device or emulator with Play Services)
 
-- [ ] App builds successfully with Firebase dependencies in `android/app/build.gradle.kts`
-- [ ] After login, FCM token is registered via `POST /api/users/fcm-token`
-- [ ] When `fire_detected` event is published, push notification appears on the device within ≤ 10 s
-- [ ] Notification title matches `"Fire Detected"` and body mentions the room name
-- [ ] Tapping the notification opens the app
-- [ ] `gas_detected`, `co_detected`, and `intrusion_detected` events also produce push notifications
+- [x] App builds successfully with Firebase dependencies in `android/app/build.gradle.kts`
+- [x] After login, FCM token is registered via `POST /api/users/fcm-token`
+- [x] When `fire_detected` event is published, push notification appears on the device within ≤ 10 s
+- [x] Notification title matches `"Fire Detected"` and body mentions the room name
+- [x] Tapping the notification opens the app
+- [x] `gas_detected`, `co_detected`, and `intrusion_detected` events also produce push notifications
+- **Verified on EC2:** All four notification types confirmed on physical phone. Admin FCM token: `sent`. Resident FCM token: `skipped / duplicate_token` (same physical device — expected).
 
 ---
 
@@ -385,16 +410,19 @@ cd backend && npm run mqtt:publish:mock
 
 These items are part of the capstone proposal but are outside the scope of the software repository in its current state. They are recorded here so the evaluation panel can account for them.
 
+**Not yet verified with real ESP32 hardware:** ESP32 firmware is not implemented (`firmware/` is empty). All sensor event flows (fire, gas, CO, intrusion, motion), NFC access control, heartbeat MQTT messages, and actuator responses (pump, valve, door) are verified via seeded data and mock MQTT only. See rows below.
+
 | Item | Status | Owner |
 |---|---|---|
 | ESP32 firmware | Not implemented — `firmware/` is empty | MCH team |
 | Physical home model and sensor wiring | Hardware scope | MCH team |
 | Real sensor events via live MQTT | Runnable locally via `npm run mqtt:broker` + `npm run mqtt:publish:mock` (see Section 12). Live hardware events require ESP32 firmware — MCH scope. | Both teams |
+| Real ESP32 heartbeat via MQTT | Device status (online/degraded/offline) displayed from seeded `last_heartbeat_at` values; backend offline monitor verified via controlled EC2 test (§14.5). Live MQTT heartbeat from real ESP32 NOT tested. | MCH + CMP |
+| NFC hardware trigger → access log pipeline | Access logs seeded and visible; real RC522 NFC card scan and door unlock NOT tested — RC522 hardware integration is firmware scope | MCH team |
+| Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |
 | AWS EC2 deployment | **Deployed.** Backend runs on EC2, PM2 + systemd auto-start verified, `/health` returns 200. | CMP / infra |
 | Firebase Cloud Messaging (FCM) | **Implemented and verified.** FCM offline push confirmed on EC2 (NotificationLog: `sent` + `skipped/duplicate_token`). Requires `google-services.json` in `android/app/` (not committed) and `FCM_ENABLED=true` + `FIREBASE_SERVICE_ACCOUNT_BASE64` in `backend/.env`. | CMP |
 | SMS connectivity-loss notifications | **Backend/provider dispatch verified; handset delivery still needs final verification.** NotificationLog `channel=sms status=sent` confirmed on EC2; Twilio Message Log shows `Sent`. SMS did not arrive on phone and Twilio has not shown `Delivered`. See DEMO_RUNBOOK.md §12.5 troubleshooting. | CMP |
-| NFC hardware trigger → access log pipeline | Access logs seeded and visible; RC522 hardware integration is firmware scope | MCH team |
-| Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |
 
 ---
 
@@ -438,9 +466,10 @@ pm2 restart smart-home-backend   # plain restart — no --update-env
 pm2 logs --lines 20
 ```
 
-- [ ] `git pull` shows the expected commit hash
-- [ ] `npm install` completes without errors
-- [ ] PM2 restarts and `/health` returns 200 within 10 s
+- [x] `git pull` shows the expected commit hash — verified for `e46f599` (demo override auto-ack) and `30153a1` (safe admin override actions UI)
+- [x] `npm install` completes without errors
+- [x] PM2 restarts and `/health` returns 200 within 10 s
+- **Note:** After code-only deploys, set any new env vars via `sed -i` on `.env` then `pm2 restart` (no `--update-env`). Env var count in PM2 startup log (e.g., `injected env (18)`) confirms new vars are loaded.
 
 ### 14.5 Controlled offline notification test
 

@@ -148,11 +148,14 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
     - `failed` — valve_open on degraded device
     - `blocked` — pump_on blocked by gas/CO lockout rule
 
-**Silence Alarm (admin-only action):**
-11. At the top of the Overrides screen, the **Admin Action** card is visible.
-12. Tap **Silence Alarm** → confirm in the dialog.
-13. The app sends a `buzzer_off` command to `esp32_home_01`.
-14. The new override record appears in the history list.
+**Safe Override Actions (admin-only):**
+11. At the top of the Overrides screen, the **Admin Actions** card is visible with four buttons in a 2×2 grid.
+12. Row 1 (red): **Silence Alarm** (`buzzer_off`) and **Test Buzzer** (`buzzer_on`).
+13. Row 2 (secondary): **Stop Pump** (`pump_off`) and **Close Valve** (`valve_close`).
+14. Tap any action → confirm in the dialog — the command is sent to `esp32_home_01`.
+15. With `OVERRIDE_DEMO_AUTO_ACK=true` on EC2, safe actions auto-complete to `executed` within ~500 ms without requiring a real ESP32 response.
+16. The new override record appears in the history list with `status: executed`.
+17. **Note:** auto-ack is a demo-only convenience. Active hazard events (fire/gas/CO) are **not** cleared by alarm silence — they remain visible in the Events collection.
 
 ---
 
@@ -162,7 +165,7 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 16. Log in as `resident@smarthome.local` / `Resident123!`.
 17. Navigate through Dashboard, Devices, Alerts, and Sensors — all are accessible in read-only mode.
 18. Open the Overrides screen — the four override history records are visible.
-19. The **Silence Alarm Admin Action card is not rendered** — the admin-only section is completely absent from the UI.
+19. The **Admin Actions card is not rendered** — the admin-only section is completely absent from the UI.
 
 ---
 
@@ -176,7 +179,7 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 4. **Events:** Fire, gas, intrusion, and motion events. Use the severity filter to narrow to `critical` events only.
 5. **Access Logs:** NFC access history with four granted entries and one denied. Use the outcome filter; the denial rate card color-codes red when denials are high.
 6. **Telemetry:** Featured latest reading panel, sensor tile grid, full historical table.
-7. **Overrides:** Override history with status filter. The **Issue Command Override** form is visible. Use the Quick Action preset **Buzzer Off** to populate the form, then submit — the new record appears in the history table.
+7. **Overrides:** Override history with status filter. The **Issue Command Override** form is visible. Four **Quick Action** presets populate the form: **Silence Alarm** (`buzzer_off`), **Test Buzzer** (`buzzer_on`), **Stop Pump** (`pump_off`), **Close Valve** (`valve_close`). The action dropdown groups options into *Safe — auto-acked in demo* and *Advanced — requires device confirmation*. Door Unlock is in the Advanced group only and is not a quick action. Submit any safe preset — with `OVERRIDE_DEMO_AUTO_ACK=true` the record becomes `executed` within ~500 ms.
 
 ---
 
@@ -426,13 +429,14 @@ The backend is deployed to AWS EC2 (Amazon Linux 2023) and managed by PM2 with s
 
 | Component | Status |
 |---|---|
-| Backend process | PM2 (`smart-home-backend`), fork mode, `pm2-ec2-user.service` enabled |
+| Backend process | PM2 (`smart-home-backend`), fork mode, `pm2-ec2-user.service` enabled. Verified commits: `e46f599` (demo override auto-ack), `30153a1` (safe admin override actions UI). |
 | Auto-start | `sudo systemctl enable pm2-ec2-user` — survives reboot |
 | Health endpoint | `http://<EC2_PUBLIC_IP>/health` → `status: ok` |
 | MongoDB | Connected to Atlas (`autonomous_smart_home`) |
 | MQTT | Connected to local Mosquitto broker on EC2 |
-| FCM | Initialized — `FCM_ENABLED=true`, `FIREBASE_SERVICE_ACCOUNT_BASE64` set in `.env` |
+| FCM | Initialized — `FCM_ENABLED=true`, `FIREBASE_SERVICE_ACCOUNT_BASE64` set in `.env`. All four critical event types (fire/gas/CO/intrusion) verified end-to-end to physical phone. |
 | SMS | Dispatch path verified — Twilio accepted the request (NotificationLog: `channel=sms status=sent`, Twilio Message Log: `Sent`). Handset delivery not yet confirmed (no `Delivered` status in Twilio). SMS initialization confirmed from PM2 startup logs (`[SMS] Twilio client initialized`). |
+| Demo Override Auto-Ack | `OVERRIDE_DEMO_AUTO_ACK=true`, `OVERRIDE_DEMO_AUTO_ACK_DELAY_MS=500`. Safe actions (`buzzer_off`, `buzzer_on`, `pump_off`, `valve_close`) auto-complete to `executed` in ~500 ms. Risky actions (`door_unlock`, `pump_on`, `valve_open`, `system_reset`) are not auto-acked. Hazard events remain untouched. See §12.6. |
 
 ---
 
@@ -571,6 +575,39 @@ One SMS log per transition. FCM deduplication ensures one send per unique token 
 
 ---
 
+### 12.6 Demo Override Auto-Acknowledgement
+
+`OVERRIDE_DEMO_AUTO_ACK=true` is set in `backend/.env` on EC2. When enabled, the backend auto-simulates ESP32 acknowledgement for a defined set of safe actuator actions after publishing the MQTT command.
+
+**Safe actions (auto-acked in demo — become `executed` in ~500 ms):**
+| Action | Meaning |
+|---|---|
+| `buzzer_off` | Alarm silence / acknowledgement |
+| `buzzer_on` | Buzzer test |
+| `pump_off` | Stop water pump |
+| `valve_close` | Close valve |
+
+**Risky actions (not auto-acked — remain `requested` without real ESP32):**
+| Action | Reason |
+|---|---|
+| `door_unlock` | Physical-security action; requires real device confirmation |
+| `pump_on` | Also blocked by gas/CO lockout when a hazard is active |
+| `valve_open` | Safety-controlled |
+| `system_reset` | System-wide impact |
+
+**Hazard safety:** Auto-acking `buzzer_off` (alarm silence) does **not** resolve the underlying hazard. Active `fire_detected`, `gas_detected`, `co_detected`, or `intrusion_detected` events remain in the `events` collection and are visible in both apps. The PM2 log explicitly records when a hazard is still active:
+```
+[AUTO_ACK] <override_id>: alarm silenced — SAFETY HAZARD STILL ACTIVE: <event_type> on esp32_home_01. Hazard NOT resolved by this action.
+```
+
+**To disable (for production or real-hardware testing):**
+```
+OVERRIDE_DEMO_AUTO_ACK=false
+```
+Restart the backend normally — plain `pm2 restart smart-home-backend` (no `--update-env`).
+
+---
+
 ## 13. Troubleshooting
 
 | Symptom | Fix |
@@ -580,7 +617,7 @@ One SMS log per transition. FCM deduplication ensures one send per unique token 
 | Android emulator shows "Unable to connect" | Verify the backend is running and reachable at `http://localhost:5000/health` on the host. The default `BASE_URL` (`10.0.2.2:5000`) is correct for the Android emulator. |
 | Physical phone shows "Unable to connect" | Change `BASE_URL` in `android/app/build.gradle.kts:17` to your PC's LAN IP (e.g., `http://192.168.1.x:5000/`) and rebuild. |
 | Biometric prompt does not appear | The device has no enrolled fingerprint, or there is no stored session. Enroll a fingerprint at **Android Settings → Security → Fingerprint**, then log in once via password. The biometric prompt appears only on subsequent launches with a stored session. |
-| Silence Alarm card missing on Android | The session is logged in as `resident`. Log out and log back in as `admin@smarthome.local`. |
+| Admin Actions card missing on Android | The session is logged in as `resident`. Log out and log back in as `admin@smarthome.local`. |
 | Seed scripts fail with a connection error | Run `npm run test:db` from `backend/` first to verify Atlas connectivity before seeding. |
 | EC2 backend returns 502 or is unreachable | SSH in and run `pm2 status`. If the process is stopped, run `pm2 start smart-home-backend`. If PM2 is not running, run `sudo systemctl restart pm2-ec2-user`. |
 | SMS notification not firing on EC2 | See Section 12.5 for the full SMS troubleshooting table. Most commonly caused by `pm2 restart --update-env` or Twilio geo permissions not enabled. |
@@ -602,7 +639,7 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 | NFC door access control — record all access attempts | **Partially done** | Access log data model, REST API, admin-web Access Logs page, and Android Alerts tab are all complete. Seeded records include granted and denied entries. Live RC522 hardware integration is MCH/firmware scope. |
 | Complete software system — user registration, RBAC, dashboards, audit logging | **Done** | JWT auth, admin/resident RBAC, all 7 admin-web pages, all Android screens (Login, Dashboard, Devices, Alerts, Sensors, Overrides, Profile), both roles fully working. |
 | Real-time alerting ≤ 5–10 s + heartbeat offline detection | **Partially done** | Heartbeat offline detection is fully implemented (0–60 s: online, 61–90 s: degraded, > 90 s: offline). FCM push notifications are implemented and wired; end-to-end delivery time requires live hardware and a configured Firebase project. |
-| Automatic + manual safety responses — authorized override path | **Partially done** | Manual override is fully implemented with RBAC (admin only), gas/CO pump lockout enforced (seeded blocked record), and override history logged. Automatic fire suppression (pump + valve activation) requires firmware. |
+| Automatic + manual safety responses — authorized override path | **Partially done** | Manual override is fully implemented with RBAC (admin only), gas/CO pump lockout enforced, and override history logged. Safe admin override actions (`buzzer_off`, `buzzer_on`, `pump_off`, `valve_close`) exposed on both Android and admin-web; demo auto-ack enabled on EC2 (`OVERRIDE_DEMO_AUTO_ACK=true`) — verified end-to-end on physical phone and browser. Automatic fire suppression (pump + valve activation) requires firmware. |
 
 ---
 
