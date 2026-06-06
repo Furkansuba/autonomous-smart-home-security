@@ -47,12 +47,16 @@ import com.smarthome.security.ui.overrides.OverridesScreen
 import com.smarthome.security.ui.overrides.OverridesViewModel
 import com.smarthome.security.ui.overrides.OverridesViewModelFactory
 import com.smarthome.security.ui.profile.ProfileScreen
+import com.smarthome.security.ui.register.RegisterScreen
+import com.smarthome.security.ui.register.RegisterViewModel
+import com.smarthome.security.ui.register.RegisterViewModelFactory
 import com.smarthome.security.ui.telemetry.TelemetryScreen
 import com.smarthome.security.ui.telemetry.TelemetryViewModel
 import com.smarthome.security.ui.telemetry.TelemetryViewModelFactory
 
 object Routes {
     const val LOGIN = "login"
+    const val REGISTER = "register"
     const val DASHBOARD = "dashboard"
     const val DEVICES = "devices"
     const val EVENTS = "events"
@@ -145,6 +149,25 @@ fun NavGraph() {
                         navController.navigate(Routes.DASHBOARD) {
                             popUpTo(Routes.LOGIN) { inclusive = true }
                         }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(Routes.REGISTER)
+                    },
+                )
+            }
+            composable(Routes.REGISTER) {
+                val registerViewModel: RegisterViewModel = viewModel(
+                    factory = RegisterViewModelFactory(authRepository),
+                )
+                RegisterScreen(
+                    viewModel = registerViewModel,
+                    onRegisterSuccess = {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
                     },
                 )
             }

@@ -180,6 +180,46 @@ async function main() {
       console.log('[OK] 9. Password without uppercase → schema rejects → 400 via middleware');
     }
 
+    // ── 10. full_name "12" — numeric only, no letters → schema rejects ────────
+    {
+      const { registerBodySchema } = require('../src/validators/api.schemas');
+      const result = registerBodySchema.safeParse({
+        full_name: '12',
+        email: 'numname@smarthome.local',
+        password: 'Valid123!',
+      });
+      assert(!result.success, 'numeric full_name: schema should reject');
+      const hasFnIssue = result.error.issues.some((i) => i.path.includes('full_name'));
+      assert(hasFnIssue, 'numeric full_name: issue should reference full_name field');
+      console.log('[OK] 10. full_name "12" (no letters) → schema rejects → 400 via middleware');
+    }
+
+    // ── 11. full_name "@@@" — symbols only, no letters → schema rejects ───────
+    {
+      const { registerBodySchema } = require('../src/validators/api.schemas');
+      const result = registerBodySchema.safeParse({
+        full_name: '@@@',
+        email: 'symname@smarthome.local',
+        password: 'Valid123!',
+      });
+      assert(!result.success, 'symbol-only full_name: schema should reject');
+      const hasFnIssue = result.error.issues.some((i) => i.path.includes('full_name'));
+      assert(hasFnIssue, 'symbol-only full_name: issue should reference full_name field');
+      console.log('[OK] 11. full_name "@@@" (no letters) → schema rejects → 400 via middleware');
+    }
+
+    // ── 12. full_name "Furkan Subasi" — Turkish name with letters → passes ────
+    {
+      const { registerBodySchema } = require('../src/validators/api.schemas');
+      const result = registerBodySchema.safeParse({
+        full_name: 'Furkan Subaşı',
+        email: 'turkish@smarthome.local',
+        password: 'Valid123!',
+      });
+      assert(result.success, `Turkish full_name: schema should accept, got ${JSON.stringify(result.error?.issues)}`);
+      console.log('[OK] 12. full_name "Furkan Subasi" (Turkish letters) → schema accepts');
+    }
+
     console.log('\nAll registration tests passed.');
   } finally {
     // Clean up all test users and the test admin key

@@ -7,7 +7,12 @@ const loginBodySchema = z.object({
   password: z.string().min(1),
 });
 const registerBodySchema = z.object({
-  full_name: z.string().min(2).max(100).trim(),
+  full_name: z
+    .string()
+    .min(2, 'Full name must be at least 2 characters')
+    .max(100)
+    .trim()
+    .regex(/\p{L}/u, 'Full name must include at least one letter'),
   email: z.string().email(),
   password: z
     .string()

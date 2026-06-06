@@ -1,8 +1,5 @@
-package com.smarthome.security.ui.login
+package com.smarthome.security.ui.register
 
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
-import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,23 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,63 +30,55 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.R
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
+fun RegisterScreen(
+    viewModel: RegisterViewModel,
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit,
+) {
+    var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var confirmPassword by remember { mutableStateOf("") }
+    var adminKey by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val activity = context as FragmentActivity
-    val hasStoredSession = viewModel.hasStoredSession
-    val isBiometricAvailable = remember {
-        BiometricManager.from(context)
-            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) ==
-            BiometricManager.BIOMETRIC_SUCCESS
-    }
-
-    LaunchedEffect(Unit) {
-        if (hasStoredSession && isBiometricAvailable) {
-            showBiometricPrompt(activity, onLoginSuccess)
-        }
-    }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(id = R.drawable.smart_home_security_logo),
             contentDescription = "Smart Home Security",
-            modifier = Modifier.fillMaxWidth(0.55f),
+            modifier = Modifier.fillMaxWidth(0.45f),
             contentScale = ContentScale.Fit,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Secure home access",
+            text = "Create your account",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -105,15 +90,30 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
                     .padding(horizontal = 16.dp, vertical = 20.dp),
             ) {
                 OutlinedTextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    label = { Text("Full Name") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    isError = uiState.fullNameError != null,
+                    supportingText = {
+                        Text(uiState.fullNameError ?: "Enter your real name. It must include at least one letter.")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    isError = uiState.emailError != null,
+                    supportingText = {
+                        Text(uiState.emailError ?: "Use a valid email format, e.g. name@example.com")
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = password,
@@ -130,10 +130,51 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
                             )
                         }
                     },
+                    isError = uiState.passwordError != null,
+                    supportingText = {
+                        Text(
+                            uiState.passwordError
+                                ?: "At least 8 characters, one uppercase letter, one number.",
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                if (uiState.errorMessage != null) {
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirm Password") },
+                    singleLine = true,
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Text(
+                                text = if (confirmPasswordVisible) "Hide" else "Show",
+                                fontSize = 12.sp,
+                            )
+                        }
+                    },
+                    isError = uiState.confirmPasswordError != null,
+                    supportingText = if (uiState.confirmPasswordError != null) {
+                        { Text(uiState.confirmPasswordError!!) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
+                    value = adminKey,
+                    onValueChange = { adminKey = it },
+                    label = { Text("Admin Key (Optional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    supportingText = {
+                        Text("Leave empty for resident account. Enter admin key only if you have one.")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                if (uiState.serverError != null) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -141,7 +182,7 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
                         shape = MaterialTheme.shapes.small,
                     ) {
                         Text(
-                            text = uiState.errorMessage!!,
+                            text = uiState.serverError!!,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -154,9 +195,19 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { viewModel.login(email.trim(), password, onLoginSuccess) },
+            onClick = {
+                viewModel.register(
+                    fullName = fullName,
+                    email = email,
+                    password = password,
+                    confirmPassword = confirmPassword,
+                    adminKey = adminKey.trim(),
+                    onSuccess = onRegisterSuccess,
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
-            enabled = email.isNotBlank() && password.isNotBlank() && !uiState.isLoading,
+            enabled = fullName.isNotBlank() && email.isNotBlank() &&
+                password.isNotBlank() && confirmPassword.isNotBlank() && !uiState.isLoading,
             contentPadding = PaddingValues(vertical = 14.dp),
         ) {
             if (uiState.isLoading) {
@@ -166,59 +217,14 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onNavigat
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
-                Text("Sign In")
-            }
-        }
-
-        if (hasStoredSession && isBiometricAvailable) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = { showBiometricPrompt(activity, onLoginSuccess) },
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 14.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Fingerprint,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Unlock with Biometric")
+                Text("Create Account")
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        TextButton(onClick = onNavigateToRegister) {
-            Text("Create account")
+        TextButton(onClick = onNavigateToLogin) {
+            Text("Back to Sign In")
         }
     }
-}
-
-private fun showBiometricPrompt(activity: FragmentActivity, onSuccess: () -> Unit) {
-    val executor = ContextCompat.getMainExecutor(activity)
-    val prompt = BiometricPrompt(
-        activity,
-        executor,
-        object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                onSuccess()
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                // user cancelled or hardware unavailable — stay on login form
-            }
-
-            override fun onAuthenticationFailed() {
-                // biometric did not match — prompt remains open
-            }
-        },
-    )
-    val info = PromptInfo.Builder()
-        .setTitle("Smart Home Security")
-        .setSubtitle("Unlock with your biometric credential")
-        .setNegativeButtonText("Use password")
-        .build()
-    prompt.authenticate(info)
 }

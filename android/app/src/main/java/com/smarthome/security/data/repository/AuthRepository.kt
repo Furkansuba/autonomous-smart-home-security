@@ -6,6 +6,7 @@ import com.smarthome.security.data.local.SessionManager
 import com.smarthome.security.data.model.FcmTokenRequest
 import com.smarthome.security.data.model.LoginRequest
 import com.smarthome.security.data.model.LoginResponse
+import com.smarthome.security.data.model.RegisterRequest
 import com.smarthome.security.data.remote.AuthApi
 import com.smarthome.security.data.remote.UsersApi
 import kotlin.coroutines.resume
@@ -39,6 +40,40 @@ class AuthRepository(
         }
     }
 
+    suspend fun register(
+        fullName: String,
+        email: String,
+        password: String,
+        adminKey: String,
+    ): Result<LoginResponse> {
+        return try {
+            val request = RegisterRequest(
+                fullName = fullName,
+                email = email,
+                password = password,
+                adminKey = adminKey.ifBlank { null },
+            )
+            val response = api.register(request)
+            if (response.isSuccessful) {
+                val body = response.body()!!
+                sessionManager.saveSession(
+                    token = body.token,
+                    email = body.user.email,
+                    fullName = body.user.fullName,
+                    role = body.user.role,
+                )
+                registerFcmTokenSilently(body.token)
+                Result.success(body)
+            } else {
+                val message = parseErrorMessage(response.errorBody()?.string())
+                    ?: "Registration failed (${response.code()})"
+                Result.failure(Exception(message))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Cannot reach server. Check your connection."))
+        }
+    }
+
     fun hasStoredSession(): Boolean = sessionManager.hasValidSession()
 
     fun logout() {
@@ -63,7 +98,14 @@ class AuthRepository(
     private fun parseErrorMessage(errorBody: String?): String? {
         if (errorBody == null) return null
         return try {
-            JsonParser.parseString(errorBody).asJsonObject.get("error")?.asString
+            val json = JsonParser.parseString(errorBody).asJsonObject
+            // Prefer the first Zod issue message (field-level detail) over the generic top-level error
+            val issues = json.getAsJsonArray("issues")
+            if (issues != null && issues.size() > 0) {
+                issues[0].asJsonObject.get("message")?.asString
+            } else {
+                json.get("error")?.asString
+            }
         } catch (e: Exception) {
             null
         }
