@@ -43,7 +43,9 @@
     "test:notification": "node scripts/test-notification-service.js",
     "test:backend": "node scripts/run-backend-checks.js",
     "test:register-api": "node scripts/test-register-api.js",
-    "test:user-management-api": "node scripts/test-user-management-api.js"
+    "test:user-management-api": "node scripts/test-user-management-api.js",
+    "test:recovery-api": "node scripts/test-recovery-api.js",
+    "seed:recovery-backfill": "node scripts/seed-recovery-backfill.js"
   },
   "keywords": [],
   "author": "",

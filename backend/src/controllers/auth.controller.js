@@ -70,7 +70,7 @@ async function registerUser(req, res) {
     return sendDatabaseUnavailable(res);
   }
   // role is NOT accepted from the request body — schema.strict() rejects it at validation stage
-  const { full_name, email, password, admin_key } = req.body;
+  const { full_name, email, password, admin_key, security_question, security_answer } = req.body;
   const normalizedEmail = String(email).toLowerCase().trim();
 
   // Generate user_id before any DB writes so it can be referenced in key consumption + rollback
@@ -111,6 +111,14 @@ async function registerUser(req, res) {
 
     const password_hash = await hashPassword(password);
 
+    // Recovery — both fields required together; schema.refine() already enforces this
+    const recoveryFields = {};
+    if (security_question && security_answer) {
+      const normalizedAnswer = security_answer.trim().toLowerCase().replace(/\s+/g, ' ');
+      recoveryFields.security_question    = security_question;
+      recoveryFields.security_answer_hash = await hashPassword(normalizedAnswer);
+    }
+
     const newUser = await User.create({
       user_id,
       email: normalizedEmail,
@@ -118,6 +126,7 @@ async function registerUser(req, res) {
       full_name: String(full_name).trim(),
       role: assignedRole,
       is_active: true,
+      ...recoveryFields,
     });
 
     const token = signAuthToken(newUser);
@@ -143,8 +152,49 @@ async function registerUser(req, res) {
   }
 }
 
+async function getRecoveryQuestion(req, res) {
+  if (!isDatabaseConnected()) return sendDatabaseUnavailable(res);
+  const { email } = req.body;
+  const normalizedEmail = String(email).toLowerCase().trim();
+  try {
+    const user = await User.findOne({ email: normalizedEmail })
+      .select('+security_question +security_answer_hash');
+    if (!user || !user.security_question || !user.security_answer_hash) {
+      return res.status(200).json({ configured: false, question: null });
+    }
+    return res.status(200).json({ configured: true, question: user.security_question });
+  } catch (error) {
+    return res.status(500).json({ error: 'Recovery lookup failed.', message: error.message });
+  }
+}
+
+async function resetPassword(req, res) {
+  if (!isDatabaseConnected()) return sendDatabaseUnavailable(res);
+  const { email, security_answer, new_password } = req.body;
+  const normalizedEmail = String(email).toLowerCase().trim();
+  try {
+    const user = await User.findOne({ email: normalizedEmail, is_active: true })
+      .select('+security_answer_hash +security_question');
+    if (!user || !user.security_question || !user.security_answer_hash) {
+      return res.status(400).json({ error: 'Recovery is not configured for this account.' });
+    }
+    const normalizedAnswer = security_answer.trim().toLowerCase().replace(/\s+/g, ' ');
+    const answerOk = await verifyPassword(normalizedAnswer, user.security_answer_hash);
+    if (!answerOk) {
+      return res.status(400).json({ error: 'Incorrect security answer.' });
+    }
+    const new_password_hash = await hashPassword(new_password);
+    await User.updateOne({ email: normalizedEmail }, { $set: { password_hash: new_password_hash } });
+    return res.status(200).json({ success: true, message: 'Password updated. Please sign in.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Password reset failed.', message: error.message });
+  }
+}
+
 module.exports = {
   loginUser,
   getCurrentUser,
   registerUser,
+  getRecoveryQuestion,
+  resetPassword,
 };

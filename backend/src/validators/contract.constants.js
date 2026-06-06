@@ -45,6 +45,15 @@ const OVERRIDE_ACTIONS = [
   'door_unlock',
   'system_reset',
 ];
+const SECURITY_QUESTION_OPTIONS = [
+  'What is the name of your first pet?',
+  'What city were you born in?',
+  'What was the name of your first school?',
+  'What was the name of the street you grew up on?',
+  "What is your mother's maiden name?",
+  'What was the make and model of your first car?',
+];
+
 module.exports = {
   ROLES,
   ROOM_IDS,
@@ -55,4 +64,5 @@ module.exports = {
   ACCESS_RESULTS,
   OVERRIDE_RESULTS,
   OVERRIDE_ACTIONS,
+  SECURITY_QUESTION_OPTIONS,
 };

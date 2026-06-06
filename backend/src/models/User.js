@@ -48,6 +48,16 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    security_question: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    security_answer_hash: {
+      type: String,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,

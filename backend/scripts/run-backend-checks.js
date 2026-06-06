@@ -9,6 +9,7 @@ const checks = [
   'test:auth-api',
   'test:register-api',
   'test:user-management-api',
+  'test:recovery-api',
   'test:rbac',
   'test:mqtt-client',
   'test:mqtt-message-handler',
