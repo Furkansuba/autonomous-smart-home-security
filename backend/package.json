@@ -41,7 +41,8 @@
     "test:error-handlers": "node scripts/test-error-handlers.js",
     "test:fcm": "node scripts/test-fcm-service.js",
     "test:notification": "node scripts/test-notification-service.js",
-    "test:backend": "node scripts/run-backend-checks.js"
+    "test:backend": "node scripts/run-backend-checks.js",
+    "test:register-api": "node scripts/test-register-api.js"
   },
   "keywords": [],
   "author": "",

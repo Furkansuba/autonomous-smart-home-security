@@ -7,6 +7,7 @@ const checks = [
   'test:error-handlers',
   'test:models',
   'test:auth-api',
+  'test:register-api',
   'test:rbac',
   'test:mqtt-client',
   'test:mqtt-message-handler',

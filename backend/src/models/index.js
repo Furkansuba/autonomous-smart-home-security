@@ -5,6 +5,7 @@ const OverrideRequest = require('./OverrideRequest');
 const NotificationLog = require('./NotificationLog');
 const TelemetrySummary = require('./TelemetrySummary');
 const User = require('./User');
+const AdminKey = require('./AdminKey');
 module.exports = {
   Device,
   Event,
@@ -13,4 +14,5 @@ module.exports = {
   NotificationLog,
   TelemetrySummary,
   User,
+  AdminKey,
 };
