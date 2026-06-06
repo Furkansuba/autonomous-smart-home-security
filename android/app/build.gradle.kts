@@ -15,7 +15,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        buildConfigField("String", "BASE_URL", "\"http://18.184.39.188:5000/\"")
+        buildConfigField("String", "BASE_URL", "\"https://smarthome-capstone.duckdns.org/\"")
     }
 
     buildTypes {
