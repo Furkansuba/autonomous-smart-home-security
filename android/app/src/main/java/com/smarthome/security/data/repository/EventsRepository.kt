@@ -13,7 +13,7 @@ class EventsRepository(
         val token = sessionManager.getToken()
             ?: return Result.failure(Exception("Session not found. Please log in again."))
         return try {
-            val response = api.getEvents("Bearer $token")
+            val response = api.getEvents("Bearer $token", limit = 100)
             when {
                 response.isSuccessful -> Result.success(response.body()?.events ?: emptyList())
                 response.code() == 401 -> {

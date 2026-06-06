@@ -38,12 +38,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +71,12 @@ fun EventsScreen(
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        viewModel.startAutoRefresh()
+        onDispose { viewModel.stopAutoRefresh() }
+    }
 
     Scaffold(
         topBar = {
@@ -135,10 +143,16 @@ fun EventsScreen(
                 }
 
                 is EventsUiState.Success -> {
-                    if (state.events.isEmpty()) {
-                        EmptyAlertsState(modifier = Modifier.align(Alignment.Center))
-                    } else {
-                        AlertFeed(events = state.events)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.events.isEmpty()) {
+                            EmptyAlertsState(modifier = Modifier.align(Alignment.Center))
+                        } else {
+                            AlertFeed(events = state.events)
+                        }
                     }
                 }
             }

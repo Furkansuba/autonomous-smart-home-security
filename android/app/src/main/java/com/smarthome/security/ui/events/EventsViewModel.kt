@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.Event
 import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.EventsRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,24 +24,53 @@ class EventsViewModel(private val repository: EventsRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<EventsUiState>(EventsUiState.Loading)
     val uiState: StateFlow<EventsUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private var autoRefreshJob: Job? = null
+
     init {
         loadEvents()
     }
 
     fun loadEvents() {
         _uiState.value = EventsUiState.Loading
+        viewModelScope.launch { fetchAndProcess() }
+    }
+
+    fun refresh() {
+        if (_isRefreshing.value) return
         viewModelScope.launch {
-            val result = repository.getEvents()
-            _uiState.value = result.fold(
-                onSuccess = { EventsUiState.Success(it) },
-                onFailure = { error ->
-                    if (error is SessionExpiredException)
-                        EventsUiState.SessionExpired
-                    else
-                        EventsUiState.Error(error.message ?: "Unknown error.")
-                },
-            )
+            _isRefreshing.value = true
+            fetchAndProcess()
+            _isRefreshing.value = false
         }
+    }
+
+    fun startAutoRefresh() {
+        stopAutoRefresh()
+        autoRefreshJob = viewModelScope.launch {
+            while (true) {
+                delay(30_000)
+                fetchAndProcess()
+            }
+        }
+    }
+
+    fun stopAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
+    }
+
+    private suspend fun fetchAndProcess() {
+        val result = repository.getEvents()
+        _uiState.value = result.fold(
+            onSuccess = { events -> EventsUiState.Success(events) },
+            onFailure = { error ->
+                if (error is SessionExpiredException) EventsUiState.SessionExpired
+                else EventsUiState.Error(error.message ?: "Unknown error.")
+            },
+        )
     }
 }
 
