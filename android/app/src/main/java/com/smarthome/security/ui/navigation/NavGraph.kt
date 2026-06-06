@@ -31,6 +31,7 @@ import com.smarthome.security.data.repository.DevicesRepository
 import com.smarthome.security.data.repository.EventsRepository
 import com.smarthome.security.data.repository.OverridesRepository
 import com.smarthome.security.data.repository.TelemetryRepository
+import com.smarthome.security.data.repository.UsersRepository
 import com.smarthome.security.ui.dashboard.DashboardScreen
 import com.smarthome.security.ui.dashboard.DashboardViewModel
 import com.smarthome.security.ui.dashboard.DashboardViewModelFactory
@@ -53,6 +54,9 @@ import com.smarthome.security.ui.register.RegisterViewModelFactory
 import com.smarthome.security.ui.telemetry.TelemetryScreen
 import com.smarthome.security.ui.telemetry.TelemetryViewModel
 import com.smarthome.security.ui.telemetry.TelemetryViewModelFactory
+import com.smarthome.security.ui.users.UsersScreen
+import com.smarthome.security.ui.users.UsersViewModel
+import com.smarthome.security.ui.users.UsersViewModelFactory
 
 object Routes {
     const val LOGIN = "login"
@@ -63,6 +67,7 @@ object Routes {
     const val TELEMETRY = "telemetry"
     const val PROFILE = "profile"
     const val OVERRIDES = "overrides"
+    const val USERS = "users"
 }
 
 private data class BottomNavItem(
@@ -98,6 +103,7 @@ fun NavGraph() {
     val eventsRepository = remember { EventsRepository(RetrofitClient.eventsApi, sessionManager) }
     val telemetryRepository = remember { TelemetryRepository(RetrofitClient.telemetryApi, sessionManager) }
     val overridesRepository = remember { OverridesRepository(RetrofitClient.overridesApi, sessionManager) }
+    val usersRepository = remember { UsersRepository(RetrofitClient.usersApi, sessionManager) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -238,6 +244,19 @@ fun NavGraph() {
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onNavigateToUsers = {
+                        navController.navigate(Routes.USERS)
+                    },
+                )
+            }
+            composable(Routes.USERS) {
+                val usersViewModel: UsersViewModel = viewModel(
+                    factory = UsersViewModelFactory(usersRepository),
+                )
+                UsersScreen(
+                    viewModel = usersViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSessionExpired = onSessionExpired,
                 )
             }
             composable(Routes.OVERRIDES) {
