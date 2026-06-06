@@ -36,7 +36,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -60,6 +62,12 @@ fun TelemetryScreen(
     onSessionExpired: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        viewModel.startAutoRefresh()
+        onDispose { viewModel.stopAutoRefresh() }
+    }
 
     Scaffold(
         topBar = {
@@ -106,10 +114,18 @@ fun TelemetryScreen(
                     )
                 }
                 is TelemetryUiState.Success -> {
-                    SensorsContent(
-                        readings = state.readings,
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
                         modifier = Modifier.fillMaxSize(),
-                    )
+                    ) {
+                        SensorsContent(
+                            readings = state.readings,
+                            lastUpdatedAt = state.lastUpdatedAt,
+                            isStale = state.isStale,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }
@@ -182,8 +198,41 @@ private fun SensorsErrorState(
 }
 
 @Composable
+private fun SensorsStaleWarning(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        ),
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Sensor data may be outdated",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+    }
+}
+
+@Composable
 private fun SensorsContent(
     readings: List<TelemetrySummary>,
+    lastUpdatedAt: String?,
+    isStale: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val expandedKeys = remember { mutableStateListOf<String>() }
@@ -196,11 +245,16 @@ private fun SensorsContent(
         modifier = modifier,
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
+        if (isStale) {
+            item { SensorsStaleWarning() }
+        }
+
         item {
             SensorsHeader(
                 readings = readings,
                 roomsCount = distinctRooms,
                 alertCount = alertingReadings.size,
+                lastUpdatedAt = lastUpdatedAt,
             )
         }
 
@@ -274,6 +328,7 @@ private fun SensorsHeader(
     readings: List<TelemetrySummary>,
     roomsCount: Int,
     alertCount: Int,
+    lastUpdatedAt: String?,
 ) {
     val isAlert = alertCount > 0
     val dynamicSummary = deriveDynamicSummary(readings)
@@ -301,6 +356,13 @@ private fun SensorsHeader(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "$roomsCount room${if (roomsCount != 1) "s" else ""} reporting",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (lastUpdatedAt != null) {
+            Text(
+                text = "Last updated: $lastUpdatedAt",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

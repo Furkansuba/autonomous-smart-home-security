@@ -42,12 +42,25 @@ function DashboardPage() {
   const pendingOverrides = summary?.overrides?.pending_count           ?? '—'
   const telData          = summary ? parseTelemetry(summary?.telemetry?.latest) : { primary: '—', secondary: '' }
 
-  const devCount  = typeof activeDevices    === 'number' ? activeDevices    : 0
+  const onlineCount   = summary?.devices?.status_counts?.online   ?? 0
+  const offlineCount  = summary?.devices?.status_counts?.offline  ?? 0
+  const degradedCount = summary?.devices?.status_counts?.degraded ?? 0
+
+  const devCount  = onlineCount
   const critCount = typeof criticalEvents   === 'number' ? criticalEvents   : 0
   const pendCount = typeof pendingOverrides === 'number' ? pendingOverrides : 0
 
-  const healthStatus = summary === null ? '—' : devCount > 0 ? 'Operational' : 'No devices'
-  const healthDesc   = summary === null ? 'Awaiting data' : `${devCount} device${devCount !== 1 ? 's' : ''} online`
+  const healthStatus = summary === null ? '—'
+    : onlineCount   > 0 ? 'Operational'
+    : degradedCount > 0 ? 'Degraded'
+    : offlineCount  > 0 ? 'All Offline'
+    : 'No Devices'
+  const healthDesc = summary === null ? 'Awaiting data'
+    : onlineCount > 0
+      ? `${onlineCount} device${onlineCount !== 1 ? 's' : ''} online`
+      : offlineCount > 0
+        ? `${offlineCount} device${offlineCount !== 1 ? 's' : ''} offline`
+        : 'No devices registered'
   const secStatus    = summary === null ? '—' : critCount === 0 ? 'Low Risk' : critCount < 3 ? 'Elevated Risk' : 'High Risk'
   const secColor     = critCount === 0 ? 'ok' : critCount < 3 ? 'warn' : 'alert'
   const secDesc      = summary === null ? 'Awaiting data' : `${critCount} critical event${critCount !== 1 ? 's' : ''} in last 24h`
@@ -89,7 +102,7 @@ function DashboardPage() {
     {
       label: 'Active Devices',
       value: activeDevices,
-      desc: 'Connected to system',
+      desc: 'Registered / enabled',
       accent: false,
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -243,13 +256,19 @@ function DashboardPage() {
               <span className="dash-panel-title">Device Connectivity</span>
             </div>
             <span className={`dash-big-value${devCount > 0 && summary !== null ? ' dash-big-value--ok' : ''}`}>
-              {activeDevices}
+              {summary !== null ? onlineCount : '—'}
             </span>
             <span className="dash-panel-sub">{healthDesc}</span>
             <div className="connectivity-status-row">
               <span className={`connectivity-dot connectivity-dot--${devCount > 0 && summary !== null ? 'ok' : 'neutral'}`} />
               <span className="connectivity-status-text">
-                {summary === null ? 'Awaiting data' : devCount > 0 ? 'Devices reachable' : 'No devices online'}
+                {summary === null
+                  ? 'Awaiting data'
+                  : devCount > 0
+                    ? 'Devices reachable'
+                    : offlineCount > 0
+                      ? `${offlineCount} device${offlineCount !== 1 ? 's' : ''} offline`
+                      : 'No devices online'}
               </span>
             </div>
           </div>
@@ -277,7 +296,7 @@ function DashboardPage() {
       <div className="dashboard-row2">
         <div className="info-panel info-panel--accented">
           <span className="info-panel-label">System Health</span>
-          <span className={`info-panel-value info-panel-value--${devCount > 0 && summary !== null ? 'ok' : 'neutral'}`}>
+          <span className={`info-panel-value info-panel-value--${summary === null ? 'neutral' : onlineCount > 0 ? 'ok' : offlineCount > 0 ? 'warn' : 'neutral'}`}>
             {healthStatus}
           </span>
           <span className="info-panel-desc">{healthDesc}</span>

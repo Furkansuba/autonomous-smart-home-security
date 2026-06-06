@@ -13,7 +13,7 @@ class TelemetryRepository(
         val token = sessionManager.getToken()
             ?: return Result.failure(Exception("Session not found. Please log in again."))
         return try {
-            val response = api.getTelemetryList("Bearer $token", limit = 20)
+            val response = api.getTelemetryList("Bearer $token", limit = 100)
             when {
                 response.isSuccessful -> {
                     val body = response.body()
