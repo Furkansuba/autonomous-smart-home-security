@@ -406,18 +406,57 @@ Payload (matches `contracts/examples/override_result.json`):
 
 ---
 
-## 11. Pin Mismatch Warnings — Verify Before Integration
+## 11. Pin Map — source of truth: code-final.txt
 
-The following discrepancies were found between `code-final` and the hardware report. **Confirm with the MCH team on the physical model before writing integration code.**
+`code-final.txt` is the current firmware source of truth. Older progress report pin references may be outdated. All integration work should use the values below.
 
-| Item | `code-final` value | Hardware report value | Action required |
-|---|---|---|---|
-| DHT sensor type | `DHT11` | DHT22 | Confirm which chip is soldered |
-| Buzzer GPIO | `BUZZER_PIN = 4` | GPIO 12 | Confirm on PCB |
-| Relay pin assignments | see `code-final` defines | differ in report | Map each relay to correct GPIO |
-| Flame sensor zones | PCF8574 bits assumed | bit-to-room mapping unconfirmed | Confirm bit order per room |
+### DHT sensor
+| Define | Value |
+|---|---|
+| `DHTTYPE` | `DHT11` |
+| `DHTPIN` | GPIO 15 |
 
-Do not hardcode pin numbers in integration code until the physical board is probed.
+### Gas / CO sensors
+| Sensor | GPIO |
+|---|---|
+| MQ-2 (gas) | GPIO 35 |
+| MQ-7 (CO) | GPIO 34 |
+
+### Actuators
+| Signal | GPIO | MQTT `device_id` |
+|---|---|---|
+| Buzzer | GPIO 4 | `buzzer_01` |
+| Servo | GPIO 13 | — |
+| Relay RM1 | GPIO 32 | `pump_rm1_01` |
+| Relay RM2 | GPIO 33 | `pump_rm2_01` |
+| Relay KIT | GPIO 25 | `pump_kit_01` |
+| Relay LIV | GPIO 26 | `pump_liv_01` |
+
+### Security sensors
+| Sensor | GPIO |
+|---|---|
+| PIR — Hallway | GPIO 36 |
+| PIR — Garage | GPIO 39 |
+| PIR — Living Room | GPIO 17 |
+| Impact — Garage | GPIO 27 |
+| Impact — Hallway | GPIO 14 |
+
+### I2C / PCF8574 (flame + reed sensors)
+| Item | Value |
+|---|---|
+| PCF8574 I2C address | `0x20` |
+| SDA | GPIO 21 |
+| SCL | GPIO 22 |
+| PCF8574 bits 0–3 | Flame sensor zones |
+| PCF8574 bits 4–6 | Reed / window sensors |
+
+### RFID (RC522)
+| Pin | GPIO |
+|---|---|
+| SS / SDA | GPIO 5 |
+| RST | -1 (not connected) |
+
+> **RFID security:** `code-final.txt` stores raw RFID UIDs as byte array constants and logs them over Serial. Do not commit raw UIDs to the repository. Do not transmit raw UIDs over MQTT. Access log payloads must use `card_uid_hash` (SHA-256, hex-encoded, `sha256:` prefix). See §9 for the hashing implementation.
 
 ---
 
