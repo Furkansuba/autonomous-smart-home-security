@@ -41,3 +41,18 @@ export function getStoredUser() {
 export function isAuthenticated() {
   return Boolean(getStoredToken())
 }
+
+export async function register(fullName, email, password, adminKey) {
+  const body = { full_name: fullName, email, password }
+  if (adminKey) body.admin_key = adminKey   // omit key entirely when empty
+
+  const data = await apiRequest('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+  if (data.token) localStorage.setItem(TOKEN_KEY, data.token)
+  if (data.user)  localStorage.setItem(USER_KEY, JSON.stringify(data.user))
+
+  return data
+}

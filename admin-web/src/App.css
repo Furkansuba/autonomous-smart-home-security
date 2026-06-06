@@ -363,6 +363,57 @@
 }
 
 
+/* ── Auth shared helpers (login + register) ──────────── */
+
+.form-field-helper {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.form-field-error {
+  font-size: 11px;
+  color: #fc8181;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.form-field-optional {
+  font-size: 10px;
+  color: #4b5563;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 3px;
+}
+
+.register-card {
+  max-width: 400px;
+}
+
+.auth-nav {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.auth-nav-text {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.auth-nav-link {
+  all: unset;
+  cursor: pointer;
+  font-size: 13px;
+  color: #9ca3af;
+  transition: color 0.15s;
+}
+
+.auth-nav-link:hover {
+  color: #e2e8f0;
+}
+
 /* ── Dashboard KPI grid ───────────────────────────────── */
 .dashboard-page {
   display: flex;

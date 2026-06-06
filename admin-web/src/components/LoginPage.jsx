@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as authService from '../services/authService.js'
 
-export default function LoginPage({ onLoginSuccess }) {
+export default function LoginPage({ onLoginSuccess, onCreateAccount }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -70,6 +70,13 @@ export default function LoginPage({ onLoginSuccess }) {
             {loading ? 'Authenticating…' : 'Sign In to Dashboard'}
           </button>
         </form>
+
+        <div className="auth-nav">
+          <span className="auth-nav-text">New here?&nbsp;</span>
+          <button type="button" className="auth-nav-link" onClick={onCreateAccount}>
+            Create account
+          </button>
+        </div>
 
       </div>
     </div>

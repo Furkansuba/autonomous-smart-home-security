@@ -35,6 +35,7 @@ export async function apiRequest(path, options = {}) {
 
   if (!response.ok) {
     const message =
+      data?.issues?.[0]?.message ||
       (data && (data.message || data.error)) ||
       `Request failed: ${response.status} ${response.statusText}`
     throw new Error(message)

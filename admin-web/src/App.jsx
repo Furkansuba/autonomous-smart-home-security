@@ -13,6 +13,7 @@ import OverridesPage from './pages/OverridesPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import NotificationLogsPage from './pages/NotificationLogsPage.jsx'
 import UsersPage from './pages/UsersPage.jsx'
+import RegisterPage from './pages/RegisterPage.jsx'
 
 const ADMIN_ONLY_PAGES = new Set(['overrides', 'notification-logs', 'users'])
 
@@ -57,6 +58,7 @@ function PageContent({ page }) {
 
 function App() {
   const [authed, setAuthed]         = useState(() => authService.isAuthenticated())
+  const [authView, setAuthView]     = useState('login')
   const [activePage, setActivePage] = useState('dashboard')
   const [theme, setTheme]           = useState(() => localStorage.getItem('admin-theme') ?? 'light')
 
@@ -67,6 +69,7 @@ function App() {
   function handleLogout() {
     authService.logout()
     setAuthed(false)
+    setAuthView('login')
   }
 
   function handleToggleTheme() {
@@ -76,7 +79,20 @@ function App() {
   }
 
   if (!authed) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />
+    if (authView === 'register') {
+      return (
+        <RegisterPage
+          onRegisterSuccess={handleLoginSuccess}
+          onBackToLogin={() => setAuthView('login')}
+        />
+      )
+    }
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onCreateAccount={() => setAuthView('register')}
+      />
+    )
   }
 
   const user = authService.getStoredUser()
