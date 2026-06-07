@@ -23,8 +23,8 @@ npm run test:backend
 
 - [x] All backend regression checks pass
   - Expected final output: `All backend regression checks passed.`
-  - Covers: config, contracts, request validation, error handling, auth, RBAC, MQTT router, ingestion, persistence, all REST controllers, dashboard, MQTT E2E, security question recovery
-  - **Verified:** 29/29 checks pass. Includes 5 override auto-ack test cases (disabled stays requested, enabled becomes executed, hazard-active alarm silence, excluded action stays requested, already-resolved no-op) and 16 recovery API test cases (registration with/without recovery, both-or-neither schema, enum enforcement, question lookup configured/unconfigured/nonexistent, reset with correct/wrong answer/weak password/normalization).
+  - Covers: config, contracts, request validation, error handling, auth, RBAC, MQTT router, ingestion, persistence, all REST controllers, dashboard, MQTT E2E, security question recovery, payload schema validation, device status monitor policy
+  - **Verified:** 31/31 checks pass. Includes `test:payload-schema` (15 device IDs validated, 12 invalid patterns rejected) and `test:device-status-monitor` (22 cases: allowlist membership for all 15 device IDs, threshold values, dispatch routing simulation). Also includes 5 override auto-ack test cases and 16 recovery API test cases.
 
 ---
 
@@ -124,6 +124,16 @@ npm run test:backend
 
 **Verification scope:** Status badges verified from seeded `last_heartbeat_at` timestamps in the Device collection. Backend offline monitor (`degraded→offline` transition) verified via controlled EC2 test — see §14.5. Real ESP32 heartbeat hardware (live MQTT heartbeat messages from device) NOT tested.
 
+### Logical device heartbeat support (backend)
+
+- [x] Device ID validation regex widened — `^[a-z][a-z0-9_]+_[0-9]+$` accepts all 15 approved device IDs (commit `56fc6c6`)
+- [x] `npm run test:payload-schema` — 15 valid IDs accepted, 12 invalid patterns rejected (31/31 suite)
+- [x] `npm run test:device-status-monitor` — 22/22 cases pass on EC2 after deploy
+- [x] `esp32_home_01` FCM offline dispatch unchanged — confirmed in monitor test and controlled EC2 test
+- [x] 14 logical component IDs excluded from FCM dispatch — `component_offline_ui_only` skipped NotificationLog entries written instead
+- [ ] seed-logical-devices executed on EC2 — **NOT run**; must be run manually before ESP32 publishes component heartbeats
+- [ ] Logical component device records visible in `GET /api/devices` — pending seed or first heartbeat upsert
+
 ---
 
 ## 6. Event Pipeline
@@ -217,14 +227,21 @@ npm run test:backend
 ### Devices tab
 - [x] Three seeded devices are listed
 - [x] Status badges show online / degraded / offline
+- [x] Pull-to-refresh gesture shows spinner and refreshes device list (commit `d383401`)
+- [x] 30 s auto-refresh updates device list without manual interaction — no crash or flicker
+- **Verified:** Physical phone smoke test passed after build from `d383401`.
 
 ### Alerts tab
 - [x] Fire, gas, intrusion, and motion events are listed
 - [x] Critical events have distinct color coding from warning/info
+- [x] Pull-to-refresh gesture shows spinner and refreshes events list (commit `40a4b09`)
+- [x] 30 s auto-refresh silently refreshes events list — no crash or flicker
+- **Verified:** Physical phone smoke test passed after build from `40a4b09`.
 
 ### Sensors tab
 - [x] Latest telemetry readings are shown per room
 - [x] Temperature, humidity, gas raw, CO raw, motion, flame, reed state are present
+- [x] Sensor freshness timestamps visible; staleness aligned with backend-decided values (commit `77660e5`)
 
 ### Override History — admin account
 - [x] Overrides screen is accessible from the Dashboard
@@ -476,10 +493,11 @@ These items are part of the capstone proposal but are outside the scope of the s
 
 | Item | Status | Owner |
 |---|---|---|
-| ESP32 firmware | Not implemented — `firmware/` is empty | MCH team |
+| ESP32 firmware | Integration docs prepared in `firmware/` (contract, handoffs, heartbeat guide, patch guide, SafeHouse adapter, test sketch). Physical flashing and MQTT integration not yet tested. | MCH team |
 | Physical home model and sensor wiring | Hardware scope | MCH team |
 | Real sensor events via live MQTT | Runnable locally via `npm run mqtt:broker` + `npm run mqtt:publish:mock` (see Section 12). Live hardware events require ESP32 firmware — MCH scope. | Both teams |
-| Real ESP32 heartbeat via MQTT | Device status (online/degraded/offline) displayed from seeded `last_heartbeat_at` values; backend offline monitor verified via controlled EC2 test (§14.5). Live MQTT heartbeat from real ESP32 NOT tested. | MCH + CMP |
+| Real ESP32 heartbeat via MQTT | Device status (online/degraded/offline) displayed from seeded `last_heartbeat_at` values; backend offline monitor verified via controlled EC2 test (§14.5). Logical device heartbeat support deployed (`56fc6c6`, `60842ac`). Live MQTT heartbeat from real ESP32 NOT tested. | MCH + CMP |
+| seed-logical-devices on EC2 | **NOT run.** 14 logical component device records absent from MongoDB. Run manually before ESP32 publishes component heartbeats. | CMP |
 | NFC hardware trigger → access log pipeline | Access logs seeded and visible; real RC522 NFC card scan and door unlock NOT tested — RC522 hardware integration is firmware scope | MCH team |
 | Automatic fire suppression (pump + valve) | Requires firmware; software override path is implemented | MCH + CMP |
 | AWS EC2 deployment | **Deployed with HTTPS.** Backend runs on EC2 behind Nginx (TLS termination). PM2 + systemd auto-start verified. Public endpoint: `https://smarthome-capstone.duckdns.org`. Port 5000 closed externally. See §15 for full HTTPS verification checklist. | CMP / infra |
@@ -528,7 +546,7 @@ pm2 restart smart-home-backend   # plain restart — no --update-env
 pm2 logs --lines 20
 ```
 
-- [x] `git pull` shows the expected commit hash — verified for `e46f599` (demo override auto-ack) and `30153a1` (safe admin override actions UI)
+- [x] `git pull` shows the expected commit hash — EC2 runtime deployed at `2b11b0f`; later firmware-doc commits exist in origin/main (`ac41d7b`) but contain no backend runtime changes. Runtime commits verified: `56fc6c6` (logical device heartbeat support), `60842ac` (component offline notification storm mitigation)
 - [x] `npm install` completes without errors
 - [x] PM2 restarts and `/health` returns 200 within 10 s
 - **Note:** After code-only deploys, set any new env vars via `sed -i` on `.env` then `pm2 restart` (no `--update-env`). Env var count in PM2 startup log (e.g., `injected env (18)`) confirms new vars are loaded.
