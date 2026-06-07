@@ -1,4 +1,5 @@
 const { publishMqttMessage } = require('./mqttClient.service');
+const { buildBackendCommandTopic } = require('./mqtt.topics');
 function normalizeOverride(override) {
   if (override && typeof override.toObject === 'function') {
     return override.toObject();
@@ -6,7 +7,7 @@ function normalizeOverride(override) {
   return override;
 }
 function buildOverrideCommandTopic(deviceId) {
-  return 'home/' + deviceId + '/command/override';
+  return buildBackendCommandTopic(deviceId, 'override');
 }
 function buildOverrideCommandPayload(overrideInput) {
   const override = normalizeOverride(overrideInput);

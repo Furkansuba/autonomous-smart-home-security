@@ -19,8 +19,12 @@ async function main() {
   };
   const topic = buildOverrideCommandTopic(override.device_id);
   assert(
-    topic === 'home/esp32_home_01/command/override',
-    'override command topic should match contract'
+    topic === 'home/esp32_home_01/cmd/override',
+    'override command topic must use /cmd/ segment (not /command/)'
+  );
+  assert(
+    topic !== 'home/esp32_home_01/command/override',
+    'override command topic must NOT use the old /command/ segment'
   );
   const payload = buildOverrideCommandPayload(override);
   assert(payload.override_id === override.override_id, 'payload should include override_id');

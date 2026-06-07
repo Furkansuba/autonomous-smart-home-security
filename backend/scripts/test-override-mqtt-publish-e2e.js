@@ -73,7 +73,7 @@ async function stopLocalBroker(broker, server) {
   });
 }
 async function startCommandSubscriber(deviceId, receivedMessages) {
-  const topic = 'home/' + deviceId + '/command/override';
+  const topic = 'home/' + deviceId + '/cmd/override';
   const subscriber = mqtt.connect('mqtt://localhost:' + TEST_PORT, {
     clientId: 'override_command_subscriber_' + Date.now(),
     clean: true,
@@ -143,7 +143,7 @@ async function main() {
     assert(res.body.created === true, 'override should be created');
     assert(res.body.mqtt_publish.published === true, 'MQTT command should be published');
     assert(
-      res.body.mqtt_publish.command_topic === 'home/' + deviceId + '/command/override',
+      res.body.mqtt_publish.command_topic === 'home/' + deviceId + '/cmd/override',
       'command topic should match device command topic'
     );
     console.log('[OK] override created and MQTT publish result is true');
@@ -151,7 +151,7 @@ async function main() {
     assert(received, 'subscriber should receive override command');
     const command = receivedMessages[0];
     assert(
-      command.topic === 'home/' + deviceId + '/command/override',
+      command.topic === 'home/' + deviceId + '/cmd/override',
       'subscriber should receive expected command topic'
     );
     assert(
