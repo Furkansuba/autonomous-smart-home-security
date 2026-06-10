@@ -1,22 +1,8 @@
 # SafeHouse → SmartHome MQTT Adapter Guide
 
-**Audience:** MCH firmware team  
-**Language:** English  
-**Related docs:** `firmware/FIRMWARE_CONTRACT.md`, `firmware/ESP32_MQTT_HEARTBEAT_STEP1_PATCH.md`
 
 ---
 
-## 1. Purpose
-
-Your SafeHouse MQTT patch is not wasted.
-
-You have already done the hard part: Wi-Fi connect, NTP sync, MQTT reconnect logic, PubSubClient setup, ArduinoJson payload building, secrets.h separation, and publish/subscribe helpers. **Keep all of that.**
-
-The only work remaining is a contract mapping — replacing SafeHouse topic strings, payload field names, and device identifiers with the SmartHome backend equivalents. The tested local safety logic (gas interlock, thermal interlock, relay control, RFID whitelist) does not change at all.
-
-**Do not rewrite your firmware from scratch.** Apply the mapping changes below on top of your existing patched sketch.
-
----
 
 ## 2. Keep unchanged — do not touch these
 
@@ -92,17 +78,27 @@ Never activate any pump relay while gas or CO is active, even if an override com
 
 ## 4. Broker note
 
-- Use the SmartHome MQTT broker host and port provided by the software team. Do not hardcode the host or port in any file that will be committed.
-- The broker currently uses **port 1883** (plain TCP). Use `WiFiClient` (not `WiFiClientSecure`) for this.
-- If TLS on port 8883 is enabled later, switch to `WiFiClientSecure` with the CA certificate and ensure NTP time is synced before the TLS handshake.
-- All broker credentials go in `secrets.h`, which must be listed in `.gitignore` and never committed.
+Current SmartHome demo MQTT broker:
+
+| Property | Value |
+|---|---|
+| Host | `smarthome-capstone.duckdns.org` |
+| Port | `1883` |
+| TLS | No |
+| MQTT username/password | Not required |
+| ESP32 client | `WiFiClient` + `PubSubClient` |
+
+Use `WiFiClient`, not `WiFiClientSecure`, for the current demo broker.
 
 ```cpp
-// secrets.h — never commit this file
-#define WIFI_SSID    "your_ssid"
-#define WIFI_PASSWORD "your_password"
-#define MQTT_HOST    "ask_software_team"
-#define MQTT_PORT    1883
+#define MQTT_HOST "smarthome-capstone.duckdns.org"
+#define MQTT_PORT 1883
+
+WiFiClient wifiClient;
+PubSubClient mqtt(wifiClient);
+
+mqtt.setServer(MQTT_HOST, MQTT_PORT);
+mqtt.connect("esp32_home_01");
 ```
 
 ---
@@ -325,62 +321,6 @@ String hashUid(byte *uid, byte uidSize) {
 
 Use the result as the `card_uid_hash` field value in the access payload.
 
-If hashing on the ESP32 is not feasible in your current sprint, **contact the software team before sending anything**. Raw UIDs are not accepted on any MQTT topic.
-
----
-
-## 10. AI prompt for conversion
-
-If you want to use Gemini, Claude, or another AI assistant to help convert your SafeHouse MQTT sketch to the SmartHome contract, copy and paste the prompt below. Attach or paste your patched sketch when asked.
-
----
-
-```
-I have an ESP32 Arduino sketch that has already been patched to use 
-Wi-Fi, NTP, MQTT (PubSubClient), ArduinoJson, and a secrets.h file. 
-The local sensor and safety logic is from our "SafeHouse" project.
-
-Please convert the MQTT contract mapping only, following these rules:
-
-1. Do NOT change any pin numbers.
-2. Do NOT change any relay HIGH/LOW semantics.
-3. Do NOT change sensor read logic (DHT, MQ-2, MQ-7, flame, PIR, 
-   impact, reed).
-4. Do NOT change safety interlock logic (gas lockout, fire interlock, 
-   security breach detection).
-5. Do NOT change RFID local whitelist behavior.
-6. Do NOT change threshold values for gas, CO, temperature, or motion.
-7. Do NOT change watchdog timer logic.
-8. Keep Wi-Fi, NTP, MQTT reconnect, PubSubClient, ArduinoJson, and 
-   secrets.h as-is.
-
-Only update the MQTT contract:
-- Replace device identifier "esp32-house-01" with "esp32_home_01".
-- Replace topic "home/telemetry" heartbeat messages with topic 
-  "home/esp32_home_01/heartbeat" and payload field "device_id".
-- Replace SafeHouse event messages with topic 
-  "home/esp32_home_01/event" and payload fields: device_id, 
-  event_type, severity, room_id, timestamp.
-- event_type values: gas_detected / co_detected / fire_detected / 
-  intrusion_detected / motion_detected / vibration_detected / 
-  reed_switch_opened.
-- Replace climate telemetry with topic "home/esp32_home_01/telemetry".
-- Replace access topic with "home/esp32_home_01/access" using 
-  card_uid_hash (SHA-256 hex, prefixed "sha256:") — never raw UID.
-- Replace override subscribe topic with 
-  "home/esp32_home_01/cmd/override".
-- Replace override ack topic with 
-  "home/esp32_home_01/override/result".
-- Replace room strings: room1→bedroom_1, room2→bedroom_2, 
-  livingroom→living_room, frontdoor→main_door.
-- Remove all SafeHouse identifiers: esp32-house-01, home/telemetry, 
-  eventType, deviceId, nfcUid, home/actuators.
-- No valves: valve_01, valve_open, valve_close must not appear.
-- Gas/CO lockout: pump commands must be rejected if gas or CO is active.
-
-Do not include real Wi-Fi credentials, MQTT host, or raw RFID UIDs 
-in the output. Use placeholder comments for those values.
-```
 
 ---
 
@@ -428,8 +368,3 @@ grep -r "executeGasInterlock\|gas.*lock\|GAS.*LOCK"  src/
 grep -r "pump_off\|relayOff\|ALL.*HIGH\|HIGH.*relay"  src/
 grep -r "sha256\|mbedtls\|hashUid\|card_uid_hash"     src/
 ```
-
----
-
-*For full payload schemas and topic list, see `firmware/FIRMWARE_CONTRACT.md`.*  
-*For integration step order, see `firmware/MCH_QUICK_HANDOFF.md`.*

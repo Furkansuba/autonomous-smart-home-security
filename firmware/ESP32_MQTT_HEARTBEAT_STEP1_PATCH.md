@@ -44,26 +44,26 @@
 ## Patch 2 — Add config block
 
 **Where:** after the existing pin-constant block, before any function definitions.  
-Use a `secrets.h` file (added to `.gitignore`) for real values — never hardcode credentials here.
+Use a `secrets.h` file for Wi-Fi values. Current MQTT host is shown below.
 
 ```cpp
-// ── Step 1 config — real values go in secrets.h, NOT here ────────
+// ── Step 1 config ───────────────────────────────────────────────
 #define WIFI_SSID         "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD     "YOUR_WIFI_PASSWORD"
-#define MQTT_HOST         "ASK_SOFTWARE_TEAM_FOR_MQTT_HOST"
+#define MQTT_HOST         "smarthome-capstone.duckdns.org"
 #define MQTT_PORT         1883
 #define DEVICE_ID         "esp32_home_01"
 #define FIRMWARE_VERSION  "mch-step1-heartbeat"
 #define HEARTBEAT_INTERVAL_MS  30000UL
 ```
 
-`secrets.h` template (this file must be listed in `.gitignore` — never commit it):
+`secrets.h` template:
 
 ```cpp
-// secrets.h — NOT committed to git
+// secrets.h
 #define WIFI_SSID         "your_actual_ssid"
 #define WIFI_PASSWORD     "your_actual_password"
-#define MQTT_HOST         "actual.host.or.ip"
+#define MQTT_HOST         "smarthome-capstone.duckdns.org"
 ```
 
 ---
@@ -273,7 +273,7 @@ The MQTT keep-alive and reconnect calls may take up to a few hundred millisecond
 
 ## Patch 7 — .gitignore entry
 
-If a `.gitignore` does not already exist in the firmware sketch directory, create one with:
+Recommended `.gitignore` entries in the firmware sketch directory:
 
 ```
 secrets.h
@@ -281,7 +281,7 @@ secrets.h
 *.elf
 ```
 
-Confirm `secrets.h` is listed before committing anything.
+
 
 ---
 
@@ -306,7 +306,7 @@ All six fields are required. The backend rejects payloads with missing or unknow
 
 ## Testing checklist
 
-Upload the modified sketch. Do **not** commit `secrets.h`.
+Upload the modified sketch.
 
 - [ ] Serial monitor: `[WiFi] Connecting to ...` followed by `[WiFi] Connected, IP: ...`
 - [ ] Serial monitor: `[NTP] Time synced`

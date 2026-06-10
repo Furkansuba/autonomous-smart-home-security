@@ -1,9 +1,6 @@
 # Firmware Integration Contract — MCH Handoff
 ## Autonomous Smart Home Security
 
-**Audience:** Mechatronics (MCH) team  
-**Backend contact:** Software team  
-**Purpose:** Connect real ESP32 firmware to the deployed backend and MQTT broker.
 
 ---
 
@@ -57,13 +54,15 @@ bblanchon/ArduinoJson @ ^7
 
 | Property | Value |
 |---|---|
-| Host | EC2 public IP (ask software team — not stored in this file) |
+| Host | `smarthome-capstone.duckdns.org` |
 | Port | **1883 TCP** |
-| Auth | None — open for ESP32 integration |
+| TLS | No |
+| Auth | None for current demo broker |
 | Protocol | MQTT 3.1.1 |
+| ESP32 client | `WiFiClient` + `PubSubClient` |
 | Client ID | `esp32_home_01` (must be unique per connection) |
 
-> **Do not hardcode the IP in source.** Use a `#define MQTT_BROKER_HOST` in a `secrets.h` that is `.gitignore`d. Never commit Wi-Fi SSID, password, or broker IP.
+Use `WiFiClient`, not `WiFiClientSecure`, for the current demo broker.
 
 ---
 
@@ -71,7 +70,7 @@ bblanchon/ArduinoJson @ ^7
 
 ### Device → Backend (ESP32 publishes)
 
-| Topic | Purpose |
+| Topic | Use |
 |---|---|
 | `home/{deviceId}/heartbeat` | Liveness ping every 30 s |
 | `home/{deviceId}/telemetry` | Sensor snapshot |
@@ -81,7 +80,7 @@ bblanchon/ArduinoJson @ ^7
 
 ### Backend → Device (ESP32 subscribes)
 
-| Topic | Purpose |
+| Topic | Use |
 |---|---|
 | `home/{deviceId}/cmd/override` | Override command from admin |
 | `home/{deviceId}/cmd/arm` | Reserved — arm system |
@@ -536,7 +535,3 @@ Always validate against the files in `contracts/examples/`:
 | `override_result.json` | `home/{deviceId}/override/result` | ESP32 → backend |
 
 These files are the authoritative schema. If firmware output does not validate against them, the backend will reject the message.
-
----
-
-*Document version: 2026-06-07. Maintained by software team. Do not edit without coordinating a contract update in `contracts/CONTRACT_FREEZE.md`.*
