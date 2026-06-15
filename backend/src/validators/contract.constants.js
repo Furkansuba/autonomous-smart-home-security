@@ -42,6 +42,7 @@ const OVERRIDE_ACTIONS = [
   'buzzer_off',
   'door_unlock',
   'system_reset',
+  'maintenance_reset',
 ];
 const SECURITY_QUESTION_OPTIONS = [
   'What is the name of your first pet?',

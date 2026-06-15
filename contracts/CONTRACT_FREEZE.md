@@ -182,6 +182,22 @@ If gas or CO is detected:
 - do not activate pump even by manual override
 - publish critical event
 Gas/CO pump lockout is mandatory.
+### Fire-active state and false-alarm recovery
+- A fire is considered active for a device while the latest recent-window
+  `fire_detected` event is newer than the latest successful (`executed`)
+  `maintenance_reset` for that device.
+- While fire is active, a normal `pump_off` override must be blocked (saved with
+  status `blocked`, never published, never auto-acked).
+- `maintenance_reset` (UI label: "Confirm Threat Cleared") is the admin-only
+  false-alarm recovery action. It is an `OVERRIDE_ACTIONS` value, issued through
+  the existing `POST /api/overrides` route and published on `home/{deviceId}/cmd/override`.
+  - It requires a non-empty `reason`.
+  - It is never demo-auto-acked; it only becomes `executed` from a real device ACK.
+  - Firmware must verify flame sensors are currently clear before acknowledging.
+    If flame is still detected it must ACK `failed` with `blocked_reason: "fire_still_present"`.
+    If gas/CO is active it must ACK `failed` with `blocked_reason: "gas_co_active"`.
+    On success it clears the fire latch, forces pump relays off, and ACKs `executed`.
+  - `maintenance_reset` must not clear gas/CO hazards.
 ## 13. Payload Example Files
 The canonical payload examples are stored under:
 - contracts/examples/heartbeat.json

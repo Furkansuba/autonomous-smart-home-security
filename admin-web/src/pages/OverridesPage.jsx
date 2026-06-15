@@ -31,6 +31,10 @@ function OverridesPage() {
   const [submitting,   setSubmitting]   = useState(false)
   const [submitMsg,    setSubmitMsg]    = useState(null)
 
+  const [mrReason,     setMrReason]     = useState('')
+  const [mrSubmitting, setMrSubmitting] = useState(false)
+  const [mrMsg,        setMrMsg]        = useState(null)
+
   const loadOverrides = useCallback((status) => {
     let cancelled = false
     setLoading(true)
@@ -90,6 +94,49 @@ function OverridesPage() {
   function applyQuickAction(actuator, action) {
     setFormActuator(actuator)
     setFormAction(action)
+  }
+
+  async function handleMaintenanceReset() {
+    if (!mrReason.trim()) {
+      setMrMsg({ ok: false, text: 'A reason is required to confirm the threat is cleared.' })
+      return
+    }
+    const ok = window.confirm(
+      'Confirm Threat Cleared (maintenance reset)\n\n' +
+      'Use this ONLY for a verified false alarm or a threat you have confirmed is cleared. ' +
+      'It does NOT bypass gas/CO safety, and the device will reject it if flame is still detected.\n\n' +
+      'Proceed?'
+    )
+    if (!ok) return
+    setMrSubmitting(true)
+    setMrMsg(null)
+    const user = authService.getStoredUser()
+    const requestedBy = user?.user_id ?? 'usr_admin_001'
+    try {
+      const res = await createOverride({
+        device_id:    formDevice.trim(),
+        actuator_id:  'pump_01',
+        action:       'maintenance_reset',
+        reason:       mrReason.trim(),
+        requested_by: requestedBy,
+      })
+      const ov = res?.override
+      if (ov?.status === 'executed') {
+        setMrMsg({ ok: true, text: 'Threat cleared confirmed — device released fire suppression.' })
+      } else if (ov?.status === 'failed') {
+        setMrMsg({ ok: false, text: `Device rejected reset: ${ov.blocked_reason || 'unknown reason'}.` })
+      } else if (ov?.status === 'blocked') {
+        setMrMsg({ ok: false, text: ov.blocked_reason || 'Maintenance reset was blocked.' })
+      } else {
+        setMrMsg({ ok: true, text: 'Maintenance reset sent — awaiting device confirmation.' })
+      }
+      setMrReason('')
+      loadOverrides(statusFilter)
+    } catch (err) {
+      setMrMsg({ ok: false, text: err.message || 'Failed to send maintenance reset.' })
+    } finally {
+      setMrSubmitting(false)
+    }
   }
 
   const statsReady   = !loading && !error
@@ -276,6 +323,48 @@ function OverridesPage() {
                 )}
               </div>
             </form>
+          </div>
+
+          {/* Threat recovery — distinct, not a quick action */}
+          <div className="cmd-form-card" style={{ borderTop: '3px solid #dc2626' }}>
+            <div className="cmd-form-hdr">
+              <span className="cmd-form-title">Confirm Threat Cleared</span>
+              <span className="cmd-form-badge" style={{ background: '#dc2626', color: '#fff' }}>Danger · Admin</span>
+            </div>
+            <p className="cmd-form-helper" style={{ color: '#b45309' }}>
+              ⚠ For verified false alarms / cleared threats only. This releases fire
+              suppression for <strong>{formDevice.trim() || 'the device'}</strong>. It does
+              <strong> not</strong> bypass gas/CO safety, and the device will reject it if
+              flame is still detected (<code>fire_still_present</code>).
+            </p>
+            <div className="cmd-form-field">
+              <label className="cmd-form-label">Reason (required)</label>
+              <input
+                className="override-form-input"
+                type="text"
+                value={mrReason}
+                onChange={(e) => setMrReason(e.target.value)}
+                disabled={mrSubmitting}
+                maxLength={240}
+                placeholder="e.g. Burnt toast — kitchen verified clear, no fire."
+              />
+            </div>
+            <div className="cmd-form-footer">
+              <button
+                type="button"
+                className="btn-override-submit"
+                style={{ background: '#dc2626' }}
+                disabled={mrSubmitting || !mrReason.trim()}
+                onClick={handleMaintenanceReset}
+              >
+                {mrSubmitting ? 'Sending…' : 'Confirm Threat Cleared'}
+              </button>
+              {mrMsg && (
+                <span className={`override-submit-msg${mrMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                  {mrMsg.text}
+                </span>
+              )}
+            </div>
           </div>
 
         </div>

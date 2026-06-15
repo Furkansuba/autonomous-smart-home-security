@@ -59,6 +59,10 @@ async function main() {
   const pumpFirePrefix = 'ovr_pumpfire_test_' + runId;
   const pumpFireEventId = 'evt_pumpfire_test_' + runId;
   const pumpDevice = 'esp32_pumpsafety_01';
+  const mrPrefix = 'ovr_mreset_test_' + runId;
+  const mrFireEventId = 'evt_mreset_fire_' + runId;
+  const mrFireEventId2 = 'evt_mreset_fire2_' + runId;
+  const mrDevice = 'esp32_mreset_01';
   const origAutoAck = env.overrideDemoAutoAck;
   const origDelay = env.overrideDemoAutoAckDelayMs;
   try {
@@ -347,6 +351,133 @@ async function main() {
     assert(valveRejectRecord === null, 'valve_close: rejected action must not be persisted');
     console.log('[OK] valve_close rejected as invalid action');
 
+    // ── Phase 3: maintenance_reset (Confirm Threat Cleared) ──────────────
+    env.overrideDemoAutoAck = true;
+    env.overrideDemoAutoAckDelayMs = 50;
+
+    // maintenance_reset without a reason is rejected
+    const mrNoReasonId = mrPrefix + '_no_reason_01';
+    const mrNoReasonRes = createMockRes();
+    await createOverride(
+      {
+        body: {
+          override_id: mrNoReasonId,
+          device_id: mrDevice,
+          requested_by: 'usr_admin_001',
+          actuator_id: 'pump_01',
+          action: 'maintenance_reset',
+          reason: '   ',
+        },
+      },
+      mrNoReasonRes
+    );
+    assert(mrNoReasonRes.statusCode === 400, 'maintenance_reset no reason: must return 400');
+    const mrNoReasonRecord = await OverrideRequest.findOne({ override_id: mrNoReasonId }).lean();
+    assert(mrNoReasonRecord === null, 'maintenance_reset no reason: must not be persisted');
+    console.log('[OK] maintenance_reset without reason rejected');
+
+    // maintenance_reset with a reason is created as requested and NOT auto-acked
+    const mrId = mrPrefix + '_with_reason_01';
+    const mrRes = createMockRes();
+    await createOverride(
+      {
+        body: {
+          override_id: mrId,
+          device_id: mrDevice,
+          requested_by: 'usr_admin_001',
+          actuator_id: 'pump_01',
+          action: 'maintenance_reset',
+          reason: 'Verified false alarm — kitchen smoke cleared.',
+        },
+      },
+      mrRes
+    );
+    assert(mrRes.statusCode === 201, 'maintenance_reset: should return 201');
+    assert(mrRes.body.override.status === 'requested', 'maintenance_reset: initial status requested');
+    await sleep(300);
+    const mrRecord = await OverrideRequest.findOne({ override_id: mrId }).lean();
+    assert(mrRecord !== null, 'maintenance_reset: record must exist');
+    assert(mrRecord.status === 'requested', 'maintenance_reset: must NOT be auto-acked (stays requested)');
+    console.log('[OK] maintenance_reset with reason created as requested, not auto-acked');
+
+    // pump_off is allowed when a successful maintenance_reset is newer than the fire
+    const baseTime = Date.now();
+    await Event.create({
+      event_id: mrFireEventId,
+      device_id: mrDevice,
+      room_id: 'kitchen',
+      event_type: 'fire_detected',
+      severity: 'critical',
+      message: 'Maintenance reset test: fire detected.',
+      confirmed: true,
+      occurred_at: new Date(baseTime - 60000),
+      received_at: new Date(baseTime - 60000),
+    });
+    // Simulate a firmware-confirmed (executed) maintenance_reset AFTER the fire
+    await OverrideRequest.create({
+      override_id: mrPrefix + '_executed_01',
+      device_id: mrDevice,
+      requested_by: 'usr_admin_001',
+      actuator_id: 'pump_01',
+      action: 'maintenance_reset',
+      reason: 'Threat cleared confirmation.',
+      status: 'executed',
+      result: 'executed',
+      requested_at: new Date(baseTime - 30000),
+      result_at: new Date(baseTime - 20000),
+    });
+    const pumpAfterResetId = mrPrefix + '_pumpoff_allowed_01';
+    const pumpAfterResetRes = createMockRes();
+    await createOverride(
+      {
+        body: {
+          override_id: pumpAfterResetId,
+          device_id: mrDevice,
+          requested_by: 'usr_admin_001',
+          actuator_id: 'pump_01',
+          action: 'pump_off',
+          reason: 'pump_off after confirmed reset.',
+        },
+      },
+      pumpAfterResetRes
+    );
+    assert(pumpAfterResetRes.statusCode === 201, 'pump_off after reset: should return 201');
+    assert(pumpAfterResetRes.body.blocked !== true, 'pump_off after reset: must NOT be blocked');
+    assert(pumpAfterResetRes.body.override.status === 'requested', 'pump_off after reset: initial requested');
+    console.log('[OK] pump_off allowed when successful maintenance_reset is newer than fire');
+
+    // pump_off is blocked again when a NEW fire occurs after the maintenance_reset
+    await Event.create({
+      event_id: mrFireEventId2,
+      device_id: mrDevice,
+      room_id: 'kitchen',
+      event_type: 'fire_detected',
+      severity: 'critical',
+      message: 'Maintenance reset test: NEW fire after reset.',
+      confirmed: true,
+      occurred_at: new Date(baseTime),
+      received_at: new Date(baseTime),
+    });
+    const pumpReblockId = mrPrefix + '_pumpoff_reblocked_01';
+    const pumpReblockRes = createMockRes();
+    await createOverride(
+      {
+        body: {
+          override_id: pumpReblockId,
+          device_id: mrDevice,
+          requested_by: 'usr_admin_001',
+          actuator_id: 'pump_01',
+          action: 'pump_off',
+          reason: 'pump_off after new fire.',
+        },
+      },
+      pumpReblockRes
+    );
+    assert(pumpReblockRes.statusCode === 201, 'pump_off reblock: should return 201');
+    assert(pumpReblockRes.body.blocked === true, 'pump_off reblock: must be blocked by new fire');
+    assert(pumpReblockRes.body.override.status === 'blocked', 'pump_off reblock: status must be blocked');
+    console.log('[OK] pump_off blocked again after a new fire post-reset');
+
     // Test: already-resolved override — auto-ack is a no-op (status guard prevents double-update)
     const resolvedId = autoAckPrefix + '_resolved_01';
     await OverrideRequest.create({
@@ -395,6 +526,10 @@ async function main() {
       override_id: { $regex: '^' + pumpFirePrefix },
     });
     await Event.deleteMany({ event_id: pumpFireEventId });
+    await OverrideRequest.deleteMany({
+      override_id: { $regex: '^' + mrPrefix },
+    });
+    await Event.deleteMany({ event_id: { $in: [mrFireEventId, mrFireEventId2] } });
     await disconnectDatabase();
   }
 }

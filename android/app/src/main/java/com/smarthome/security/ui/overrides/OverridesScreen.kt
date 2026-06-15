@@ -38,6 +38,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -78,6 +79,8 @@ fun OverridesScreen(
     val activeAction by viewModel.activeAction.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingConfirm by remember { mutableStateOf<Triple<String, String, String>?>(null) }
+    var showMaintenanceDialog by remember { mutableStateOf(false) }
+    var maintenanceReason by remember { mutableStateOf("") }
 
     LaunchedEffect(overrideActionState) {
         when (val s = overrideActionState) {
@@ -122,6 +125,52 @@ fun OverridesScreen(
             },
             dismissButton = {
                 TextButton(onClick = { pendingConfirm = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    if (showMaintenanceDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showMaintenanceDialog = false
+                maintenanceReason = ""
+            },
+            title = { Text("Confirm Threat Cleared") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Use only for a verified false alarm or a threat you have confirmed " +
+                            "is cleared. This does NOT bypass gas/CO safety, and the device " +
+                            "will reject it if flame is still detected.",
+                    )
+                    OutlinedTextField(
+                        value = maintenanceReason,
+                        onValueChange = { maintenanceReason = it },
+                        label = { Text("Reason (required)") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = maintenanceReason.isNotBlank(),
+                    onClick = {
+                        val reason = maintenanceReason.trim()
+                        showMaintenanceDialog = false
+                        maintenanceReason = ""
+                        viewModel.sendMaintenanceReset(reason, adminEmail)
+                    },
+                ) {
+                    Text("Confirm Threat Cleared")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showMaintenanceDialog = false
+                    maintenanceReason = ""
+                }) {
                     Text("Cancel")
                 }
             },
@@ -210,6 +259,14 @@ fun OverridesScreen(
                                 onActionClick = { action, actuatorId, label ->
                                     pendingConfirm = Triple(action, actuatorId, label)
                                 },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp),
+                            )
+                            MaintenanceResetCard(
+                                enabled = overrideActionState !is OverrideActionState.Sending &&
+                                    adminEmail.isNotBlank(),
+                                onClick = { showMaintenanceDialog = true },
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
                                     .padding(top = 8.dp),
@@ -322,6 +379,56 @@ private fun AdminActionsCard(
                     text = "Admin email missing. Please sign in again.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MaintenanceResetCard(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.18f),
+        ),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Threat Recovery",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Confirm Threat Cleared releases fire suppression after a verified " +
+                    "false alarm. It does not bypass gas/CO safety and is rejected by the " +
+                    "device if flame is still detected.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text(
+                    text = "Confirm Threat Cleared",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }

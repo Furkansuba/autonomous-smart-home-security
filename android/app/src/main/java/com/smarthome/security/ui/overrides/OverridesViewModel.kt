@@ -76,6 +76,31 @@ class OverridesViewModel(private val repository: OverridesRepository) : ViewMode
         }
     }
 
+    fun sendMaintenanceReset(reason: String, adminEmail: String) {
+        if (_overrideActionState.value is OverrideActionState.Sending) return
+        if (reason.isBlank()) {
+            _overrideActionState.value =
+                OverrideActionState.Error("A reason is required to confirm the threat is cleared.")
+            return
+        }
+        _overrideActionState.value = OverrideActionState.Sending
+        _activeAction.value = "maintenance_reset"
+        viewModelScope.launch {
+            val result = repository.sendMaintenanceReset(reason, adminEmail)
+            _overrideActionState.value = result.fold(
+                onSuccess = { OverrideActionState.Success(it) },
+                onFailure = { error ->
+                    if (error is SessionExpiredException)
+                        OverrideActionState.SessionExpired
+                    else
+                        OverrideActionState.Error(error.message ?: "Unknown error.")
+                },
+            )
+            _activeAction.value = null
+            if (result.isSuccess) loadOverrides()
+        }
+    }
+
     fun resetOverrideActionState() {
         _overrideActionState.value = OverrideActionState.Idle
     }

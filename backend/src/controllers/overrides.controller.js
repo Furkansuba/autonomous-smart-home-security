@@ -36,6 +36,35 @@ async function findActiveHazard(deviceId, eventTypes) {
     occurred_at: { $gte: hazardCutoff },
   });
 }
+// Fire is considered active for a device when the most recent recent-window
+// fire_detected event is NEWER than the latest successful (executed)
+// maintenance_reset for the same device. A confirmed maintenance_reset clears
+// the prior fire; a new fire_detected after that reset re-activates it.
+async function isFireActive(deviceId) {
+  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
+  const latestFire = await Event.findOne({
+    device_id: deviceId,
+    event_type: { $in: FIRE_HAZARD_TYPES },
+    occurred_at: { $gte: hazardCutoff },
+  })
+    .sort({ occurred_at: -1 })
+    .lean();
+  if (!latestFire) {
+    return false;
+  }
+  const latestReset = await OverrideRequest.findOne({
+    device_id: deviceId,
+    action: 'maintenance_reset',
+    status: 'executed',
+  })
+    .sort({ result_at: -1, requested_at: -1 })
+    .lean();
+  if (!latestReset) {
+    return true;
+  }
+  const resetAt = latestReset.result_at || latestReset.requested_at;
+  return new Date(latestFire.occurred_at) > new Date(resetAt);
+}
 // Persists a blocked override and responds. No MQTT command is published and
 // the action is never auto-acked, so a blocked override can never appear as
 // "executed". Hazard events themselves are left untouched.
@@ -193,6 +222,13 @@ async function createOverride(req, res) {
       supported_actions: OVERRIDE_ACTIONS,
     });
   }
+  // Confirm Threat Cleared is an auditable safety action: a reason is mandatory.
+  if (action === 'maintenance_reset' && (!reason || !reason.trim())) {
+    return res.status(400).json({
+      error: 'maintenance_reset requires a non-empty reason.',
+      action,
+    });
+  }
   try {
     // Gas/CO pump lockout: never start a pump while a gas or CO hazard is active.
     if (PUMP_ACTIONS.includes(action)) {
@@ -209,15 +245,15 @@ async function createOverride(req, res) {
     // Fire-aware Stop Pump: never let pump_off look "executed" while a fire is
     // active. The firmware safety loop owns the pump relay during a fire and
     // keeps suppression running, so a normal pump_off must not be published or
-    // auto-acked. Releasing suppression is a separate maintenance reset flow
-    // (not implemented in this phase) after the threat is confirmed cleared.
+    // auto-acked. A fire that has been cleared by a successful maintenance_reset
+    // (Confirm Threat Cleared) is no longer active, so pump_off is allowed again.
     if (action === 'pump_off') {
-      const activeFire = await findActiveHazard(device_id, FIRE_HAZARD_TYPES);
-      if (activeFire) {
+      const fireActive = await isFireActive(device_id);
+      if (fireActive) {
         return createBlockedOverride(
           res,
           req.body,
-          'Fire is active for this device. The pump cannot be stopped while fire suppression is engaged. Clear the threat and use a maintenance reset to release suppression.',
+          'Fire is active for this device. The pump cannot be stopped while fire suppression is engaged. Use Confirm Threat Cleared (maintenance reset) once the threat is verified clear.',
           'pump_off_blocked_fire_active'
         );
       }
