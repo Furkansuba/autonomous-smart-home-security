@@ -38,8 +38,6 @@ const OVERRIDE_RESULTS = ['executed', 'failed', 'blocked'];
 const OVERRIDE_ACTIONS = [
   'pump_on',
   'pump_off',
-  'valve_open',
-  'valve_close',
   'buzzer_on',
   'buzzer_off',
   'door_unlock',

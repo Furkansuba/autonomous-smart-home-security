@@ -182,16 +182,16 @@ npm run test:backend
 
 ### Admin-web override submission
 - [x] Issue Command Override form is visible when logged in as admin
-- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump, Close Valve) populate the form fields
+- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump) populate the form fields
 - [x] Action dropdown groups Safe and Advanced actions with clear optgroup labels
 - [x] Submitting each safe quick action creates a new override record
 - [x] Records appear with `status: executed` after ~500 ms (OVERRIDE_DEMO_AUTO_ACK=true on EC2)
 - [x] Door Unlock is in the Advanced dropdown only — stays `requested` without real ESP32
 
 ### Android Safe Override Actions
-- [x] Admin Actions card is visible on the Overrides screen when logged in as admin (2×2 grid)
+- [x] Admin Actions card is visible on the Overrides screen when logged in as admin (safe-action grid)
 - [x] Each button shows a confirmation dialog with action name and hazard-not-resolved notice
-- [x] All four safe actions (buzzer_off, buzzer_on, pump_off, valve_close) submitted and executed
+- [x] All three safe actions (buzzer_off, buzzer_on, pump_off) submitted and executed
 - [x] New override records appear in history with `status: executed`
 - [x] Hazard events (fire/gas/CO/intrusion) remained visible after alarm silence — not cleared
 
@@ -246,9 +246,9 @@ npm run test:backend
 ### Override History — admin account
 - [x] Overrides screen is accessible from the Dashboard
 - [x] Four seeded overrides are visible
-- [x] Admin Actions card is rendered (four safe action buttons in 2×2 grid: Silence Alarm, Test Buzzer, Stop Pump, Close Valve)
+- [x] Admin Actions card is rendered (three safe action buttons: Silence Alarm, Test Buzzer, Stop Pump)
 - [x] Confirmation dialog shows per-action text and hazard-not-resolved notice
-- [x] All four safe actions submitted and new records appear with `status: executed`
+- [x] All three safe actions submitted and new records appear with `status: executed`
 
 ### RBAC — resident account
 - [x] Log out and log in as `resident@smarthome.local`
@@ -321,9 +321,9 @@ npm run test:backend
 - [x] Override history table loads
 - [x] Status filter re-fetches correctly
 - [x] Issue Command Override form is visible
-- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump, Close Valve) populate the form
+- [x] Quick Action presets (Silence Alarm, Test Buzzer, Stop Pump) populate the form
 - [x] Action dropdown groups Safe and Advanced actions with clear optgroup labels
-- [x] All four safe quick action presets executed successfully (auto-acked to `executed` on EC2)
+- [x] All three safe quick action presets executed successfully (auto-acked to `executed` on EC2)
 - [x] Door Unlock is in the Advanced dropdown — stays `requested` without real ESP32 (expected by design)
 
 ### UI shell

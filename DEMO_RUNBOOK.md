@@ -141,13 +141,13 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 10. Four seeded overrides are shown:
     - `requested` — buzzer_off pending
     - `executed` — door_unlock completed
-    - `failed` — valve_open on degraded device
+    - `failed` — buzzer_on on degraded device
     - `blocked` — pump_on blocked by gas/CO lockout rule
 
 **Safe Override Actions (admin-only):**
-11. At the top of the Overrides screen, the **Admin Actions** card is visible with four buttons in a 2×2 grid.
+11. At the top of the Overrides screen, the **Admin Actions** card is visible with three safe-action buttons.
 12. Row 1 (red): **Silence Alarm** (`buzzer_off`) and **Test Buzzer** (`buzzer_on`).
-13. Row 2 (secondary): **Stop Pump** (`pump_off`) and **Close Valve** (`valve_close`).
+13. Row 2 (secondary): **Stop Pump** (`pump_off`).
 14. Tap any action → confirm in the dialog — the command is sent to `esp32_home_01`.
 15. With `OVERRIDE_DEMO_AUTO_ACK=true` on EC2, safe actions auto-complete to `executed` within ~500 ms without requiring a real ESP32 response.
 16. The new override record appears in the history list with `status: executed`.
@@ -202,7 +202,7 @@ The Android biometric feature is a **stored-session unlock**, not a standalone b
 4. **Events:** Fire, gas, intrusion, and motion events. Use the severity filter to narrow to `critical` events only.
 5. **Access Logs:** NFC access history with four granted entries and one denied. Use the outcome filter; the denial rate card color-codes red when denials are high.
 6. **Telemetry:** Featured latest reading panel, sensor tile grid, full historical table.
-7. **Overrides:** Override history with status filter. The **Issue Command Override** form is visible. Four **Quick Action** presets populate the form: **Silence Alarm** (`buzzer_off`), **Test Buzzer** (`buzzer_on`), **Stop Pump** (`pump_off`), **Close Valve** (`valve_close`). The action dropdown groups options into *Safe — auto-acked in demo* and *Advanced — requires device confirmation*. Door Unlock is in the Advanced group only and is not a quick action. Submit any safe preset — with `OVERRIDE_DEMO_AUTO_ACK=true` the record becomes `executed` within ~500 ms.
+7. **Overrides:** Override history with status filter. The **Issue Command Override** form is visible. Three **Quick Action** presets populate the form: **Silence Alarm** (`buzzer_off`), **Test Buzzer** (`buzzer_on`), **Stop Pump** (`pump_off`). The action dropdown groups options into *Safe — auto-acked in demo* and *Advanced — requires device confirmation*. Door Unlock is in the Advanced group only and is not a quick action. Submit any safe preset — with `OVERRIDE_DEMO_AUTO_ACK=true` the record becomes `executed` within ~500 ms.
 
 ---
 
@@ -482,7 +482,7 @@ The backend is deployed to AWS EC2 (Amazon Linux 2023) and managed by PM2 with s
 | MQTT | Connected to local Mosquitto broker on EC2 |
 | FCM | Initialized — `FCM_ENABLED=true`, `FIREBASE_SERVICE_ACCOUNT_BASE64` set in `.env`. All four critical event types (fire/gas/CO/intrusion) verified end-to-end to physical phone. |
 | SMS | Dispatch path verified — Twilio accepted the request (NotificationLog: `channel=sms status=sent`, Twilio Message Log: `Sent`). Handset delivery not yet confirmed (no `Delivered` status in Twilio). SMS initialization confirmed from PM2 startup logs (`[SMS] Twilio client initialized`). |
-| Demo Override Auto-Ack | `OVERRIDE_DEMO_AUTO_ACK=true`, `OVERRIDE_DEMO_AUTO_ACK_DELAY_MS=500`. Safe actions (`buzzer_off`, `buzzer_on`, `pump_off`, `valve_close`) auto-complete to `executed` in ~500 ms. Risky actions (`door_unlock`, `pump_on`, `valve_open`, `system_reset`) are not auto-acked. Hazard events remain untouched. See §12.6. |
+| Demo Override Auto-Ack | `OVERRIDE_DEMO_AUTO_ACK=true`, `OVERRIDE_DEMO_AUTO_ACK_DELAY_MS=500`. Safe actions (`buzzer_off`, `buzzer_on`, `pump_off`) auto-complete to `executed` in ~500 ms. Risky actions (`door_unlock`, `pump_on`, `system_reset`) are not auto-acked. Hazard events remain untouched. See §12.6. |
 | Logical device heartbeat support | `56fc6c6` and `60842ac` deployed. Device ID validation regex widened to accept all 14 logical component IDs. Component offline FCM suppressed; only `esp32_home_01` triggers FCM on offline transition. 31/31 local backend tests passed before deploy; EC2 deploy verification ran `check:config` (env/FCM/SMS confirmed) and `test:device-status-monitor` (22/22 cases passed). |
 | seed-logical-devices | **NOT run on EC2.** The 14 logical component device records (`pcf8574_01`, `flame_sensor_01`, `pump_rm1_01`, etc.) are not in MongoDB. Run `npm run seed:logical-devices` manually on EC2 before the ESP32 begins publishing component heartbeats. Do not run automatically. |
 | Android refresh | `40a4b09` (Events pull-to-refresh + 30 s auto-refresh) and `d383401` (Devices pull-to-refresh + 30 s auto-refresh) committed and built. Physical phone smoke test passed. `77660e5` (Telemetry freshness alignment) also committed. |
@@ -635,14 +635,12 @@ One SMS log per transition. FCM deduplication ensures one send per unique token 
 | `buzzer_off` | Alarm silence / acknowledgement |
 | `buzzer_on` | Buzzer test |
 | `pump_off` | Stop water pump |
-| `valve_close` | Close valve |
 
 **Risky actions (not auto-acked — remain `requested` without real ESP32):**
 | Action | Reason |
 |---|---|
 | `door_unlock` | Physical-security action; requires real device confirmation |
 | `pump_on` | Also blocked by gas/CO lockout when a hazard is active |
-| `valve_open` | Safety-controlled |
 | `system_reset` | System-wide impact |
 
 **Hazard safety:** Auto-acking `buzzer_off` (alarm silence) does **not** resolve the underlying hazard. Active `fire_detected`, `gas_detected`, `co_detected`, or `intrusion_detected` events remain in the `events` collection and are visible in both apps. The PM2 log explicitly records when a hazard is still active:
@@ -689,7 +687,7 @@ This section maps each objective from the capstone proposal (§1.3, §7.2) to th
 | NFC door access control — record all access attempts | **Partially done** | Access log data model, REST API, admin-web Access Logs page, and Android Alerts tab are all complete. Seeded records include granted and denied entries. Live RC522 hardware integration is MCH/firmware scope. |
 | Complete software system — user registration, RBAC, dashboards, audit logging | **Done** | JWT auth, admin/resident RBAC, all 7 admin-web pages, all Android screens (Login, Dashboard, Devices, Alerts, Sensors, Overrides, Profile), both roles fully working. |
 | Real-time alerting ≤ 5–10 s + heartbeat offline detection | **Partially done** | Heartbeat offline detection is fully implemented (0–60 s: online, 61–90 s: degraded, > 90 s: offline). FCM push notifications are implemented and wired; end-to-end delivery time requires live hardware and a configured Firebase project. |
-| Automatic + manual safety responses — authorized override path | **Partially done** | Manual override is fully implemented with RBAC (admin only), gas/CO pump lockout enforced, and override history logged. Safe admin override actions (`buzzer_off`, `buzzer_on`, `pump_off`, `valve_close`) exposed on both Android and admin-web; demo auto-ack enabled on EC2 (`OVERRIDE_DEMO_AUTO_ACK=true`) — verified end-to-end on physical phone and browser. Automatic fire suppression (pump + valve activation) requires firmware. |
+| Automatic + manual safety responses — authorized override path | **Partially done** | Manual override is fully implemented with RBAC (admin only), gas/CO pump lockout enforced, and override history logged. Safe admin override actions (`buzzer_off`, `buzzer_on`, `pump_off`) exposed on both Android and admin-web; demo auto-ack enabled on EC2 (`OVERRIDE_DEMO_AUTO_ACK=true`) — verified end-to-end on physical phone and browser. Automatic fire suppression (pump + valve activation) requires firmware. |
 
 ---
 

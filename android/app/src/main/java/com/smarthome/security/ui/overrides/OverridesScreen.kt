@@ -234,7 +234,6 @@ private val SAFE_ACTIONS = listOf(
     SafeActionDef("buzzer_off",  "buzzer_01", "Silence Alarm"),
     SafeActionDef("buzzer_on",   "buzzer_01", "Test Buzzer"),
     SafeActionDef("pump_off",    "pump_01",   "Stop Pump"),
-    SafeActionDef("valve_close", "valve_01",  "Close Valve"),
 )
 
 @Composable

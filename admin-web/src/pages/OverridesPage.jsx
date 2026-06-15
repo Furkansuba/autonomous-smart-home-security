@@ -13,7 +13,6 @@ const QUICK_ACTIONS = [
   { label: 'Silence Alarm', actuator: 'buzzer_01', action: 'buzzer_off'  },
   { label: 'Test Buzzer',   actuator: 'buzzer_01', action: 'buzzer_on'   },
   { label: 'Stop Pump',     actuator: 'pump_01',   action: 'pump_off'    },
-  { label: 'Close Valve',   actuator: 'valve_01',  action: 'valve_close' },
 ]
 
 function OverridesPage() {
@@ -230,11 +229,9 @@ function OverridesPage() {
                       <option value="buzzer_off">buzzer_off</option>
                       <option value="buzzer_on">buzzer_on</option>
                       <option value="pump_off">pump_off</option>
-                      <option value="valve_close">valve_close</option>
                     </optgroup>
                     <optgroup label="Advanced — requires device confirmation">
                       <option value="pump_on">pump_on</option>
-                      <option value="valve_open">valve_open</option>
                       <option value="door_unlock">door_unlock</option>
                       <option value="system_reset">system_reset</option>
                     </optgroup>

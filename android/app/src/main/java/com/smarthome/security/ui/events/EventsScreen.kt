@@ -162,11 +162,12 @@ fun EventsScreen(
 
 @Composable
 private fun AlertFeed(events: List<Event>) {
-    val critical = events.filter { it.severity == "critical" }
-    val others = events.filter { it.severity != "critical" }
-    val criticalCount = critical.size
-    val warningCount = events.count { it.severity == "warning" }
-    val infoCount = events.count { it.severity != "critical" && it.severity != "warning" }
+    // Single unified feed, newest first. Critical wins on color (red); all
+    // non-critical events render yellow/amber. No separate Critical/Recent sections.
+    val sorted = events.sortedByDescending { it.occurredAt }
+    val criticalCount = sorted.count { it.severity == "critical" }
+    val warningCount = sorted.count { it.severity == "warning" }
+    val infoCount = sorted.count { it.severity != "critical" && it.severity != "warning" }
 
     LazyColumn(
         modifier = Modifier
@@ -177,35 +178,15 @@ private fun AlertFeed(events: List<Event>) {
     ) {
         item {
             AlertSummaryHeader(
-                total = events.size,
+                total = sorted.size,
                 criticalCount = criticalCount,
                 warningCount = warningCount,
                 infoCount = infoCount,
             )
         }
 
-        if (critical.isNotEmpty()) {
-            item {
-                SectionLabel(
-                    title = "CRITICAL ALERTS",
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            items(critical, key = { it.eventId }) { event ->
-                EventCard(event = event)
-            }
-        }
-
-        if (others.isNotEmpty()) {
-            item {
-                SectionLabel(
-                    title = if (critical.isNotEmpty()) "RECENT ALERTS" else "ALL ALERTS",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            items(others, key = { it.eventId }) { event ->
-                EventCard(event = event)
-            }
+        items(sorted, key = { it.eventId }) { event ->
+            EventCard(event = event)
         }
     }
 }
@@ -299,31 +280,6 @@ private fun SeverityCountBadge(count: Int, label: String, color: Color) {
             text = "$count $label",
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun SectionLabel(title: String, color: Color) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(color),
-        )
-        Text(
-            text = title,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = color,
-            letterSpacing = 1.sp,
         )
     }
 }
@@ -485,9 +441,9 @@ private fun EmptyAlertsState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun resolveSeverityColor(severity: String): Color = when (severity) {
+    // Critical wins → red. Everything non-critical → yellow/amber.
     "critical" -> MaterialTheme.colorScheme.error
-    "warning" -> MaterialTheme.colorScheme.tertiary
-    else -> MaterialTheme.colorScheme.primary
+    else -> MaterialTheme.colorScheme.tertiary
 }
 
 private fun eventTypeIcon(eventType: String): ImageVector {

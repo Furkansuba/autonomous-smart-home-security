@@ -15,7 +15,7 @@ const { persistMappedOperation } = require('../services/persistence.service');
 const PUMP_ACTIONS = ['pump_on'];
 const GAS_CO_HAZARD_TYPES = ['gas_detected', 'co_detected'];
 const HAZARD_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DEMO_AUTO_ACK_SAFE_ACTIONS = new Set(['buzzer_off', 'buzzer_on', 'pump_off', 'valve_close']);
+const DEMO_AUTO_ACK_SAFE_ACTIONS = new Set(['buzzer_off', 'buzzer_on', 'pump_off']);
 const SAFETY_HAZARD_TYPES = ['fire_detected', 'gas_detected', 'co_detected'];
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
