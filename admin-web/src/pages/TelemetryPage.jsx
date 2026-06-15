@@ -72,9 +72,9 @@ function TelemetryPage() {
   const boolValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
   const boolTile     = (val) => val ? 'sensor-tile--alert' : 'sensor-tile--ok'
 
-  const gasLabel    = (val) => val == null ? 'No reading' : (val ? 'Detected' : 'Clear')
-  const gasValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
-  const gasTileClass = (val) => val == null ? '' : (val ? 'sensor-tile--alert' : 'sensor-tile--ok')
+  const gasLabel     = (val) => val == null ? '—' : String(val)
+  const gasValClass  = (val) => val == null ? '' : (val > 1000 ? 'telemetry-val--alert' : 'telemetry-val--ok')
+  const gasTileClass = (val) => val == null ? '' : (val > 1000 ? 'sensor-tile--alert' : 'sensor-tile--ok')
 
   return (
     <div className="telemetry-page">
@@ -112,9 +112,9 @@ function TelemetryPage() {
               <span className="telemetry-chip-label">Flame</span>
               <span className="telemetry-chip-value">{boolLabel(latest.flame_detected)}</span>
             </span>
-            <span className={`telemetry-chip${latest.gas_detected ? ' telemetry-chip--alert' : ''}`}>
-              <span className="telemetry-chip-label">Gas</span>
-              <span className="telemetry-chip-value">{gasLabel(latest.gas_detected)}</span>
+            <span className={`telemetry-chip${latest.gas_raw > 1000 ? ' telemetry-chip--alert' : ''}`}>
+              <span className="telemetry-chip-label">Gas raw</span>
+              <span className="telemetry-chip-value">{gasLabel(latest.gas_raw)}</span>
             </span>
           </div>
         )}
@@ -176,9 +176,9 @@ function TelemetryPage() {
                   </span>
                 </div>
                 <div className="telemetry-reading-field">
-                  <span className="telemetry-reading-field-label">Gas</span>
-                  <span className={`telemetry-reading-field-value ${gasValClass(latest.gas_detected)}`}>
-                    {gasLabel(latest.gas_detected)}
+                  <span className="telemetry-reading-field-label">Gas raw</span>
+                  <span className={`telemetry-reading-field-value ${gasValClass(latest.gas_raw)}`}>
+                    {gasLabel(latest.gas_raw)}
                   </span>
                 </div>
               </div>
@@ -219,10 +219,10 @@ function TelemetryPage() {
                   <span className="sensor-tile-value">{boolLabel(latest.flame_detected)}</span>
                   <span className="sensor-tile-label">Flame</span>
                 </div>
-                <div className={`sensor-tile ${gasTileClass(latest.gas_detected)}`}>
+                <div className={`sensor-tile ${gasTileClass(latest.gas_raw)}`}>
                   <div className="sensor-tile-icon"><IconWarning /></div>
-                  <span className="sensor-tile-value">{gasLabel(latest.gas_detected)}</span>
-                  <span className="sensor-tile-label">Gas</span>
+                  <span className="sensor-tile-value">{gasLabel(latest.gas_raw)}</span>
+                  <span className="sensor-tile-label">Gas raw</span>
                 </div>
               </div>
             </div>
@@ -240,7 +240,7 @@ function TelemetryPage() {
               <DataTable
                 wrapClassName="telemetry-table-wrap"
                 tableClassName="telemetry-table"
-                columns={['Device', 'Room', 'Temp (°C)', 'Humidity (%)', 'Motion', 'Flame', 'Gas', 'Recorded At']}
+                columns={['Device', 'Room', 'Temp (°C)', 'Humidity (%)', 'Motion', 'Flame', 'Gas raw', 'Recorded At']}
               >
                 {telemetry.map((t) => (
                   <tr key={t._id ?? t.telemetry_id ?? `${t.device_id}-${t.recorded_at}`}>
@@ -250,7 +250,7 @@ function TelemetryPage() {
                     <td>{t.humidity_percent != null ? t.humidity_percent.toFixed(0) : '—'}</td>
                     <td>{t.motion_detected != null ? (t.motion_detected ? 'Yes' : 'No') : '—'}</td>
                     <td>{t.flame_detected  != null ? (t.flame_detected  ? 'Yes' : 'No') : '—'}</td>
-                    <td>{t.gas_detected    != null ? (t.gas_detected    ? 'Yes' : 'No') : '—'}</td>
+                    <td>{t.gas_raw != null ? t.gas_raw : '—'}</td>
                     <td className="telemetry-col-ts">{formatDateTime(t.recorded_at ?? t.createdAt)}</td>
                   </tr>
                 ))}

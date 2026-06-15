@@ -279,9 +279,9 @@ private fun SensorsContent(
             }
             items(
                 items = alertingReadings,
-                key = { r -> "alert_${r.deviceId}_${r.occurredAt ?: r.createdAt ?: ""}" },
+                key = { r -> "alert_${r.deviceId}_${r.roomId ?: ""}_${r.occurredAt ?: r.createdAt ?: ""}" },
             ) { reading ->
-                val key = "alert_${reading.deviceId}_${reading.occurredAt ?: reading.createdAt ?: ""}"
+                val key = "alert_${reading.deviceId}_${reading.roomId ?: ""}_${reading.occurredAt ?: reading.createdAt ?: ""}"
                 SensorCard(
                     reading = reading,
                     expanded = key in expandedKeys,
@@ -305,9 +305,9 @@ private fun SensorsContent(
             }
             items(
                 items = normalReadings,
-                key = { r -> "normal_${r.deviceId}_${r.occurredAt ?: r.createdAt ?: ""}" },
+                key = { r -> "normal_${r.deviceId}_${r.roomId ?: ""}_${r.occurredAt ?: r.createdAt ?: ""}" },
             ) { reading ->
-                val key = "normal_${reading.deviceId}_${reading.occurredAt ?: reading.createdAt ?: ""}"
+                val key = "normal_${reading.deviceId}_${reading.roomId ?: ""}_${reading.occurredAt ?: reading.createdAt ?: ""}"
                 SensorCard(
                     reading = reading,
                     expanded = key in expandedKeys,
