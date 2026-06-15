@@ -28,10 +28,10 @@ class OverridesRepository(
         }
     }
 
-    suspend fun silenceAlarm(adminEmail: String): Result<Unit> =
+    suspend fun silenceAlarm(adminEmail: String): Result<String> =
         sendSafeAction("buzzer_off", "buzzer_01", adminEmail)
 
-    suspend fun sendSafeAction(action: String, actuatorId: String, adminEmail: String): Result<Unit> {
+    suspend fun sendSafeAction(action: String, actuatorId: String, adminEmail: String): Result<String> {
         val token = sessionManager.getToken()
             ?: return Result.failure(Exception("Session not found. Please log in again."))
         val body = CreateOverrideRequest(
@@ -44,7 +44,18 @@ class OverridesRepository(
         return try {
             val response = api.createOverride("Bearer $token", body)
             when {
-                response.isSuccessful -> Result.success(Unit)
+                response.isSuccessful -> {
+                    // A 2xx can still be a safety block (e.g. pump_off during a fire):
+                    // the override is persisted with status "blocked" and no command is
+                    // sent. Surface that instead of a misleading "Command sent."
+                    val override = response.body()?.override
+                    val message = if (override?.status == "blocked") {
+                        override.blockedReason ?: "Command blocked for safety."
+                    } else {
+                        "Command sent."
+                    }
+                    Result.success(message)
+                }
                 response.code() == 401 -> {
                     sessionManager.clearSession()
                     Result.failure(SessionExpiredException())

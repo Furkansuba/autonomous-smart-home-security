@@ -56,6 +56,9 @@ async function main() {
   const lockoutEventId = 'evt_lockout_test_' + runId;
   const autoAckPrefix = 'ovr_autoack_test_' + runId;
   const autoAckHazardEventId = 'evt_autoack_hazard_' + runId;
+  const pumpFirePrefix = 'ovr_pumpfire_test_' + runId;
+  const pumpFireEventId = 'evt_pumpfire_test_' + runId;
+  const pumpDevice = 'esp32_pumpsafety_01';
   const origAutoAck = env.overrideDemoAutoAck;
   const origDelay = env.overrideDemoAutoAckDelayMs;
   try {
@@ -257,6 +260,93 @@ async function main() {
     assert(excludedRecord.status === 'requested', 'excluded action: door_unlock must stay requested');
     console.log('[OK] auto-ack excluded: door_unlock stays requested');
 
+    // ── Phase 2: fire-aware pump_off safety ──────────────────────────────
+    env.overrideDemoAutoAck = true;
+    env.overrideDemoAutoAckDelayMs = 50;
+
+    // pump_off auto-acks to executed when there is NO recent fire for the device
+    const pumpOkId = pumpFirePrefix + '_no_fire_01';
+    const pumpOkReq = {
+      body: {
+        override_id: pumpOkId,
+        device_id: pumpDevice,
+        requested_by: 'usr_admin_001',
+        actuator_id: 'pump_01',
+        action: 'pump_off',
+        reason: 'pump_off with no active fire.',
+      },
+    };
+    const pumpOkRes = createMockRes();
+    await createOverride(pumpOkReq, pumpOkRes);
+    assert(pumpOkRes.statusCode === 201, 'pump_off no fire: should return 201');
+    assert(pumpOkRes.body.blocked !== true, 'pump_off no fire: must not be blocked');
+    assert(pumpOkRes.body.override.status === 'requested', 'pump_off no fire: initial status requested');
+    await sleep(300);
+    const pumpOkRecord = await OverrideRequest.findOne({ override_id: pumpOkId }).lean();
+    assert(pumpOkRecord !== null, 'pump_off no fire: record must exist');
+    assert(pumpOkRecord.status === 'executed', 'pump_off no fire: must auto-ack to executed');
+    console.log('[OK] pump_off auto-acks executed when no recent fire');
+
+    // pump_off is blocked (not auto-acked) when a recent fire_detected is active
+    await Event.create({
+      event_id: pumpFireEventId,
+      device_id: pumpDevice,
+      room_id: 'kitchen',
+      event_type: 'fire_detected',
+      severity: 'critical',
+      message: 'Pump safety test: fire detected.',
+      confirmed: true,
+      occurred_at: new Date(),
+      received_at: new Date(),
+    });
+    const pumpFireId = pumpFirePrefix + '_fire_active_01';
+    const pumpFireReq = {
+      body: {
+        override_id: pumpFireId,
+        device_id: pumpDevice,
+        requested_by: 'usr_admin_001',
+        actuator_id: 'pump_01',
+        action: 'pump_off',
+        reason: 'pump_off attempt during active fire.',
+      },
+    };
+    const pumpFireRes = createMockRes();
+    await createOverride(pumpFireReq, pumpFireRes);
+    assert(pumpFireRes.statusCode === 201, 'pump_off fire: should return 201');
+    assert(pumpFireRes.body.blocked === true, 'pump_off fire: must be blocked');
+    assert(pumpFireRes.body.override.status === 'blocked', 'pump_off fire: status must be blocked');
+    assert(
+      typeof pumpFireRes.body.override.blocked_reason === 'string' &&
+        pumpFireRes.body.override.blocked_reason.length > 0,
+      'pump_off fire: blocked_reason must be non-empty'
+    );
+    assert(pumpFireRes.body.mqtt_publish.published === false, 'pump_off fire: must not publish MQTT command');
+    await sleep(200);
+    const pumpFireRecord = await OverrideRequest.findOne({ override_id: pumpFireId }).lean();
+    assert(pumpFireRecord.status === 'blocked', 'pump_off fire: must stay blocked, never auto-acked to executed');
+    const fireStillExists = await Event.findOne({ event_id: pumpFireEventId }).lean();
+    assert(fireStillExists !== null, 'pump_off fire: fire_detected event must not be cleared');
+    console.log('[OK] pump_off blocked while fire active; hazard event preserved');
+
+    // valve actions remain rejected (removed from the contract in Phase 1)
+    const valveRejectId = pumpFirePrefix + '_valve_reject_01';
+    const valveRejectReq = {
+      body: {
+        override_id: valveRejectId,
+        device_id: pumpDevice,
+        requested_by: 'usr_admin_001',
+        actuator_id: 'pump_01',
+        action: 'valve_close',
+        reason: 'valve_close should be rejected.',
+      },
+    };
+    const valveRejectRes = createMockRes();
+    await createOverride(valveRejectReq, valveRejectRes);
+    assert(valveRejectRes.statusCode === 400, 'valve_close: must be rejected with 400');
+    const valveRejectRecord = await OverrideRequest.findOne({ override_id: valveRejectId }).lean();
+    assert(valveRejectRecord === null, 'valve_close: rejected action must not be persisted');
+    console.log('[OK] valve_close rejected as invalid action');
+
     // Test: already-resolved override — auto-ack is a no-op (status guard prevents double-update)
     const resolvedId = autoAckPrefix + '_resolved_01';
     await OverrideRequest.create({
@@ -301,6 +391,10 @@ async function main() {
       override_id: { $regex: '^' + autoAckPrefix },
     });
     await Event.deleteMany({ event_id: autoAckHazardEventId });
+    await OverrideRequest.deleteMany({
+      override_id: { $regex: '^' + pumpFirePrefix },
+    });
+    await Event.deleteMany({ event_id: pumpFireEventId });
     await disconnectDatabase();
   }
 }

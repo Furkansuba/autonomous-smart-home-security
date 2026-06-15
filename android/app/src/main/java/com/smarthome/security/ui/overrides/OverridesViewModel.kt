@@ -21,7 +21,7 @@ sealed class OverridesUiState {
 sealed class OverrideActionState {
     object Idle : OverrideActionState()
     object Sending : OverrideActionState()
-    object Success : OverrideActionState()
+    data class Success(val message: String) : OverrideActionState()
     data class Error(val message: String) : OverrideActionState()
     object SessionExpired : OverrideActionState()
 }
@@ -63,7 +63,7 @@ class OverridesViewModel(private val repository: OverridesRepository) : ViewMode
         viewModelScope.launch {
             val result = repository.sendSafeAction(action, actuatorId, adminEmail)
             _overrideActionState.value = result.fold(
-                onSuccess = { OverrideActionState.Success },
+                onSuccess = { OverrideActionState.Success(it) },
                 onFailure = { error ->
                     if (error is SessionExpiredException)
                         OverrideActionState.SessionExpired

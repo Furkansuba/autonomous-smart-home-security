@@ -66,14 +66,19 @@ function OverridesPage() {
     const storedUser = authService.getStoredUser()
     const requestedBy = storedUser?.user_id ?? 'usr_admin_001'
     try {
-      await createOverride({
+      const res = await createOverride({
         device_id:    formDevice.trim(),
         actuator_id:  formActuator.trim(),
         action:       formAction,
         reason:       formReason.trim(),
         requested_by: requestedBy,
       })
-      setSubmitMsg({ ok: true, text: 'Override created successfully.' })
+      const ov = res?.override
+      if (ov?.status === 'blocked') {
+        setSubmitMsg({ ok: false, text: ov.blocked_reason || 'Command blocked for safety.' })
+      } else {
+        setSubmitMsg({ ok: true, text: 'Override created successfully.' })
+      }
       loadOverrides(statusFilter)
     } catch (err) {
       setSubmitMsg({ ok: false, text: err.message || 'Failed to create override.' })
@@ -249,6 +254,13 @@ function OverridesPage() {
                   />
                 </div>
               </div>
+              {formAction === 'pump_off' && (
+                <p className="cmd-form-helper" style={{ color: '#d97706' }}>
+                  ⚠ Stop Pump does not confirm a fire has been cleared. If a fire is
+                  currently active, this command is blocked for safety and fire
+                  suppression keeps running.
+                </p>
+              )}
               <div className="cmd-form-footer">
                 <button
                   className="btn-override-submit"

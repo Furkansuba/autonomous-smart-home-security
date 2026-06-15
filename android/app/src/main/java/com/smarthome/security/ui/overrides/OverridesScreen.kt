@@ -82,7 +82,7 @@ fun OverridesScreen(
     LaunchedEffect(overrideActionState) {
         when (val s = overrideActionState) {
             is OverrideActionState.Success -> {
-                snackbarHostState.showSnackbar("Command sent.")
+                snackbarHostState.showSnackbar(s.message)
                 viewModel.resetOverrideActionState()
             }
             is OverrideActionState.Error -> {
@@ -99,7 +99,16 @@ fun OverridesScreen(
             onDismissRequest = { pendingConfirm = null },
             title = { Text(label) },
             text = {
-                Text("Send $action to esp32_home_01. This action will be logged in override history. Active hazards are not resolved by this command.")
+                Text(
+                    if (action == "pump_off") {
+                        "Send pump_off to esp32_home_01. This does NOT confirm a fire has been " +
+                            "cleared. If a fire is currently active, the system blocks this command " +
+                            "and keeps fire suppression running for safety. Logged in override history."
+                    } else {
+                        "Send $action to esp32_home_01. This action will be logged in override " +
+                            "history. Active hazards are not resolved by this command."
+                    }
+                )
             },
             confirmButton = {
                 TextButton(

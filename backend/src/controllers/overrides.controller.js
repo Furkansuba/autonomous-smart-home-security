@@ -14,6 +14,7 @@ const {
 const { persistMappedOperation } = require('../services/persistence.service');
 const PUMP_ACTIONS = ['pump_on'];
 const GAS_CO_HAZARD_TYPES = ['gas_detected', 'co_detected'];
+const FIRE_HAZARD_TYPES = ['fire_detected'];
 const HAZARD_WINDOW_MS = 24 * 60 * 60 * 1000;
 const DEMO_AUTO_ACK_SAFE_ACTIONS = new Set(['buzzer_off', 'buzzer_on', 'pump_off']);
 const SAFETY_HAZARD_TYPES = ['fire_detected', 'gas_detected', 'co_detected'];
@@ -24,6 +25,42 @@ function sendDatabaseUnavailable(res) {
   return res.status(503).json({
     error: 'Database is not connected.',
     database: getDatabaseStatus(),
+  });
+}
+// Returns a recent hazard event of the given types for the device, or null.
+async function findActiveHazard(deviceId, eventTypes) {
+  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
+  return Event.findOne({
+    device_id: deviceId,
+    event_type: { $in: eventTypes },
+    occurred_at: { $gte: hazardCutoff },
+  });
+}
+// Persists a blocked override and responds. No MQTT command is published and
+// the action is never auto-acked, so a blocked override can never appear as
+// "executed". Hazard events themselves are left untouched.
+async function createBlockedOverride(res, body, blockedReason, skipReason) {
+  const blocked = await OverrideRequest.create({
+    override_id: body.override_id || createOverrideId(),
+    device_id: body.device_id,
+    requested_by: body.requested_by,
+    actuator_id: body.actuator_id,
+    action: body.action,
+    reason: body.reason,
+    status: 'blocked',
+    blocked_reason: blockedReason,
+    requested_at: new Date(),
+    result_at: new Date(),
+  });
+  return res.status(201).json({
+    created: true,
+    blocked: true,
+    override: blocked,
+    mqtt_publish: {
+      published: false,
+      skipped: true,
+      reason: skipReason,
+    },
   });
 }
 async function autoAckDemoOverride(override, delayMs) {
@@ -157,37 +194,32 @@ async function createOverride(req, res) {
     });
   }
   try {
+    // Gas/CO pump lockout: never start a pump while a gas or CO hazard is active.
     if (PUMP_ACTIONS.includes(action)) {
-      const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
-      const activeHazard = await Event.findOne({
-        device_id,
-        event_type: { $in: GAS_CO_HAZARD_TYPES },
-        occurred_at: { $gte: hazardCutoff },
-      });
+      const activeHazard = await findActiveHazard(device_id, GAS_CO_HAZARD_TYPES);
       if (activeHazard) {
-        const blocked = await OverrideRequest.create({
-          override_id: override_id || createOverrideId(),
-          device_id,
-          requested_by,
-          actuator_id,
-          action,
-          reason,
-          status: 'blocked',
-          blocked_reason:
-            'Gas or CO hazard is active for this device. Pump activation is not permitted.',
-          requested_at: new Date(),
-          result_at: new Date(),
-        });
-        return res.status(201).json({
-          created: true,
-          blocked: true,
-          override: blocked,
-          mqtt_publish: {
-            published: false,
-            skipped: true,
-            reason: 'pump_lockout_gas_co',
-          },
-        });
+        return createBlockedOverride(
+          res,
+          req.body,
+          'Gas or CO hazard is active for this device. Pump activation is not permitted.',
+          'pump_lockout_gas_co'
+        );
+      }
+    }
+    // Fire-aware Stop Pump: never let pump_off look "executed" while a fire is
+    // active. The firmware safety loop owns the pump relay during a fire and
+    // keeps suppression running, so a normal pump_off must not be published or
+    // auto-acked. Releasing suppression is a separate maintenance reset flow
+    // (not implemented in this phase) after the threat is confirmed cleared.
+    if (action === 'pump_off') {
+      const activeFire = await findActiveHazard(device_id, FIRE_HAZARD_TYPES);
+      if (activeFire) {
+        return createBlockedOverride(
+          res,
+          req.body,
+          'Fire is active for this device. The pump cannot be stopped while fire suppression is engaged. Clear the threat and use a maintenance reset to release suppression.',
+          'pump_off_blocked_fire_active'
+        );
       }
     }
     const override = await OverrideRequest.create({
