@@ -1,6 +1,7 @@
 package com.smarthome.security.data.repository
 
 import com.smarthome.security.data.local.SessionManager
+import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.data.remote.TelemetryApi
 import com.smarthome.security.data.remote.SessionExpiredException
@@ -28,6 +29,18 @@ class TelemetryRepository(
             }
         } catch (e: Exception) {
             Result.failure(Exception("Cannot reach server. Check your connection."))
+        }
+    }
+
+    // Best-effort: derived hazards are supplementary, so a failure here returns an
+    // empty list rather than breaking the Sensors screen.
+    suspend fun getActiveHazards(): List<ActiveHazard> {
+        val token = sessionManager.getToken() ?: return emptyList()
+        return try {
+            val response = api.getActiveHazards("Bearer $token")
+            if (response.isSuccessful) response.body()?.hazards ?: emptyList() else emptyList()
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

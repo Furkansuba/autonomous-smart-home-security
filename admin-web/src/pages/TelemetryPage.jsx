@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react'
-import { getTelemetry, getLatestTelemetry } from '../services/telemetryService.js'
+import { getTelemetry, getLatestTelemetry, getActiveHazards } from '../services/telemetryService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+
+const HAZARD_LABELS = {
+  fire_detected: 'Fire',
+  gas_detected: 'Gas',
+  co_detected: 'CO',
+  intrusion_detected: 'Intrusion',
+  vibration_detected: 'Impact',
+  reed_switch_opened: 'Reed / Window',
+  motion_detected: 'Motion',
+}
+const hazardLabel = (type) => HAZARD_LABELS[type] ?? type
 
 const IconThermometer = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -44,6 +55,7 @@ const IconWarning = () => (
 function TelemetryPage() {
   const [telemetry, setTelemetry] = useState([])
   const [latest,    setLatest]    = useState(null)
+  const [hazards,   setHazards]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
 
@@ -51,11 +63,12 @@ function TelemetryPage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([getTelemetry(), getLatestTelemetry()])
-      .then(([list, lat]) => {
+    Promise.all([getTelemetry(), getLatestTelemetry(), getActiveHazards()])
+      .then(([list, lat, hz]) => {
         if (!cancelled) {
           setTelemetry(Array.isArray(list) ? list : [])
           setLatest(lat)
+          setHazards(Array.isArray(hz) ? hz : [])
           setLoading(false)
         }
       })
@@ -128,6 +141,32 @@ function TelemetryPage() {
 
       {!loading && !error && (
         <>
+          {/* ── Recent hazards (derived from alert events, not raw sensor values) ── */}
+          {hazards.length > 0 && (
+            <div className="dash-panel" style={{ borderTop: '3px solid #dc2626' }}>
+              <div className="dash-panel-hdr">
+                <span className="dash-panel-title">Recent Hazards</span>
+                <span className="dash-panel-badge" style={{ background: '#dc2626', color: '#fff' }}>
+                  Derived from alerts
+                </span>
+              </div>
+              <p className="telemetry-page-subtitle" style={{ margin: '0 0 10px' }}>
+                Active alert events still within their visibility window. Derived from recent
+                events — not the live sensor snapshot below.
+              </p>
+              <div className="telemetry-summary-chips">
+                {hazards.map((h) => (
+                  <span key={h.event_id} className="telemetry-chip telemetry-chip--alert">
+                    <span className="telemetry-chip-label">
+                      {hazardLabel(h.event_type)} · {h.room_id}
+                    </span>
+                    <span className="telemetry-chip-value">Recent event</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Featured latest reading panel ── */}
           <div className="telemetry-reading-panel">
             <div className="telemetry-reading-hdr">

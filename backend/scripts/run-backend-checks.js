@@ -27,6 +27,7 @@ const checks = [
   'test:event-api',
   'test:access-log-api',
   'test:telemetry-api',
+  'test:telemetry-hazards',
   'test:override-api',
   'test:dashboard-api',
   'test:mqtt-e2e-local',

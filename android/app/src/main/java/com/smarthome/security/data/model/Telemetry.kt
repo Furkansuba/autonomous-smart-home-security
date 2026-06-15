@@ -19,3 +19,21 @@ data class TelemetrySummary(
 data class TelemetryListResponse(
     val telemetry: List<TelemetrySummary>?,
 )
+
+// Backend-derived recent hazard (read-only event latch). Not a raw sensor value.
+data class ActiveHazard(
+    @SerializedName("device_id") val deviceId: String,
+    @SerializedName("room_id") val roomId: String?,
+    @SerializedName("event_type") val eventType: String,
+    val severity: String?,
+    val message: String?,
+    @SerializedName("event_id") val eventId: String,
+    @SerializedName("occurred_at") val occurredAt: String?,
+    @SerializedName("ttl_seconds") val ttlSeconds: Int?,
+    @SerializedName("expires_at") val expiresAt: String?,
+    val source: String?,
+)
+
+data class HazardsResponse(
+    val hazards: List<ActiveHazard>?,
+)

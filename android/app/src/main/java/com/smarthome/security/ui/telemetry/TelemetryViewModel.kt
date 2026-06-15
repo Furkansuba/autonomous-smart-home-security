@@ -3,6 +3,7 @@ package com.smarthome.security.ui.telemetry
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.data.remote.SessionExpiredException
 import com.smarthome.security.data.repository.TelemetryRepository
@@ -20,6 +21,7 @@ sealed class TelemetryUiState {
     object Loading : TelemetryUiState()
     data class Success(
         val readings: List<TelemetrySummary>,
+        val hazards: List<ActiveHazard>,
         val lastUpdatedAt: String?,
         val isStale: Boolean,
     ) : TelemetryUiState()
@@ -73,11 +75,13 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
     }
 
     private suspend fun fetchAndProcess() {
+        // Derived hazards are best-effort and supplementary to the telemetry list.
+        val hazards = repository.getActiveHazards()
         val result = repository.getTelemetryList()
         _uiState.value = result.fold(
             onSuccess = { readings ->
-                if (readings.isEmpty()) TelemetryUiState.Empty
-                else processReadings(readings)
+                if (readings.isEmpty() && hazards.isEmpty()) TelemetryUiState.Empty
+                else processReadings(readings, hazards)
             },
             onFailure = { error ->
                 if (error is SessionExpiredException) TelemetryUiState.SessionExpired
@@ -86,7 +90,10 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
         )
     }
 
-    private fun processReadings(all: List<TelemetrySummary>): TelemetryUiState.Success {
+    private fun processReadings(
+        all: List<TelemetrySummary>,
+        hazards: List<ActiveHazard>,
+    ): TelemetryUiState.Success {
         val deduplicated = all
             .sortedByDescending { it.occurredAt ?: it.createdAt ?: "" }
             .distinctBy { it.roomId ?: it.deviceId }
@@ -107,6 +114,7 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
 
         return TelemetryUiState.Success(
             readings = deduplicated,
+            hazards = hazards,
             lastUpdatedAt = lastUpdatedAt,
             isStale = isStale,
         )

@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.ui.theme.AppColors
 
@@ -121,6 +122,7 @@ fun TelemetryScreen(
                     ) {
                         SensorsContent(
                             readings = state.readings,
+                            hazards = state.hazards,
                             lastUpdatedAt = state.lastUpdatedAt,
                             isStale = state.isStale,
                             modifier = Modifier.fillMaxSize(),
@@ -228,9 +230,69 @@ private fun SensorsStaleWarning(modifier: Modifier = Modifier) {
     }
 }
 
+private fun hazardLabel(type: String): String = when (type) {
+    "fire_detected" -> "Fire"
+    "gas_detected" -> "Gas"
+    "co_detected" -> "CO"
+    "intrusion_detected" -> "Intrusion"
+    "vibration_detected" -> "Impact"
+    "reed_switch_opened" -> "Reed / Window"
+    "motion_detected" -> "Motion"
+    else -> type
+}
+
+@Composable
+private fun RecentHazardsBanner(hazards: List<ActiveHazard>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+        ),
+        shape = RoundedCornerShape(10.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = "Recent hazards",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = "Active alert events within their visibility window — derived from recent " +
+                    "events, not the live sensor snapshot.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            hazards.forEach { h ->
+                Text(
+                    text = "• ${hazardLabel(h.eventType)} — ${h.roomId ?: h.deviceId}  (recent event)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun SensorsContent(
     readings: List<TelemetrySummary>,
+    hazards: List<ActiveHazard>,
     lastUpdatedAt: String?,
     isStale: Boolean,
     modifier: Modifier = Modifier,
@@ -245,6 +307,10 @@ private fun SensorsContent(
         modifier = modifier,
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
+        if (hazards.isNotEmpty()) {
+            item { RecentHazardsBanner(hazards = hazards) }
+        }
+
         if (isStale) {
             item { SensorsStaleWarning() }
         }

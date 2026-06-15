@@ -23,3 +23,17 @@ export async function getLatestTelemetry(params = {}) {
     return null
   }
 }
+
+// Backend-derived recent hazards (read-only event latch). Not raw sensor values.
+export async function getActiveHazards(params = {}) {
+  const query = new URLSearchParams()
+  if (params.device_id != null) query.set('device_id', String(params.device_id))
+  if (params.room_id   != null) query.set('room_id',   String(params.room_id))
+  const qs = query.toString()
+  try {
+    const data = await apiRequest(`/api/telemetry/hazards${qs ? `?${qs}` : ''}`)
+    return Array.isArray(data?.hazards) ? data.hazards : []
+  } catch {
+    return []
+  }
+}
