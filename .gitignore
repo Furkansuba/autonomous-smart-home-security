@@ -39,6 +39,8 @@ Thumbs.db
 google-services.json
 firebase-adminsdk*.json
 serviceAccountKey.json
+# Firmware secrets (real Wi-Fi/MQTT/RFID values) — keep secrets.example.h only
+firmware/secrets.h
 # Mongo / local data
 *.sqlite
 *.db
