@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.DashboardSummary
 import com.smarthome.security.data.model.Event
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.TimeFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -880,28 +881,24 @@ private fun timeOfDayGreeting(): String {
     }
 }
 
+// Relative freshness label ("just now", "5 min ago", "3h ago"); for anything older than a
+// day it falls back to an absolute LOCAL date/time. The UTC parse here is only used to
+// compute the elapsed difference (epoch-based), not for display.
 private fun relativeTime(isoTimestamp: String): String {
     return try {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("UTC")
-        val then = sdf.parse(isoTimestamp.substringBefore(".").trimEnd('Z')) ?: return shortTime(isoTimestamp)
+        val then = sdf.parse(isoTimestamp.substringBefore(".").trimEnd('Z'))
+            ?: return TimeFormat.dateTime(isoTimestamp)
         val diffMin = ((System.currentTimeMillis() - then.time) / 60_000L).toInt()
         when {
             diffMin < 1 -> "just now"
             diffMin < 60 -> "$diffMin min ago"
             diffMin < 1440 -> "${diffMin / 60}h ago"
-            else -> shortTime(isoTimestamp)
+            else -> TimeFormat.dateTime(isoTimestamp)
         }
     } catch (e: Exception) {
-        shortTime(isoTimestamp)
-    }
-}
-
-private fun shortTime(raw: String): String {
-    return try {
-        raw.substringAfter("T").take(5) + " UTC"
-    } catch (e: Exception) {
-        raw
+        TimeFormat.dateTime(isoTimestamp)
     }
 }
 

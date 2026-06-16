@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.Device
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -412,7 +413,7 @@ private fun DeviceCard(device: Device) {
                             device.locationLabel?.takeIf { it.isNotBlank() }?.let { append(it) }
                             device.lastHeartbeatAt?.let { ts ->
                                 if (isNotEmpty()) append("  ·  ")
-                                append("Last heartbeat · ${shortTimestamp(ts)}")
+                                append("Last heartbeat · ${TimeFormat.time(ts)}")
                             }
                         }
                         if (subtitle.isNotBlank()) {
@@ -469,10 +470,10 @@ private fun DeviceCard(device: Device) {
                             DetailRow(label = "Firmware", value = device.firmwareVersion!!)
                         }
                         if (!device.lastSeenAt.isNullOrBlank()) {
-                            DetailRow(label = "Last seen", value = formatTimestamp(device.lastSeenAt!!))
+                            DetailRow(label = "Last seen", value = TimeFormat.dateTime(device.lastSeenAt))
                         }
                         if (!device.lastHeartbeatAt.isNullOrBlank()) {
-                            DetailRow(label = "Last heartbeat", value = formatTimestamp(device.lastHeartbeatAt!!))
+                            DetailRow(label = "Last heartbeat", value = TimeFormat.dateTime(device.lastHeartbeatAt))
                         }
                         DetailRow(
                             label = "Active",
@@ -564,21 +565,3 @@ private fun EmptyDevicesState(modifier: Modifier = Modifier) {
     }
 }
 
-private fun shortTimestamp(raw: String): String {
-    return try {
-        val noMillis = raw.substringBefore(".")
-        val time = noMillis.substringAfter("T").trimEnd('Z')
-        time.substring(0, minOf(5, time.length)) + " UTC"
-    } catch (e: Exception) {
-        raw
-    }
-}
-
-private fun formatTimestamp(raw: String): String {
-    return try {
-        val noMillis = raw.substringBefore(".")
-        noMillis.replace("T", " ").trimEnd('Z') + " UTC"
-    } catch (e: Exception) {
-        raw
-    }
-}

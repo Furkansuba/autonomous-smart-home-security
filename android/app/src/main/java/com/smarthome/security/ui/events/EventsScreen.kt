@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.Event
+import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -345,7 +346,7 @@ private fun EventCard(event: Event) {
                 }
 
                 val roomPart = event.roomId?.let { formatRoomId(it) }
-                val timePart = formatTimestampShort(event.occurredAt)
+                val timePart = TimeFormat.time(event.occurredAt)
                 val subtitle = listOfNotNull(roomPart, timePart).joinToString("  ·  ")
                 if (subtitle.isNotBlank()) {
                     Spacer(modifier = Modifier.height(3.dp))
@@ -374,7 +375,7 @@ private fun EventCard(event: Event) {
                             )
                         }
                         DetailRow(label = "Event ID", value = event.eventId, monospace = true)
-                        DetailRow(label = "Time", value = formatTimestamp(event.occurredAt))
+                        DetailRow(label = "Time", value = TimeFormat.dateTime(event.occurredAt))
                     }
                 }
             }
@@ -465,21 +466,3 @@ private fun formatEventType(raw: String): String =
 
 private fun formatRoomId(raw: String): String =
     raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
-
-private fun formatTimestamp(raw: String): String {
-    return try {
-        val noMillis = raw.substringBefore(".")
-        noMillis.replace("T", " ").trimEnd('Z') + " UTC"
-    } catch (e: Exception) {
-        raw
-    }
-}
-
-private fun formatTimestampShort(raw: String): String {
-    return try {
-        val time = raw.substringAfter("T").substringBefore(".")
-        "${time.substring(0, 5)} UTC"
-    } catch (e: Exception) {
-        raw
-    }
-}

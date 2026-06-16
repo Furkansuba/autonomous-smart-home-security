@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.OverrideRequest
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -815,7 +816,7 @@ private fun OverrideCard(override: OverrideRequest) {
 
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "${override.actuatorId}  ·  ${formatTimestampShort(override.requestedAt)}",
+                    text = "${override.actuatorId}  ·  ${TimeFormat.time(override.requestedAt)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -847,10 +848,10 @@ private fun OverrideCard(override: OverrideRequest) {
                             )
                         }
                         if (!override.resultAt.isNullOrBlank()) {
-                            DetailRow(label = "Result at", value = formatTimestamp(override.resultAt!!))
+                            DetailRow(label = "Result at", value = TimeFormat.dateTime(override.resultAt))
                         }
                         DetailRow(label = "Override ID", value = override.overrideId, monospace = true)
-                        DetailRow(label = "Requested at", value = formatTimestamp(override.requestedAt))
+                        DetailRow(label = "Requested at", value = TimeFormat.dateTime(override.requestedAt))
                     }
                 }
             }
@@ -936,17 +937,3 @@ private fun statusLabel(status: String): String = when (status) {
 
 private fun formatAction(action: String): String =
     action.split("_").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
-
-private fun formatTimestamp(raw: String): String =
-    try {
-        raw.substringBefore(".").replace("T", " ").trimEnd('Z') + " UTC"
-    } catch (e: Exception) {
-        raw
-    }
-
-private fun formatTimestampShort(raw: String): String =
-    try {
-        "${raw.substringAfter("T").substringBefore(".").substring(0, 5)} UTC"
-    } catch (e: Exception) {
-        raw
-    }

@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -585,7 +586,7 @@ private fun SensorCard(
     val title = reading.roomId?.let { formatRoomId(it) } ?: reading.deviceId
     val status = derivePrimaryStatus(reading)
     val alert = isAlertStatus(reading)
-    val timestamp = shortTimestamp(reading.occurredAt ?: reading.createdAt)
+    val timestamp = TimeFormat.time(reading.occurredAt ?: reading.createdAt)
     val sensorIcon = deriveSensorIcon(reading)
     val accentColor = when {
         alert -> MaterialTheme.colorScheme.error
@@ -708,7 +709,7 @@ private fun SensorCardDetails(reading: TelemetrySummary) {
     DetailRow("Device", reading.deviceId)
     reading.roomId?.let { DetailRow("Room", formatRoomId(it)) }
     val ts = reading.occurredAt ?: reading.createdAt
-    ts?.let { DetailRow("Recorded", it.replace("T", " ").substringBefore(".") + " UTC") }
+    ts?.let { DetailRow("Recorded", TimeFormat.dateTime(it)) }
 }
 
 @Composable
@@ -772,11 +773,6 @@ private fun derivePrimaryStatus(t: TelemetrySummary): String = when {
 
 private fun isAlertStatus(t: TelemetrySummary): Boolean =
     t.flameDetected == true || t.motionDetected == true || t.reedOpen == true
-
-private fun shortTimestamp(raw: String?): String {
-    if (raw == null) return "—"
-    return raw.substringAfter("T").take(5)
-}
 
 private fun formatRoomId(raw: String): String =
     raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
