@@ -13,6 +13,7 @@ const checks = [
   'test:rbac',
   'test:mqtt-client',
   'test:mqtt-message-handler',
+  'test:event-bus',
   'test:mock-mqtt-notification',
   'test:mqtt-command-publisher',
   'test:payload-schema',

@@ -939,6 +939,57 @@
   cursor: not-allowed;
 }
 
+/* ── Live (SSE) connection indicator ──────────────────────── */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.live-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.live-indicator--on {
+  color: #2f855a;
+  background: #f0fff4;
+  border-color: #c6f6d5;
+}
+
+.live-indicator--on .live-indicator-dot {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+.live-indicator--off {
+  color: var(--text-muted);
+  background: var(--icon-bg);
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.dashboard-live-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.theme-dark .live-indicator--on {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.25);
+  border-color: #047857;
+}
+
 /* ── Export CSV button (reused across list pages) ─────────── */
 .btn-export-csv {
   all: unset;

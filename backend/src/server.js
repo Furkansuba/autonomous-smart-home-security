@@ -18,6 +18,7 @@ const overridesRoutes = require('./routes/overrides.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const usersRoutes = require('./routes/users.routes');
 const notificationLogsRoutes = require('./routes/notificationLogs.routes');
+const streamRoutes = require('./routes/stream.routes');
 const { startDeviceStatusMonitor } = require('./services/deviceStatusMonitor.service');
 const {
   notFoundHandler,
@@ -27,7 +28,9 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
-app.use(morgan('dev'));
+// Skip request logging for the SSE stream: its URL carries the JWT in the query
+// string (EventSource cannot send headers), so logging it would leak the token.
+app.use(morgan('dev', { skip: (req) => req.path.startsWith('/api/stream') }));
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -49,6 +52,7 @@ app.use('/api/overrides', overridesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/notification-logs', notificationLogsRoutes);
+app.use('/api/stream', streamRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 async function handleIncomingMqttMessage(topic, messageBuffer) {

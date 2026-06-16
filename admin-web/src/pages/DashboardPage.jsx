@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getDashboardSummary } from '../services/dashboardService.js'
+import { useEventStream } from '../hooks/useEventStream.js'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
 function parseTelemetry(latest) {
   if (!Array.isArray(latest) || latest.length === 0) return { primary: 'No data', secondary: '' }
@@ -16,6 +18,14 @@ function DashboardPage() {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [liveTick, setLiveTick] = useState(0)
+
+  // Real-time: refresh the summary when activity that affects it is streamed.
+  const liveConnected = useEventStream((type) => {
+    if (type === 'event' || type === 'override_result' || type === 'device_status') {
+      setLiveTick((t) => t + 1)
+    }
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -35,7 +45,7 @@ function DashboardPage() {
         }
       })
     return () => { cancelled = true }
-  }, [])
+  }, [liveTick])
 
   const activeDevices    = summary?.devices?.total_active             ?? '—'
   const criticalEvents   = summary?.events?.recent_critical_24h_count ?? '—'
@@ -173,6 +183,9 @@ function DashboardPage() {
 
   return (
     <div className="dashboard-page">
+      <div className="dashboard-live-row">
+        <LiveIndicator connected={liveConnected} />
+      </div>
       {loading && <p className="dashboard-status">Loading dashboard…</p>}
       {!loading && error && <p className="dashboard-error">{error}</p>}
 

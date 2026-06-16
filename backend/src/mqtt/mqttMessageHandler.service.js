@@ -1,6 +1,7 @@
 const { ingestMqttMessage } = require('../services/ingestion.service');
 const { persistAcceptedIngestion } = require('../services/persistence.service');
 const { sendEventNotification } = require('../services/notification.service');
+const { publishStreamEvent, buildStreamSummary } = require('../services/eventBus.service');
 const { Device } = require('../models');
 
 // Reflect a confirmed ARM/DISARM acknowledgement onto the device's security mode.
@@ -121,6 +122,10 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
     sendEventNotification(ingestion.data).catch((notifError) => {
       console.error('[MQTT] notification dispatch failed: ' + notifError.message);
     });
+  }
+  // Broadcast a safe real-time summary to connected SSE clients (admin-web Live view).
+  if (persistence.saved) {
+    publishStreamEvent(buildStreamSummary(ingestion));
   }
   let armState;
   let doorState;

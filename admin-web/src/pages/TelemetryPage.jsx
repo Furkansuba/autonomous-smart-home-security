@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { getTelemetry, getLatestTelemetry, getActiveHazards } from '../services/telemetryService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
+import { useEventStream } from '../hooks/useEventStream.js'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
 const HAZARD_LABELS = {
   fire_detected: 'Fire',
@@ -59,6 +61,12 @@ function TelemetryPage() {
   const [hazards,   setHazards]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
+  const [liveTick,  setLiveTick]  = useState(0)
+
+  // Real-time: refetch when telemetry (or a hazard event) is streamed.
+  const liveConnected = useEventStream((type) => {
+    if (type === 'telemetry' || type === 'event') setLiveTick((t) => t + 1)
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -80,7 +88,7 @@ function TelemetryPage() {
         }
       })
     return () => { cancelled = true }
-  }, [])
+  }, [liveTick])
 
   const boolLabel    = (val) => val == null ? '—' : (val ? 'Detected' : 'Clear')
   const boolValClass = (val) => val == null ? '' : (val ? 'telemetry-val--alert' : 'telemetry-val--ok')
@@ -293,6 +301,7 @@ function TelemetryPage() {
               <div className="telemetry-records-hdr">
                 <span className="telemetry-records-title">All Records</span>
                 <span className="telemetry-records-count">{telemetry.length}</span>
+                <LiveIndicator connected={liveConnected} />
                 <button
                   type="button"
                   className="btn-export-csv"

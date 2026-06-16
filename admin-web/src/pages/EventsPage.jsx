@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { getEvents } from '../services/eventService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
+import { useEventStream } from '../hooks/useEventStream.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
 const SEVERITY_FILTERS = ['all', 'info', 'warning', 'critical']
 const SEV_RANK = { critical: 0, warning: 1, info: 2 }
@@ -15,6 +17,12 @@ function EventsPage() {
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
   const [severity, setSeverity] = useState('all')
+  const [liveTick, setLiveTick] = useState(0)
+
+  // Real-time: refetch when a new event is streamed. Polling/manual refresh remain.
+  const liveConnected = useEventStream((type) => {
+    if (type === 'event') setLiveTick((t) => t + 1)
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -36,7 +44,7 @@ function EventsPage() {
         }
       })
     return () => { cancelled = true }
-  }, [severity])
+  }, [severity, liveTick])
 
   const total    = events.length
   const critical = events.filter(e => e.severity === 'critical').length
@@ -161,6 +169,7 @@ function EventsPage() {
 
       <div className="events-toolbar">
         <FilterBar options={SEVERITY_FILTERS} activeValue={severity} onChange={setSeverity} />
+        <LiveIndicator connected={liveConnected} />
         <button
           type="button"
           className="btn-export-csv"

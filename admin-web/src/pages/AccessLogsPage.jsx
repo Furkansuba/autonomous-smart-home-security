@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { getAccessLogs } from '../services/accessLogService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
+import { useEventStream } from '../hooks/useEventStream.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
 const RESULT_FILTERS = ['all', 'granted', 'denied']
 
@@ -14,6 +16,12 @@ function AccessLogsPage() {
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
   const [result,  setResult]  = useState('all')
+  const [liveTick, setLiveTick] = useState(0)
+
+  // Real-time: refetch when a new access log is streamed.
+  const liveConnected = useEventStream((type) => {
+    if (type === 'access') setLiveTick((t) => t + 1)
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -35,7 +43,7 @@ function AccessLogsPage() {
         }
       })
     return () => { cancelled = true }
-  }, [result])
+  }, [result, liveTick])
 
   const total        = logs.length
   const grantedCount = logs.filter(l => l.result === 'granted').length
@@ -175,6 +183,7 @@ function AccessLogsPage() {
 
       <div className="access-logs-toolbar">
         <FilterBar options={RESULT_FILTERS} activeValue={result} onChange={setResult} />
+        <LiveIndicator connected={liveConnected} />
         <button
           type="button"
           className="btn-export-csv"

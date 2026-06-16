@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { getOverrides, createOverride } from '../services/overrideService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
+import { useEventStream } from '../hooks/useEventStream.js'
 import * as authService from '../services/authService.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
 
@@ -63,6 +65,11 @@ function OverridesPage() {
       })
     return () => { cancelled = true }
   }, [])
+
+  // Real-time: reload the history when an override result is streamed.
+  const liveConnected = useEventStream((type) => {
+    if (type === 'override_result') loadOverrides(statusFilter)
+  })
 
   useEffect(() => loadOverrides(statusFilter), [loadOverrides, statusFilter])
 
@@ -541,6 +548,7 @@ function OverridesPage() {
         <div className="ovr-logs-hdr">
           <span className="cmd-form-title">Override History</span>
           <div className="ovr-logs-hdr-controls">
+            <LiveIndicator connected={liveConnected} />
             <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
             <button
               type="button"
