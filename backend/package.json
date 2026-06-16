@@ -36,6 +36,7 @@
     "test:override-mqtt-e2e": "node scripts/test-override-mqtt-publish-e2e.js",
     "seed:demo": "node scripts/seed-demo-data.js",
     "clean:demo": "node scripts/clean-demo-data.js",
+    "cleanup:demo-devices": "node scripts/cleanup-demo-devices.js",
     "test:pagination": "node scripts/test-api-pagination.js",
     "seed:demo-admin": "node scripts/seed-demo-admin.js",
     "seed:demo-resident": "node scripts/seed-demo-resident.js",

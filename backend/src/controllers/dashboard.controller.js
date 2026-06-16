@@ -16,7 +16,14 @@ function sendDatabaseUnavailable(res) {
   });
 }
 async function getDeviceStatusCounts() {
+  // Only active devices contribute to the dashboard health metrics, so deactivated
+  // records never inflate the online/degraded/offline counts. This matches
+  // total_active, which already filters is_active:true. (Seeded demo controllers are
+  // removed entirely from the devices collection by cleanup-demo-devices.js.)
   const rows = await Device.aggregate([
+    {
+      $match: { is_active: true },
+    },
     {
       $group: {
         _id: '$status',
