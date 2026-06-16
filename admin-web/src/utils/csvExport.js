@@ -61,7 +61,10 @@ export function exportRowsToCsv(filenameBase, columns, rows) {
   const dataLines = rows.map((row) =>
     columns.map((c) => csvCell(c.value(row))).join(',')
   )
-  const content = BOM + [headerLine, ...dataLines].join('\r\n')
+  // "sep=," tells Excel the field delimiter explicitly, so the file splits into
+  // columns on double-click even under regional settings (e.g. Turkish/European)
+  // where the default list separator is ";" rather than ",".
+  const content = BOM + 'sep=,\r\n' + [headerLine, ...dataLines].join('\r\n')
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   triggerDownload(blob, buildFilename(filenameBase))
   return true
