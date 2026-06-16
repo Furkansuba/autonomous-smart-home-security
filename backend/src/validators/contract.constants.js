@@ -41,6 +41,7 @@ const OVERRIDE_ACTIONS = [
   'buzzer_on',
   'buzzer_off',
   'door_unlock',
+  'door_lock',
   'system_reset',
   'maintenance_reset',
   'arm',

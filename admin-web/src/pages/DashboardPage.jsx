@@ -57,6 +57,12 @@ function DashboardPage() {
       ? 'Intrusion monitoring suppressed. Fire/gas/CO still active.'
       : 'Mode unknown — awaiting device.'
 
+  // Device-reported / last-commanded door lock state (NOT sensor-verified).
+  const doorLocked = summary?.door?.locked
+  const doorLabel  = doorLocked === true ? 'LOCKED' : doorLocked === false ? 'UNLOCKED' : 'UNKNOWN'
+  const doorColor  = doorLocked === true ? 'ok' : 'warn'
+  const doorDesc   = 'Device-reported door lock state — not independently sensor-verified.'
+
   const devCount  = onlineCount
   const critCount = typeof criticalEvents   === 'number' ? criticalEvents   : 0
   const pendCount = typeof pendingOverrides === 'number' ? pendingOverrides : 0
@@ -199,6 +205,23 @@ function DashboardPage() {
             <span className="sec-banner-desc">{armDesc}</span>
           </div>
           <span className="sec-banner-tag">Arm Mode</span>
+        </div>
+      )}
+
+      {!loading && !error && summary !== null && (
+        <div className={`sec-banner sec-banner--${doorColor}`}>
+          <span className="sec-banner-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {doorLocked === false
+                ? <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></>
+                : <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></>}
+            </svg>
+          </span>
+          <div className="sec-banner-body">
+            <span className="sec-banner-title">Door {doorLabel}</span>
+            <span className="sec-banner-desc">{doorDesc}</span>
+          </div>
+          <span className="sec-banner-tag">Door Lock</span>
         </div>
       )}
 

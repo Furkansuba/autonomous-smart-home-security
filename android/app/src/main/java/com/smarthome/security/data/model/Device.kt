@@ -13,6 +13,8 @@ data class Device(
     @SerializedName("is_active") val isActive: Boolean,
     // Security ARM/DISARM mode (intrusion monitoring only). null if not reported.
     @SerializedName("security_armed") val securityArmed: Boolean? = null,
+    // Device-reported / last-commanded door lock state (not sensor-verified). null = unknown.
+    @SerializedName("door_locked") val doorLocked: Boolean? = null,
 )
 
 data class DevicesResponse(

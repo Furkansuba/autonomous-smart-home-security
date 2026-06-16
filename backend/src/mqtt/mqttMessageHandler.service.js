@@ -28,6 +28,33 @@ async function applyArmStateFromOverrideResult(data) {
     return { applied: false, reason: 'update_error', error: error.message };
   }
 }
+
+// Reflect a confirmed door_lock/door_unlock acknowledgement onto the device's
+// device-reported lock state. Only an `executed` result changes Device.door_locked;
+// failed/blocked/requested ACKs leave it untouched. This is last-commanded state,
+// not independently sensor-verified.
+async function applyDoorStateFromOverrideResult(data) {
+  if (!data || (data.action !== 'door_lock' && data.action !== 'door_unlock')) {
+    return { applied: false, reason: 'not_door_action' };
+  }
+  if (data.result !== 'executed') {
+    return { applied: false, reason: 'not_executed' };
+  }
+  const locked = data.action === 'door_lock';
+  try {
+    const updated = await Device.findOneAndUpdate(
+      { device_id: data.device_id },
+      { $set: { door_locked: locked } },
+      { returnDocument: 'after' }
+    );
+    if (!updated) {
+      return { applied: false, reason: 'device_not_found' };
+    }
+    return { applied: true, door_locked: locked };
+  } catch (error) {
+    return { applied: false, reason: 'update_error', error: error.message };
+  }
+}
 function parseMqttMessagePayload(messageBuffer) {
   try {
     const raw =
@@ -96,8 +123,10 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
     });
   }
   let armState;
+  let doorState;
   if (ingestion.payload_type === 'override_result' && persistence.saved) {
     armState = await applyArmStateFromOverrideResult(ingestion.data);
+    doorState = await applyDoorStateFromOverrideResult(ingestion.data);
   }
   return {
     handled: true,
@@ -109,10 +138,12 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
     ingestion,
     persistence,
     ...(armState ? { arm_state: armState } : {}),
+    ...(doorState ? { door_state: doorState } : {}),
   };
 }
 module.exports = {
   parseMqttMessagePayload,
   handleMqttMessage,
   applyArmStateFromOverrideResult,
+  applyDoorStateFromOverrideResult,
 };

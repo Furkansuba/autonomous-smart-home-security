@@ -38,6 +38,10 @@ function mapHeartbeatToDeviceUpdate(ingestionResult) {
   if (typeof data.security_armed === 'boolean') {
     setFields.security_armed = data.security_armed;
   }
+  // door_locked is device-reported / last-commanded lock state (not sensor-verified).
+  if (typeof data.door_locked === 'boolean') {
+    setFields.door_locked = data.door_locked;
+  }
   return {
     kind: 'update',
     model: 'Device',

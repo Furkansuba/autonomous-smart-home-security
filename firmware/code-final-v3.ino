@@ -87,6 +87,10 @@ unsigned long lastFireEventMs[4] = {0, 0, 0, 0}; // index matches FLAME_ROOMS
 // ---- SYSTEM REGISTERS ----
 bool systemActive = true;
 bool systemArmed  = true;
+// Device-reported / last-commanded door lock state (no physical lock sensor).
+// Boot calls lockDoor() so the door starts LOCKED. Kept in sync by lockDoor()/
+// unlockDoor() (including the hazard auto-unlock), and reported in the heartbeat.
+bool doorLocked   = true;
 
 bool mq2Hazard = false;
 bool mq7Hazard = false;
@@ -172,6 +176,7 @@ void publishHeartbeat() {
   doc["uptime_seconds"]   = millis() / 1000;
   doc["wifi_rssi"]        = WiFi.RSSI();
   doc["security_armed"]   = systemArmed;
+  doc["door_locked"]      = doorLocked;
   doc["timestamp"]        = isoTimestamp();
 
   char payload[256];
@@ -286,11 +291,20 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   String cmd = String(action);
   if (Serial) Serial.printf("[OVERRIDE] Received: %s\n", action);
 
+  // door_lock — physical door control. Blocked while a fire/gas/CO hazard is active so
+  // evacuation is never trapped behind a locked door. Honest ACK: report "failed" rather
+  // than locking and falsely ACKing "executed". Does NOT change systemArmed.
   if (cmd == "door_lock") {
+    if (mq2Hazard || mq7Hazard || activeFlameZone != 0xFF) {
+      if (Serial) Serial.println("[OVERRIDE] door_lock REJECTED — evacuation hazard active");
+      publishAck(overrideId, actuatorId, action, "failed", "door_lock_blocked_hazard");
+      return;
+    }
     lockDoor();
     publishAck(overrideId, actuatorId, action, "executed");
     return;
   }
+  // door_unlock — allowed at all times (evacuation may require it). Does NOT change systemArmed.
   if (cmd == "door_unlock") {
     unlockDoor();
     publishAck(overrideId, actuatorId, action, "executed");
@@ -470,6 +484,7 @@ void lockDoor() {
   mainDoorServo.write(0);
   delay(400);
   mainDoorServo.detach();
+  doorLocked = true;
 }
 
 void unlockDoor() {
@@ -477,6 +492,7 @@ void unlockDoor() {
   mainDoorServo.write(180);
   delay(400);
   mainDoorServo.detach();
+  doorLocked = false;
 }
 
 // ---------------------------------------------------------

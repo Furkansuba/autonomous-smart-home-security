@@ -78,7 +78,7 @@ async function getDashboardSummary(req, res) {
         .limit(5)
         .lean(),
       Device.findOne({ device_id: 'esp32_home_01' })
-        .select('device_id security_armed')
+        .select('device_id security_armed door_locked')
         .lean(),
     ]);
     return res.status(200).json({
@@ -104,6 +104,14 @@ async function getDashboardSummary(req, res) {
         device_id: 'esp32_home_01',
         // null when the main controller has not registered yet; otherwise true/false.
         armed: mainController ? mainController.security_armed !== false : null,
+      },
+      door: {
+        device_id: 'esp32_home_01',
+        // Device-reported / last-commanded lock state (NOT sensor-verified).
+        // null = unknown (device not registered or has not reported yet).
+        locked: mainController && typeof mainController.door_locked === 'boolean'
+          ? mainController.door_locked
+          : null,
       },
     });
   } catch (error) {

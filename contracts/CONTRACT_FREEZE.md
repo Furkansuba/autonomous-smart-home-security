@@ -248,3 +248,31 @@ only becomes `executed` from a real device ACK on `override/result`.
   buzzer and pumps during a hazard, and arm/disarm only set the security flag.
 ### Roles
 - ARM/DISARM is admin-only. Residents may VIEW the current mode but cannot change it.
+## 15. Door Lock / Door Unlock
+`door_lock` and `door_unlock` are physical door actuator controls (servo on the main door).
+They are SEPARATE from ARM/DISARM: door control never changes `security_armed`, and ARM/DISARM
+never locks or unlocks the door.
+### Override actions
+- `OVERRIDE_ACTIONS` includes `door_lock` and `door_unlock`. Admin-only, issued via
+  `POST /api/overrides`, published on `home/{deviceId}/cmd/override` (see §8). They are never
+  demo-auto-acked: the stored override only becomes `executed` from a real device ACK.
+- `home/{deviceId}/cmd/unlock` remains RESERVED for a future dedicated path; v1 uses cmd/override.
+### Evacuation safety
+- `door_lock` is BLOCKED while a fire/gas/CO hazard is active (so evacuation is never trapped):
+  - Backend saves it as `blocked` with `blocked_reason: "door_lock_blocked_hazard"`, never
+    publishes it, never auto-acks it. Fire-active respects `maintenance_reset` (a confirmed
+    threat-cleared reset re-allows `door_lock`); gas/CO use the recent hazard-event window.
+  - Firmware also refuses `door_lock` during a hazard, ACKing `failed` with
+    `blocked_reason: "door_lock_blocked_hazard"` instead of locking.
+- `door_unlock` is ALLOWED at all times, including during a hazard — evacuation may require it,
+  and the firmware safety loop auto-unlocks the door during fire/gas/CO.
+### Device field
+- `devices.door_locked` (boolean, default `null` = unknown). This is DEVICE-REPORTED /
+  last-commanded lock state — it is NOT independently sensor-verified (no physical lock sensor).
+  UI must label it as device-reported, not as verified physical state.
+- It is updated ONLY by:
+  - a heartbeat carrying `door_locked` (device-reported truth), or
+  - a confirmed ACK: `door_lock` executed → `true`; `door_unlock` executed → `false`.
+  - `failed` / `blocked` / `requested` ACKs do NOT change `door_locked`.
+### Roles
+- Door Lock / Door Unlock are admin-only. Residents may VIEW the door state but cannot change it.

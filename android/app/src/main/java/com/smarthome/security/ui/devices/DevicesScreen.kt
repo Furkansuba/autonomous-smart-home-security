@@ -441,6 +441,14 @@ private fun DeviceCard(device: Device) {
                                 color = if (armed) AppColors.statusOnline else AppColors.statusDegraded,
                             )
                         }
+                        device.doorLocked?.let { locked ->
+                            Text(
+                                text = if (locked) "DOOR LOCKED" else "DOOR UNLOCKED",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (locked) AppColors.statusOnline else AppColors.statusDegraded,
+                            )
+                        }
                         Icon(
                             imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                             contentDescription = if (expanded) "Collapse" else "Expand",
@@ -479,6 +487,19 @@ private fun DeviceCard(device: Device) {
                                 valueColor = if (armed) AppColors.statusOnline else AppColors.statusDegraded,
                             )
                         }
+                        DetailRow(
+                            label = "Door lock state",
+                            value = when (device.doorLocked) {
+                                true -> "Locked (device-reported)"
+                                false -> "Unlocked (device-reported)"
+                                null -> "Unknown"
+                            },
+                            valueColor = when (device.doorLocked) {
+                                true -> AppColors.statusOnline
+                                false -> AppColors.statusDegraded
+                                null -> null
+                            },
+                        )
                     }
                 }
             }

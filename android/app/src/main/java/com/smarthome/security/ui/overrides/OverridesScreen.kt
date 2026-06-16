@@ -115,6 +115,14 @@ fun OverridesScreen(
                             "DISARM suppresses intrusion monitoring only (motion, vibration, reed/window). " +
                                 "FIRE, GAS, and CO detection remain fully active and will still alarm, and " +
                                 "disarming does not silence an active hazard. Logged in override history."
+                        "door_lock" ->
+                            "Lock the physical door on esp32_home_01. This is BLOCKED while a fire/gas/CO " +
+                                "hazard is active so evacuation is never trapped behind a locked door. " +
+                                "Does not change ARM/DISARM mode. Logged in override history."
+                        "door_unlock" ->
+                            "Unlock the physical door on esp32_home_01. This is a physical-security action " +
+                                "and is allowed at any time (including during a hazard for evacuation). " +
+                                "Does not change ARM/DISARM mode. Logged in override history."
                         else ->
                             "Send $action to esp32_home_01. This action will be logged in override " +
                                 "history. Active hazards are not resolved by this command."
@@ -286,6 +294,21 @@ fun OverridesScreen(
                                     .padding(horizontal = 16.dp)
                                     .padding(top = 8.dp),
                             )
+                            DoorControlsCard(
+                                overrideActionState = overrideActionState,
+                                activeAction = activeAction,
+                                adminEmail = adminEmail,
+                                onActionClick = { action ->
+                                    pendingConfirm = Triple(
+                                        action,
+                                        "door_controller_01",
+                                        if (action == "door_lock") "Lock Door" else "Unlock Door",
+                                    )
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp),
+                            )
                             MaintenanceResetCard(
                                 enabled = overrideActionState !is OverrideActionState.Sending &&
                                     adminEmail.isNotBlank(),
@@ -447,6 +470,77 @@ private fun SecurityModeCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf("arm" to "Arm", "disarm" to "Disarm").forEach { (action, label) ->
+                    val isThisLoading = isSending && activeAction == action
+                    Button(
+                        onClick = { onActionClick(action) },
+                        enabled = !isSending && !emailMissing,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        if (isThisLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = MaterialTheme.colorScheme.onSecondary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DoorControlsCard(
+    overrideActionState: OverrideActionState,
+    activeAction: String?,
+    adminEmail: String,
+    onActionClick: (action: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSending = overrideActionState is OverrideActionState.Sending
+    val emailMissing = adminEmail.isBlank()
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Door Controls",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Physical door lock/unlock. Lock Door is blocked during a fire/gas/CO " +
+                    "hazard so evacuation is never trapped; Unlock Door is a physical-security " +
+                    "action allowed at any time and is logged. Does not change ARM/DISARM mode.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf("door_lock" to "Lock Door", "door_unlock" to "Unlock Door").forEach { (action, label) ->
                     val isThisLoading = isSending && activeAction == action
                     Button(
                         onClick = { onActionClick(action) },

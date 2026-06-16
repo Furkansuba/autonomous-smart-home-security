@@ -258,6 +258,25 @@ async function createOverride(req, res) {
         );
       }
     }
+    // Evacuation safety: never lock the door while a fire/gas/CO hazard is active.
+    // door_unlock is intentionally NOT blocked — evacuation may require unlocking,
+    // and the firmware safety loop auto-unlocks during a hazard. Fire-active respects
+    // maintenance_reset (a confirmed threat-cleared reset re-allows door_lock); gas/CO
+    // use the recent hazard-event window.
+    if (action === 'door_lock') {
+      const fireActive = await isFireActive(device_id);
+      const gasCoActive = fireActive
+        ? null
+        : await findActiveHazard(device_id, GAS_CO_HAZARD_TYPES);
+      if (fireActive || gasCoActive) {
+        return createBlockedOverride(
+          res,
+          req.body,
+          'A fire/gas/CO hazard is active for this device. The door cannot be locked while a hazard is active so evacuation is never blocked. Door lock is re-allowed once the threat is cleared.',
+          'door_lock_blocked_hazard'
+        );
+      }
+    }
     const override = await OverrideRequest.create({
       override_id: override_id || createOverrideId(),
       device_id,

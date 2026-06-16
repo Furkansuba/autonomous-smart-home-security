@@ -59,6 +59,14 @@ const deviceSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    // Device-reported / last-commanded physical door lock state. true = LOCKED.
+    // This is NOT independently sensor-verified — there is no physical lock sensor.
+    // Updated only by a heartbeat that reports door_locked, or by a confirmed
+    // (executed) door_lock/door_unlock ACK. null = unknown until first reported.
+    door_locked: {
+      type: Boolean,
+      default: null,
+    },
   },
   {
     timestamps: true,

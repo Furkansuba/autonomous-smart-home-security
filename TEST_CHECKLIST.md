@@ -248,6 +248,52 @@ verified by code review only — real ESP32 hardware NOT bench-tested (MCH scope
 
 ---
 
+## 8c. Door Lock / Door Unlock
+
+**Context:** `door_lock` / `door_unlock` are physical door actuator controls, separate from
+ARM/DISARM, issued as admin-only override actions through `POST /api/overrides` on
+`home/{deviceId}/cmd/override`. `door_locked` is device-reported / last-commanded state — NOT
+independently sensor-verified (no physical lock sensor).
+
+### Backend (`npm run test:door-control`, requires MongoDB)
+- [ ] `door_unlock` accepted by the override route (created `requested`)
+- [ ] `door_lock` accepted when no hazard is active (created `requested`)
+- [ ] `door_lock` BLOCKED during active fire → `blocked`, not published, not auto-acked
+- [ ] `door_lock` BLOCKED during active gas/CO → `blocked`
+- [ ] `door_unlock` ALLOWED during active fire/gas/CO (evacuation)
+- [ ] `door_lock` / `door_unlock` are NOT demo-auto-acked (stay `requested`)
+- [ ] executed `door_lock` ACK sets `Device.door_locked = true`
+- [ ] executed `door_unlock` ACK sets `Device.door_locked = false`
+- [ ] failed/blocked ACK does NOT change `Device.door_locked`
+- [ ] heartbeat carrying `door_locked` updates `Device.door_locked`
+- [ ] valve actions remain rejected (400)
+- [ ] door control and ARM/DISARM are independent (neither ACK changes the other's state)
+
+### RBAC
+- [ ] resident cannot lock/unlock the door — blocked by `requireRole('admin')` on
+      `POST /api/overrides` (covered by `npm run test:rbac`); door controls hidden for non-admins
+
+### UI
+- [ ] Admin-web Overrides page Door Controls card issues lock/unlock with evacuation + audit
+      warnings and reports status honestly (requested/blocked/failed/executed)
+- [ ] Admin-web Dashboard shows a device-reported Door Lock indicator (Locked/Unlocked/Unknown)
+- [ ] Android Overrides screen Door Controls card issues lock/unlock (admin only) with dialog copy
+- [ ] Android Devices screen shows "Door lock state" labeled device-reported (Locked/Unlocked/Unknown)
+
+### Firmware review notes (`firmware/code-final-v3.ino`, hardware NOT bench-tested)
+- [ ] `door_unlock` handler → `unlockDoor()` + ACK `executed`, allowed during hazards, no `systemArmed` change
+- [ ] `door_lock` handler → during gas/CO/flame, ACK `failed` (`door_lock_blocked_hazard`), does NOT lock
+- [ ] `door_lock` handler (no hazard) → `lockDoor()` + ACK `executed`, no `systemArmed` change
+- [ ] `lockDoor()` sets `doorLocked = true`; `unlockDoor()` sets `doorLocked = false`; boot locks → `true`
+- [ ] hazard auto-unlock (gas/thermal interlock) calls `unlockDoor()` → `doorLocked = false` naturally
+- [ ] heartbeat payload includes `door_locked = doorLocked`
+
+**Verification scope:** Backend + UI exercised via tests and mock data. Firmware door control
+verified by code review only — real ESP32 servo NOT bench-tested (MCH scope). `door_locked` is
+device-reported, not sensor-verified.
+
+---
+
 ## 9. Android App
 
 ### Login

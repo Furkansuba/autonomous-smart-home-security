@@ -38,6 +38,9 @@ function OverridesPage() {
   const [armSubmitting, setArmSubmitting] = useState(false)
   const [armMsg,        setArmMsg]        = useState(null)
 
+  const [doorSubmitting, setDoorSubmitting] = useState(false)
+  const [doorMsg,         setDoorMsg]        = useState(null)
+
   const loadOverrides = useCallback((status) => {
     let cancelled = false
     setLoading(true)
@@ -141,6 +144,52 @@ function OverridesPage() {
       setArmMsg({ ok: false, text: err.message || 'Failed to send command.' })
     } finally {
       setArmSubmitting(false)
+    }
+  }
+
+  // Door Lock / Unlock — physical door actuator control. Admin-only. door_lock is
+  // blocked during an active fire/gas/CO hazard for evacuation safety; door_unlock is
+  // always allowed. Status is reported honestly and applied only on device ACK.
+  async function handleDoorControl(action) {
+    const device = formDevice.trim() || 'esp32_home_01'
+    const verb = action === 'door_lock' ? 'LOCK' : 'UNLOCK'
+    const ok = window.confirm(
+      `${verb} the physical door for ${device}?\n\n` +
+      (action === 'door_lock'
+        ? 'Lock Door is BLOCKED while a fire/gas/CO hazard is active so evacuation is never ' +
+          'trapped behind a locked door.'
+        : 'Unlock Door is a physical-security action. It is allowed during a hazard for ' +
+          'evacuation.') +
+      '\n\nThis is logged in override history and applied once the device acknowledges.'
+    )
+    if (!ok) return
+    setDoorSubmitting(true)
+    setDoorMsg(null)
+    const user = authService.getStoredUser()
+    const requestedBy = user?.user_id ?? 'usr_admin_001'
+    try {
+      const res = await createOverride({
+        device_id:    device,
+        actuator_id:  'door_controller_01',
+        action,
+        reason:       action === 'door_lock' ? 'Lock door via admin web.' : 'Unlock door via admin web.',
+        requested_by: requestedBy,
+      })
+      const ov = res?.override
+      if (ov?.status === 'blocked') {
+        setDoorMsg({ ok: false, text: ov.blocked_reason || 'Command blocked for safety.' })
+      } else if (ov?.status === 'failed') {
+        setDoorMsg({ ok: false, text: `Device rejected: ${ov.blocked_reason || 'unknown reason'}.` })
+      } else if (ov?.status === 'executed') {
+        setDoorMsg({ ok: true, text: `Door ${action === 'door_lock' ? 'LOCKED' : 'UNLOCKED'} — confirmed by device.` })
+      } else {
+        setDoorMsg({ ok: true, text: `${verb} requested — awaiting device confirmation.` })
+      }
+      loadOverrides(statusFilter)
+    } catch (err) {
+      setDoorMsg({ ok: false, text: err.message || 'Failed to send command.' })
+    } finally {
+      setDoorSubmitting(false)
     }
   }
 
@@ -406,6 +455,44 @@ function OverridesPage() {
             {armMsg && (
               <span className={`override-submit-msg${armMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
                 {armMsg.text}
+              </span>
+            )}
+          </div>
+
+          {/* Door controls — physical door actuator (separate from ARM/DISARM) */}
+          <div className="cmd-form-card" style={{ borderTop: '3px solid #0891b2' }}>
+            <div className="cmd-form-hdr">
+              <span className="cmd-form-title">Door Controls</span>
+              <span className="cmd-form-badge" style={{ background: '#0891b2', color: '#fff' }}>Admin</span>
+            </div>
+            <p className="cmd-form-helper">
+              Physical door lock/unlock for <strong>{formDevice.trim() || 'the device'}</strong>.
+              <strong> Lock Door is blocked during an active fire/gas/CO hazard</strong> so evacuation is
+              never trapped; <strong>Unlock Door</strong> is a physical-security action allowed at any time
+              (including during a hazard for evacuation). Both are logged and applied once the device
+              acknowledges. This does not change ARM/DISARM mode.
+            </p>
+            <div className="cmd-quick-grid">
+              <button
+                type="button"
+                className="cmd-quick-btn"
+                onClick={() => handleDoorControl('door_lock')}
+                disabled={doorSubmitting}
+              >
+                Lock Door
+              </button>
+              <button
+                type="button"
+                className="cmd-quick-btn"
+                onClick={() => handleDoorControl('door_unlock')}
+                disabled={doorSubmitting}
+              >
+                Unlock Door
+              </button>
+            </div>
+            {doorMsg && (
+              <span className={`override-submit-msg${doorMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                {doorMsg.text}
               </span>
             )}
           </div>
