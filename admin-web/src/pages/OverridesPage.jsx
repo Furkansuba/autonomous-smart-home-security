@@ -275,66 +275,11 @@ function OverridesPage() {
         </div>
       </div>
 
-      {/* Filter toolbar */}
-      <div className="overrides-toolbar">
-        <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
-      </div>
-
-      {loading && <StateMessage className="overrides-loading">Loading overrides…</StateMessage>}
-
-      {!loading && error && (
-        <StateMessage className="overrides-error">{error}</StateMessage>
-      )}
-
-      {!loading && !error && overrides.length === 0 && (
-        <StateMessage className="overrides-empty">No overrides found.</StateMessage>
-      )}
-
-      {!loading && !error && overrides.length > 0 && (
-        <DataTable
-          wrapClassName="overrides-table-wrap"
-          tableClassName="overrides-table"
-          columns={['Override ID', 'Device', 'Requested By', 'Actuator', 'Action', 'Reason', 'Status', 'Requested At', 'Result At']}
-        >
-          {overrides.map((o) => (
-            <tr key={o.override_id ?? o._id}>
-              <td className="overrides-col-id">{o.override_id ?? '—'}</td>
-              <td>{o.device_id ?? '—'}</td>
-              <td>{o.requested_by ?? '—'}</td>
-              <td>{o.actuator_id ?? '—'}</td>
-              <td>{o.action ?? '—'}</td>
-              <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
-              <td><Badge baseClass="override-status-badge" variant={o.status ?? 'requested'}>{o.status ?? '—'}</Badge></td>
-              <td className="overrides-col-ts">{formatDateTime(o.requested_at)}</td>
-              <td className="overrides-col-ts">{o.result_at ? formatDateTime(o.result_at) : '—'}</td>
-            </tr>
-          ))}
-        </DataTable>
-      )}
-
-      {/* Command panel: admin only */}
+      {/* ── Admin control area: primary form on top, action cards in a responsive grid ── */}
       {isAdmin ? (
-        <div className="cmd-panel">
-
-          <div className="cmd-quick-section">
-            <span className="cmd-section-label">Quick Actions</span>
-            <p className="cmd-quick-hint">Select a preset to populate the command form. Safe actions auto-complete in demo mode. Hazard events are not cleared by overrides.</p>
-            <div className="cmd-quick-grid">
-              {QUICK_ACTIONS.map((qa) => (
-                <button
-                  key={qa.action}
-                  type="button"
-                  className="cmd-quick-btn"
-                  onClick={() => applyQuickAction(qa.actuator, qa.action)}
-                  disabled={submitting}
-                >
-                  {qa.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="cmd-form-card">
+        <>
+          {/* Primary control — full width */}
+          <div className="cmd-form-card ovr-primary">
             <div className="cmd-form-hdr">
               <span className="cmd-form-title">Issue Command Override</span>
               <span className="cmd-form-badge">Manual Control</span>
@@ -422,135 +367,198 @@ function OverridesPage() {
             </form>
           </div>
 
-          {/* Security mode — ARM / DISARM (intrusion monitoring only) */}
-          <div className="cmd-form-card" style={{ borderTop: '3px solid #2563eb' }}>
-            <div className="cmd-form-hdr">
-              <span className="cmd-form-title">Security Mode</span>
-              <span className="cmd-form-badge" style={{ background: '#2563eb', color: '#fff' }}>Admin</span>
-            </div>
-            <p className="cmd-form-helper">
-              ARM/DISARM controls <strong>intrusion monitoring only</strong> (motion, vibration,
-              reed/window) for <strong>{formDevice.trim() || 'the device'}</strong>. FIRE, GAS, and
-              CO detection <strong>always remain active</strong> and are never affected. Disarming
-              does not silence an active fire/gas/CO alarm. Applied once the device acknowledges.
-            </p>
-            <div className="cmd-quick-grid">
-              <button
-                type="button"
-                className="cmd-quick-btn"
-                onClick={() => handleArmDisarm('arm')}
-                disabled={armSubmitting}
-              >
-                Arm
-              </button>
-              <button
-                type="button"
-                className="cmd-quick-btn"
-                onClick={() => handleArmDisarm('disarm')}
-                disabled={armSubmitting}
-              >
-                Disarm
-              </button>
-            </div>
-            {armMsg && (
-              <span className={`override-submit-msg${armMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
-                {armMsg.text}
-              </span>
-            )}
-          </div>
+          {/* Action cards — responsive 2–4 column grid */}
+          <div className="ovr-actions-grid">
 
-          {/* Door controls — physical door actuator (separate from ARM/DISARM) */}
-          <div className="cmd-form-card" style={{ borderTop: '3px solid #0891b2' }}>
-            <div className="cmd-form-hdr">
-              <span className="cmd-form-title">Door Controls</span>
-              <span className="cmd-form-badge" style={{ background: '#0891b2', color: '#fff' }}>Admin</span>
+            {/* Quick Actions */}
+            <div className="cmd-form-card ovr-action-card">
+              <div className="cmd-form-hdr">
+                <span className="cmd-form-title">Quick Actions</span>
+                <span className="cmd-form-badge">Presets</span>
+              </div>
+              <p className="cmd-form-helper">Select a preset to populate the command form above. Safe actions auto-complete in demo mode. Hazard events are not cleared by overrides.</p>
+              <div className="ovr-btn-row">
+                {QUICK_ACTIONS.map((qa) => (
+                  <button
+                    key={qa.action}
+                    type="button"
+                    className="cmd-quick-btn"
+                    onClick={() => applyQuickAction(qa.actuator, qa.action)}
+                    disabled={submitting}
+                  >
+                    {qa.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="cmd-form-helper">
-              Physical door lock/unlock for <strong>{formDevice.trim() || 'the device'}</strong>.
-              <strong> Lock Door is blocked during an active fire/gas/CO hazard</strong> so evacuation is
-              never trapped; <strong>Unlock Door</strong> is a physical-security action allowed at any time
-              (including during a hazard for evacuation). Both are logged and applied once the device
-              acknowledges. This does not change ARM/DISARM mode.
-            </p>
-            <div className="cmd-quick-grid">
-              <button
-                type="button"
-                className="cmd-quick-btn"
-                onClick={() => handleDoorControl('door_lock')}
-                disabled={doorSubmitting}
-              >
-                Lock Door
-              </button>
-              <button
-                type="button"
-                className="cmd-quick-btn"
-                onClick={() => handleDoorControl('door_unlock')}
-                disabled={doorSubmitting}
-              >
-                Unlock Door
-              </button>
-            </div>
-            {doorMsg && (
-              <span className={`override-submit-msg${doorMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
-                {doorMsg.text}
-              </span>
-            )}
-          </div>
 
-          {/* Threat recovery — distinct, not a quick action */}
-          <div className="cmd-form-card" style={{ borderTop: '3px solid #dc2626' }}>
-            <div className="cmd-form-hdr">
-              <span className="cmd-form-title">Confirm Threat Cleared</span>
-              <span className="cmd-form-badge" style={{ background: '#dc2626', color: '#fff' }}>Danger · Admin</span>
-            </div>
-            <p className="cmd-form-helper" style={{ color: '#b45309' }}>
-              ⚠ For verified false alarms / cleared threats only. This releases fire
-              suppression for <strong>{formDevice.trim() || 'the device'}</strong>. It does
-              <strong> not</strong> bypass gas/CO safety, and the device will reject it if
-              flame is still detected (<code>fire_still_present</code>).
-            </p>
-            <div className="cmd-form-field">
-              <label className="cmd-form-label">Reason (required)</label>
-              <input
-                className="override-form-input"
-                type="text"
-                value={mrReason}
-                onChange={(e) => setMrReason(e.target.value)}
-                disabled={mrSubmitting}
-                maxLength={240}
-                placeholder="e.g. Burnt toast — kitchen verified clear, no fire."
-              />
-            </div>
-            <div className="cmd-form-footer">
-              <button
-                type="button"
-                className="btn-override-submit"
-                style={{ background: '#dc2626' }}
-                disabled={mrSubmitting || !mrReason.trim()}
-                onClick={handleMaintenanceReset}
-              >
-                {mrSubmitting ? 'Sending…' : 'Confirm Threat Cleared'}
-              </button>
-              {mrMsg && (
-                <span className={`override-submit-msg${mrMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
-                  {mrMsg.text}
+            {/* Security Mode — ARM / DISARM (intrusion monitoring only) */}
+            <div className="cmd-form-card ovr-action-card" style={{ borderTopColor: '#2563eb' }}>
+              <div className="cmd-form-hdr">
+                <span className="cmd-form-title">Security Mode</span>
+                <span className="cmd-form-badge" style={{ background: '#2563eb', color: '#fff' }}>Admin</span>
+              </div>
+              <p className="cmd-form-helper">
+                ARM/DISARM controls <strong>intrusion monitoring only</strong> (motion, vibration,
+                reed/window) for <strong>{formDevice.trim() || 'the device'}</strong>. FIRE, GAS, and
+                CO detection <strong>always remain active</strong>. Disarming does not silence an
+                active fire/gas/CO alarm. Applied once the device acknowledges.
+              </p>
+              <div className="ovr-btn-row">
+                <button
+                  type="button"
+                  className="cmd-quick-btn"
+                  onClick={() => handleArmDisarm('arm')}
+                  disabled={armSubmitting}
+                >
+                  Arm
+                </button>
+                <button
+                  type="button"
+                  className="cmd-quick-btn"
+                  onClick={() => handleArmDisarm('disarm')}
+                  disabled={armSubmitting}
+                >
+                  Disarm
+                </button>
+              </div>
+              {armMsg && (
+                <span className={`override-submit-msg${armMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                  {armMsg.text}
                 </span>
               )}
             </div>
-          </div>
 
-        </div>
-      ) : (
-        <div className="cmd-panel">
-          <div className="cmd-form-card">
-            <div className="cmd-form-hdr">
-              <span className="cmd-form-title">Override Controls</span>
-              <span className="cmd-form-badge">Admin Role Required</span>
+            {/* Door Controls — physical door actuator (separate from ARM/DISARM) */}
+            <div className="cmd-form-card ovr-action-card" style={{ borderTopColor: '#0891b2' }}>
+              <div className="cmd-form-hdr">
+                <span className="cmd-form-title">Door Controls</span>
+                <span className="cmd-form-badge" style={{ background: '#0891b2', color: '#fff' }}>Admin</span>
+              </div>
+              <p className="cmd-form-helper">
+                Physical door lock/unlock for <strong>{formDevice.trim() || 'the device'}</strong>.
+                <strong> Lock Door is blocked during an active fire/gas/CO hazard</strong> so evacuation
+                is never trapped; <strong>Unlock Door</strong> is allowed at any time (including during a
+                hazard). Logged and applied on device ACK. Does not change ARM/DISARM mode.
+              </p>
+              <div className="ovr-btn-row">
+                <button
+                  type="button"
+                  className="cmd-quick-btn"
+                  onClick={() => handleDoorControl('door_lock')}
+                  disabled={doorSubmitting}
+                >
+                  Lock Door
+                </button>
+                <button
+                  type="button"
+                  className="cmd-quick-btn"
+                  onClick={() => handleDoorControl('door_unlock')}
+                  disabled={doorSubmitting}
+                >
+                  Unlock Door
+                </button>
+              </div>
+              {doorMsg && (
+                <span className={`override-submit-msg${doorMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                  {doorMsg.text}
+                </span>
+              )}
             </div>
-            <p className="cmd-form-helper">Manual override controls are restricted to admin accounts.</p>
+
+            {/* Threat Recovery — Confirm Threat Cleared with required reason */}
+            <div className="cmd-form-card ovr-action-card" style={{ borderTopColor: '#dc2626' }}>
+              <div className="cmd-form-hdr">
+                <span className="cmd-form-title">Confirm Threat Cleared</span>
+                <span className="cmd-form-badge" style={{ background: '#dc2626', color: '#fff' }}>Danger · Admin</span>
+              </div>
+              <p className="cmd-form-helper" style={{ color: '#b45309' }}>
+                ⚠ For verified false alarms / cleared threats only. Releases fire suppression for
+                <strong> {formDevice.trim() || 'the device'}</strong>. Does <strong>not</strong> bypass
+                gas/CO safety; the device rejects it if flame is still detected
+                (<code>fire_still_present</code>).
+              </p>
+              <div className="cmd-form-field">
+                <label className="cmd-form-label">Reason (required)</label>
+                <input
+                  className="override-form-input"
+                  type="text"
+                  value={mrReason}
+                  onChange={(e) => setMrReason(e.target.value)}
+                  disabled={mrSubmitting}
+                  maxLength={240}
+                  placeholder="e.g. Burnt toast — kitchen verified clear."
+                />
+              </div>
+              <div className="cmd-form-footer">
+                <button
+                  type="button"
+                  className="btn-override-submit"
+                  style={{ background: '#dc2626' }}
+                  disabled={mrSubmitting || !mrReason.trim()}
+                  onClick={handleMaintenanceReset}
+                >
+                  {mrSubmitting ? 'Sending…' : 'Confirm Threat Cleared'}
+                </button>
+                {mrMsg && (
+                  <span className={`override-submit-msg${mrMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                    {mrMsg.text}
+                  </span>
+                )}
+              </div>
+            </div>
+
           </div>
+        </>
+      ) : (
+        <div className="cmd-form-card">
+          <div className="cmd-form-hdr">
+            <span className="cmd-form-title">Override Controls</span>
+            <span className="cmd-form-badge">Admin Role Required</span>
+          </div>
+          <p className="cmd-form-helper">Manual override controls are restricted to admin accounts.</p>
         </div>
       )}
+
+      {/* ── Override history / logs — full width below the controls ── */}
+      <div className="ovr-logs">
+        <div className="ovr-logs-hdr">
+          <span className="cmd-form-title">Override History</span>
+          <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
+        </div>
+
+        {loading && <StateMessage className="overrides-loading">Loading overrides…</StateMessage>}
+
+        {!loading && error && (
+          <StateMessage className="overrides-error">{error}</StateMessage>
+        )}
+
+        {!loading && !error && overrides.length === 0 && (
+          <StateMessage className="overrides-empty">No overrides found.</StateMessage>
+        )}
+
+        {!loading && !error && overrides.length > 0 && (
+          <DataTable
+            wrapClassName="overrides-table-wrap"
+            tableClassName="overrides-table"
+            columns={['Status', 'Action', 'Actuator', 'Requested By', 'Requested At', 'Result At', 'Result Detail', 'Reason', 'Device']}
+          >
+            {overrides.map((o) => (
+              <tr key={o.override_id ?? o._id}>
+                <td><Badge baseClass="override-status-badge" variant={o.status ?? 'requested'}>{o.status ?? '—'}</Badge></td>
+                <td>{o.action ?? '—'}</td>
+                <td>{o.actuator_id ?? '—'}</td>
+                <td>{o.requested_by ?? '—'}</td>
+                <td className="overrides-col-ts">{formatDateTime(o.requested_at)}</td>
+                <td className="overrides-col-ts">{o.result_at ? formatDateTime(o.result_at) : '—'}</td>
+                <td className="overrides-col-reason" title={o.blocked_reason ?? '—'}>{o.blocked_reason ?? '—'}</td>
+                <td className="overrides-col-reason" title={o.reason ?? '—'}>{o.reason ?? '—'}</td>
+                <td>{o.device_id ?? '—'}</td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
+      </div>
     </div>
   )
 }

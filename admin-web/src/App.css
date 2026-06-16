@@ -2999,6 +2999,66 @@
   .cmd-panel { grid-template-columns: 1fr; }
 }
 
+/* ── Overrides: improved demo layout ─────────────────────────
+   Primary command form full width on top, action cards in a
+   responsive 2–4 column grid, logs full width below. */
+.ovr-primary {
+  width: 100%;
+}
+
+.ovr-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .ovr-actions-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .ovr-actions-grid { grid-template-columns: 1fr; }
+}
+
+/* Each action card stretches to equal height; its button row sits at the bottom. */
+.ovr-action-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.ovr-action-card .cmd-form-helper {
+  flex: 1 1 auto;
+}
+
+/* Side-by-side action buttons that wrap on narrow cards. */
+.ovr-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ovr-btn-row .cmd-quick-btn {
+  flex: 1 1 0;
+  min-width: 92px;
+  text-align: center;
+}
+
+/* Logs section — full width, prominent. */
+.ovr-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ovr-logs-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /* ── Quick actions sidebar ───────────────────────────────── */
 .cmd-quick-section {
   background: var(--surface);
