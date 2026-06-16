@@ -52,6 +52,13 @@ const deviceSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    // Security ARM/DISARM mode for intrusion monitoring only. true = ARMED.
+    // Updated solely by a confirmed device ACK (arm/disarm override) or a heartbeat
+    // that reports security_armed. Never affects fire/gas/CO safety behavior.
+    security_armed: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

@@ -103,13 +103,21 @@ fun OverridesScreen(
             title = { Text(label) },
             text = {
                 Text(
-                    if (action == "pump_off") {
-                        "Send pump_off to esp32_home_01. This does NOT confirm a fire has been " +
-                            "cleared. If a fire is currently active, the system blocks this command " +
-                            "and keeps fire suppression running for safety. Logged in override history."
-                    } else {
-                        "Send $action to esp32_home_01. This action will be logged in override " +
-                            "history. Active hazards are not resolved by this command."
+                    when (action) {
+                        "pump_off" ->
+                            "Send pump_off to esp32_home_01. This does NOT confirm a fire has been " +
+                                "cleared. If a fire is currently active, the system blocks this command " +
+                                "and keeps fire suppression running for safety. Logged in override history."
+                        "arm" ->
+                            "ARM re-enables intrusion monitoring (motion, vibration, reed/window) on " +
+                                "esp32_home_01. Applied once the device acknowledges. Logged in override history."
+                        "disarm" ->
+                            "DISARM suppresses intrusion monitoring only (motion, vibration, reed/window). " +
+                                "FIRE, GAS, and CO detection remain fully active and will still alarm, and " +
+                                "disarming does not silence an active hazard. Logged in override history."
+                        else ->
+                            "Send $action to esp32_home_01. This action will be logged in override " +
+                                "history. Active hazards are not resolved by this command."
                     }
                 )
             },
@@ -263,6 +271,21 @@ fun OverridesScreen(
                                     .padding(horizontal = 16.dp)
                                     .padding(top = 8.dp),
                             )
+                            SecurityModeCard(
+                                overrideActionState = overrideActionState,
+                                activeAction = activeAction,
+                                adminEmail = adminEmail,
+                                onActionClick = { action ->
+                                    pendingConfirm = Triple(
+                                        action,
+                                        "esp32_home_01",
+                                        if (action == "arm") "Arm Security" else "Disarm Security",
+                                    )
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp),
+                            )
                             MaintenanceResetCard(
                                 enabled = overrideActionState !is OverrideActionState.Sending &&
                                     adminEmail.isNotBlank(),
@@ -380,6 +403,77 @@ private fun AdminActionsCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecurityModeCard(
+    overrideActionState: OverrideActionState,
+    activeAction: String?,
+    adminEmail: String,
+    onActionClick: (action: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSending = overrideActionState is OverrideActionState.Sending
+    val emailMissing = adminEmail.isBlank()
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Security Mode",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Arm/Disarm controls intrusion monitoring only (motion, vibration, " +
+                    "reed/window). Fire, gas, and CO detection always remain active; disarming " +
+                    "does not silence an active hazard alarm.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf("arm" to "Arm", "disarm" to "Disarm").forEach { (action, label) ->
+                    val isThisLoading = isSending && activeAction == action
+                    Button(
+                        onClick = { onActionClick(action) },
+                        enabled = !isSending && !emailMissing,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        if (isThisLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = MaterialTheme.colorScheme.onSecondary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

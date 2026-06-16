@@ -11,6 +11,8 @@ data class Device(
     @SerializedName("last_heartbeat_at") val lastHeartbeatAt: String?,
     @SerializedName("location_label") val locationLabel: String?,
     @SerializedName("is_active") val isActive: Boolean,
+    // Security ARM/DISARM mode (intrusion monitoring only). null if not reported.
+    @SerializedName("security_armed") val securityArmed: Boolean? = null,
 )
 
 data class DevicesResponse(

@@ -1,6 +1,33 @@
 const { ingestMqttMessage } = require('../services/ingestion.service');
 const { persistAcceptedIngestion } = require('../services/persistence.service');
 const { sendEventNotification } = require('../services/notification.service');
+const { Device } = require('../models');
+
+// Reflect a confirmed ARM/DISARM acknowledgement onto the device's security mode.
+// Only an `executed` result flips Device.security_armed; failed/blocked/requested
+// ACKs leave the stored mode untouched. Never touches safety state.
+async function applyArmStateFromOverrideResult(data) {
+  if (!data || (data.action !== 'arm' && data.action !== 'disarm')) {
+    return { applied: false, reason: 'not_arm_disarm' };
+  }
+  if (data.result !== 'executed') {
+    return { applied: false, reason: 'not_executed' };
+  }
+  const armed = data.action === 'arm';
+  try {
+    const updated = await Device.findOneAndUpdate(
+      { device_id: data.device_id },
+      { $set: { security_armed: armed } },
+      { returnDocument: 'after' }
+    );
+    if (!updated) {
+      return { applied: false, reason: 'device_not_found' };
+    }
+    return { applied: true, security_armed: armed };
+  } catch (error) {
+    return { applied: false, reason: 'update_error', error: error.message };
+  }
+}
 function parseMqttMessagePayload(messageBuffer) {
   try {
     const raw =
@@ -68,6 +95,10 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
       console.error('[MQTT] notification dispatch failed: ' + notifError.message);
     });
   }
+  let armState;
+  if (ingestion.payload_type === 'override_result' && persistence.saved) {
+    armState = await applyArmStateFromOverrideResult(ingestion.data);
+  }
   return {
     handled: true,
     accepted: true,
@@ -77,9 +108,11 @@ async function handleMqttMessage(topic, messageBuffer, options = {}) {
     device_id: ingestion.device_id,
     ingestion,
     persistence,
+    ...(armState ? { arm_state: armState } : {}),
   };
 }
 module.exports = {
   parseMqttMessagePayload,
   handleMqttMessage,
+  applyArmStateFromOverrideResult,
 };

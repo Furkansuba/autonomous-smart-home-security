@@ -171,6 +171,7 @@ void publishHeartbeat() {
   doc["firmware_version"] = "mch-integrated-v3";
   doc["uptime_seconds"]   = millis() / 1000;
   doc["wifi_rssi"]        = WiFi.RSSI();
+  doc["security_armed"]   = systemArmed;
   doc["timestamp"]        = isoTimestamp();
 
   char payload[256];
@@ -292,6 +293,22 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   }
   if (cmd == "door_unlock") {
     unlockDoor();
+    publishAck(overrideId, actuatorId, action, "executed");
+    return;
+  }
+
+  // ARM / DISARM — security/intrusion monitoring mode ONLY. These set just the
+  // systemArmed flag and NOTHING else. They must NOT touch the physical door
+  // (door_lock / door_unlock are separate controls) and must NOT touch the buzzer
+  // or pumps: the safety-first loop is the sole owner of hazard-related actuators,
+  // so an active fire/gas/CO siren and suppression keep running regardless of mode.
+  if (cmd == "arm") {
+    systemArmed = true;
+    publishAck(overrideId, actuatorId, action, "executed");
+    return;
+  }
+  if (cmd == "disarm") {
+    systemArmed = false;
     publishAck(overrideId, actuatorId, action, "executed");
     return;
   }

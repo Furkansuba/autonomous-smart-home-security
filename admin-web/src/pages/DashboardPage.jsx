@@ -46,6 +46,17 @@ function DashboardPage() {
   const offlineCount  = summary?.devices?.status_counts?.offline  ?? 0
   const degradedCount = summary?.devices?.status_counts?.degraded ?? 0
 
+  // Security ARM/DISARM mode of the main controller. null = unknown (not registered).
+  const armed       = summary?.security?.armed
+  const armKnown    = summary !== null && (armed === true || armed === false)
+  const armLabel    = armed === true ? 'ARMED' : armed === false ? 'DISARMED' : '—'
+  const armColor    = armed === true ? 'ok' : 'warn'
+  const armDesc     = armed === true
+    ? 'Intrusion monitoring active. Fire/gas/CO always on.'
+    : armed === false
+      ? 'Intrusion monitoring suppressed. Fire/gas/CO still active.'
+      : 'Mode unknown — awaiting device.'
+
   const devCount  = onlineCount
   const critCount = typeof criticalEvents   === 'number' ? criticalEvents   : 0
   const pendCount = typeof pendingOverrides === 'number' ? pendingOverrides : 0
@@ -171,6 +182,23 @@ function DashboardPage() {
             <span className="sec-banner-desc">{secDesc}</span>
           </div>
           <span className="sec-banner-tag">Security Status</span>
+        </div>
+      )}
+
+      {!loading && !error && summary !== null && (
+        <div className={`sec-banner sec-banner--${armColor}`}>
+          <span className="sec-banner-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {armed === false
+                ? <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></>
+                : <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>}
+            </svg>
+          </span>
+          <div className="sec-banner-body">
+            <span className="sec-banner-title">{armKnown ? armLabel : 'Mode Unknown'}</span>
+            <span className="sec-banner-desc">{armDesc}</span>
+          </div>
+          <span className="sec-banner-tag">Arm Mode</span>
         </div>
       )}
 

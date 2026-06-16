@@ -204,6 +204,50 @@ npm run test:backend
 
 ---
 
+## 8b. Security Mode — ARM / DISARM
+
+**Context:** ARM/DISARM controls security/intrusion monitoring only and is issued as an
+admin-only override action (`arm` / `disarm`) through `POST /api/overrides`, published on
+`home/{deviceId}/cmd/override`. It NEVER affects fire/gas/CO safety.
+
+### Backend (`npm run test:arm-disarm`, requires MongoDB)
+- [ ] `arm` / `disarm` accepted by the override controller, created as `requested`
+- [ ] `arm` / `disarm` are NOT demo-auto-acked (stay `requested` until a real ACK)
+- [ ] `arm` / `disarm` are NOT blocked by an active fire/gas/CO hazard
+- [ ] unknown override action still rejected with 400
+- [ ] executed `arm` ACK sets `Device.security_armed = true`
+- [ ] executed `disarm` ACK sets `Device.security_armed = false`
+- [ ] failed/blocked/requested ACK does NOT flip `Device.security_armed`
+- [ ] heartbeat carrying `security_armed` updates `Device.security_armed`
+
+### RBAC
+- [ ] resident cannot ARM/DISARM — blocked by `requireRole('admin')` on `POST /api/overrides`
+      (covered by `npm run test:rbac`); admin-only control hidden in admin-web/Android UI
+
+### UI
+- [ ] Admin-web Dashboard shows an ARMED / DISARMED indicator (from dashboard `security.armed`)
+- [ ] Admin-web Overrides page Security Mode card issues arm/disarm and reports status honestly
+- [ ] Android Devices screen shows ARMED / DISARMED on the controller card
+- [ ] Android Overrides screen Security Mode card issues arm/disarm (admin only)
+
+### Firmware review notes (`firmware/code-final-v3.ino`, hardware NOT bench-tested)
+- [ ] `onMqttMessage` handles `arm` → `systemArmed = true` + ACK `executed` (no door change)
+- [ ] `onMqttMessage` handles `disarm` → `systemArmed = false` + ACK `executed` (no door change)
+- [ ] ARM/DISARM do NOT call `lockDoor()` / `unlockDoor()` — the physical door is controlled
+      only by the separate `door_lock` / `door_unlock` actions (and RFID/serial), never by mode
+- [ ] DISARM handler does NOT call `digitalWrite(BUZZER_PIN, LOW)` or stop pumps — the
+      safety-first loop (PRIORITY 1) keeps an active fire/gas/CO siren and suppression running
+- [ ] DISARMED + fire/gas/CO: full hazard response unchanged (PRIORITY 1 runs before the
+      `systemArmed` security block) — fire/gas/CO never gated by mode
+- [ ] DISARMED + PIR/impact/reed: `checkSecurityBreaches()` is skipped (only runs when
+      `systemArmed`), so no security events are published and the security siren stays off
+- [ ] heartbeat payload includes `security_armed = systemArmed`
+
+**Verification scope:** Backend + UI exercised via tests and mock data. Firmware arm/disarm
+verified by code review only — real ESP32 hardware NOT bench-tested (MCH scope).
+
+---
+
 ## 9. Android App
 
 ### Login

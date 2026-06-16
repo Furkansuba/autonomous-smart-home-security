@@ -52,6 +52,7 @@ async function getDashboardSummary(req, res) {
       latestEvents,
       latestAccessLogs,
       latestTelemetry,
+      mainController,
     ] = await Promise.all([
       getDeviceStatusCounts(),
       Device.countDocuments({ is_active: true }),
@@ -76,6 +77,9 @@ async function getDashboardSummary(req, res) {
         .sort({ occurred_at: -1, received_at: -1 })
         .limit(5)
         .lean(),
+      Device.findOne({ device_id: 'esp32_home_01' })
+        .select('device_id security_armed')
+        .lean(),
     ]);
     return res.status(200).json({
       generated_at: new Date().toISOString(),
@@ -95,6 +99,11 @@ async function getDashboardSummary(req, res) {
       },
       overrides: {
         pending_count: pendingOverridesCount,
+      },
+      security: {
+        device_id: 'esp32_home_01',
+        // null when the main controller has not registered yet; otherwise true/false.
+        armed: mainController ? mainController.security_armed !== false : null,
       },
     });
   } catch (error) {

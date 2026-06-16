@@ -140,6 +140,13 @@ Backend to Device:
 - home/{deviceId}/cmd/disarm
 - home/{deviceId}/cmd/reset
 - home/{deviceId}/cmd/unlock
+Arm/Disarm transport — v1:
+- v1 issues ARM/DISARM as override actions (`arm` / `disarm`) through the existing
+  `POST /api/overrides` route, published on `home/{deviceId}/cmd/override`, and
+  acknowledged on `home/{deviceId}/override/result`. This reuses the audited override
+  pipeline and minimizes firmware/transport risk.
+- The dedicated `home/{deviceId}/cmd/arm` and `home/{deviceId}/cmd/disarm` topics remain
+  RESERVED for a future dedicated control path and are not used by v1.
 ## 9. Heartbeat Policy
 - heartbeat interval: 30 seconds
 - degraded threshold: 60 seconds
@@ -148,6 +155,9 @@ Device status values:
 - online
 - degraded
 - offline
+Heartbeat may also include an optional boolean `security_armed` reporting the device's
+current ARMED (true) / DISARMED (false) security mode. When present it is treated as
+device-reported truth and persisted to the device's `security_armed` field.
 ## 10. Notification Policy
 Push notification required:
 - fire_detected
@@ -213,3 +223,28 @@ Rules:
 - Android and admin-web must display fields from these structures without inventing new names.
 - Tests should use these examples as fixtures.
 - New payload types must be added to this contract before implementation.
+## 14. Security Arm/Disarm Mode
+ARM/DISARM controls security/intrusion monitoring only. It NEVER affects fire/gas/CO safety.
+### Override actions
+`OVERRIDE_ACTIONS` includes `arm` and `disarm` (alongside pump/buzzer/door/system_reset/
+maintenance_reset). They are admin-only, issued via `POST /api/overrides`, and published on
+`home/{deviceId}/cmd/override` (see §8). They are never demo-auto-acked: the stored override
+only becomes `executed` from a real device ACK on `override/result`.
+### Device field
+- `devices.security_armed` (boolean, default `true` = ARMED). It is the displayable source of
+  truth for the current mode.
+- It is updated ONLY by a confirmed device ACK:
+  - `arm` ACK with result `executed` → `security_armed = true`
+  - `disarm` ACK with result `executed` → `security_armed = false`
+  - `failed` / `blocked` / `requested` ACKs do NOT change `security_armed`
+- A heartbeat carrying `security_armed` overrides the stored value (device-reported truth).
+### Behavior
+- ARMED: PIR motion (`motion_detected`), impact/vibration (`vibration_detected`), and
+  reed/window/door (`reed_switch_opened`) intrusion detection is active.
+- DISARMED: the above security/intrusion detection is suppressed (no security events, no
+  security siren).
+- FIRE, GAS, and CO detection are ALWAYS active regardless of mode.
+- DISARM must never silence an active fire/gas/CO siren; the firmware safety loop owns the
+  buzzer and pumps during a hazard, and arm/disarm only set the security flag.
+### Roles
+- ARM/DISARM is admin-only. Residents may VIEW the current mode but cannot change it.

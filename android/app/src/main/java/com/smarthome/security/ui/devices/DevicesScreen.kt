@@ -433,6 +433,14 @@ private fun DeviceCard(device: Device) {
                             fontWeight = FontWeight.Medium,
                             color = statusColor,
                         )
+                        device.securityArmed?.let { armed ->
+                            Text(
+                                text = if (armed) "ARMED" else "DISARMED",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (armed) AppColors.statusOnline else AppColors.statusDegraded,
+                            )
+                        }
                         Icon(
                             imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                             contentDescription = if (expanded) "Collapse" else "Expand",
@@ -463,6 +471,14 @@ private fun DeviceCard(device: Device) {
                             value = if (device.isActive) "Yes" else "No",
                             valueColor = if (device.isActive) AppColors.statusOnline else null,
                         )
+                        device.securityArmed?.let { armed ->
+                            DetailRow(
+                                label = "Security mode",
+                                value = if (armed) "Armed (intrusion monitoring on)"
+                                        else "Disarmed (fire/gas/CO still active)",
+                                valueColor = if (armed) AppColors.statusOnline else AppColors.statusDegraded,
+                            )
+                        }
                     }
                 }
             }

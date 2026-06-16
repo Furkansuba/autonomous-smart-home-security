@@ -27,6 +27,17 @@ function ensureAcceptedIngestion(ingestionResult) {
 function mapHeartbeatToDeviceUpdate(ingestionResult) {
   const data = ingestionResult.data;
   const receivedAt = toDate(ingestionResult.received_at, 'received_at');
+  const setFields = {
+    status: data.status,
+    firmware_version: data.firmware_version,
+    last_seen_at: receivedAt,
+    last_heartbeat_at: toDate(data.timestamp, 'timestamp'),
+    wifi_rssi: data.wifi_rssi,
+  };
+  // Heartbeat is device-reported truth: when it carries security_armed, persist it.
+  if (typeof data.security_armed === 'boolean') {
+    setFields.security_armed = data.security_armed;
+  }
   return {
     kind: 'update',
     model: 'Device',
@@ -34,13 +45,7 @@ function mapHeartbeatToDeviceUpdate(ingestionResult) {
       device_id: data.device_id,
     },
     update: {
-      $set: {
-        status: data.status,
-        firmware_version: data.firmware_version,
-        last_seen_at: receivedAt,
-        last_heartbeat_at: toDate(data.timestamp, 'timestamp'),
-        wifi_rssi: data.wifi_rssi,
-      },
+      $set: setFields,
       $setOnInsert: {
         device_id: data.device_id,
         name: data.device_id,

@@ -35,6 +35,9 @@ function OverridesPage() {
   const [mrSubmitting, setMrSubmitting] = useState(false)
   const [mrMsg,        setMrMsg]        = useState(null)
 
+  const [armSubmitting, setArmSubmitting] = useState(false)
+  const [armMsg,        setArmMsg]        = useState(null)
+
   const loadOverrides = useCallback((status) => {
     let cancelled = false
     setLoading(true)
@@ -94,6 +97,51 @@ function OverridesPage() {
   function applyQuickAction(actuator, action) {
     setFormActuator(actuator)
     setFormAction(action)
+  }
+
+  // ARM/DISARM controls security/intrusion monitoring only. It is admin-only and is
+  // issued through the existing override pipeline (action arm/disarm). The status is
+  // reported honestly: it stays "requested" until the device ACKs over MQTT.
+  async function handleArmDisarm(action) {
+    const device = formDevice.trim() || 'esp32_home_01'
+    const verb = action === 'arm' ? 'ARM' : 'DISARM'
+    const ok = window.confirm(
+      `${verb} security monitoring for ${device}?\n\n` +
+      (action === 'disarm'
+        ? 'DISARM suppresses intrusion monitoring only (motion, vibration, reed/window). ' +
+          'FIRE, GAS, and CO detection remain fully active and will still alarm.'
+        : 'ARM re-enables intrusion monitoring (motion, vibration, reed/window).') +
+      '\n\nThis is logged in override history and applied once the device acknowledges.'
+    )
+    if (!ok) return
+    setArmSubmitting(true)
+    setArmMsg(null)
+    const user = authService.getStoredUser()
+    const requestedBy = user?.user_id ?? 'usr_admin_001'
+    try {
+      const res = await createOverride({
+        device_id:    device,
+        actuator_id:  device,
+        action,
+        reason:       action === 'arm' ? 'Arm security via admin web.' : 'Disarm security via admin web.',
+        requested_by: requestedBy,
+      })
+      const ov = res?.override
+      if (ov?.status === 'blocked') {
+        setArmMsg({ ok: false, text: ov.blocked_reason || 'Command blocked.' })
+      } else if (ov?.status === 'failed') {
+        setArmMsg({ ok: false, text: `Device rejected: ${ov.blocked_reason || 'unknown reason'}.` })
+      } else if (ov?.status === 'executed') {
+        setArmMsg({ ok: true, text: `Security ${action === 'arm' ? 'ARMED' : 'DISARMED'} — confirmed by device.` })
+      } else {
+        setArmMsg({ ok: true, text: `${verb} requested — awaiting device confirmation.` })
+      }
+      loadOverrides(statusFilter)
+    } catch (err) {
+      setArmMsg({ ok: false, text: err.message || 'Failed to send command.' })
+    } finally {
+      setArmSubmitting(false)
+    }
   }
 
   async function handleMaintenanceReset() {
@@ -323,6 +371,43 @@ function OverridesPage() {
                 )}
               </div>
             </form>
+          </div>
+
+          {/* Security mode — ARM / DISARM (intrusion monitoring only) */}
+          <div className="cmd-form-card" style={{ borderTop: '3px solid #2563eb' }}>
+            <div className="cmd-form-hdr">
+              <span className="cmd-form-title">Security Mode</span>
+              <span className="cmd-form-badge" style={{ background: '#2563eb', color: '#fff' }}>Admin</span>
+            </div>
+            <p className="cmd-form-helper">
+              ARM/DISARM controls <strong>intrusion monitoring only</strong> (motion, vibration,
+              reed/window) for <strong>{formDevice.trim() || 'the device'}</strong>. FIRE, GAS, and
+              CO detection <strong>always remain active</strong> and are never affected. Disarming
+              does not silence an active fire/gas/CO alarm. Applied once the device acknowledges.
+            </p>
+            <div className="cmd-quick-grid">
+              <button
+                type="button"
+                className="cmd-quick-btn"
+                onClick={() => handleArmDisarm('arm')}
+                disabled={armSubmitting}
+              >
+                Arm
+              </button>
+              <button
+                type="button"
+                className="cmd-quick-btn"
+                onClick={() => handleArmDisarm('disarm')}
+                disabled={armSubmitting}
+              >
+                Disarm
+              </button>
+            </div>
+            {armMsg && (
+              <span className={`override-submit-msg${armMsg.ok ? ' override-submit-msg--ok' : ' override-submit-msg--err'}`}>
+                {armMsg.text}
+              </span>
+            )}
           </div>
 
           {/* Threat recovery — distinct, not a quick action */}

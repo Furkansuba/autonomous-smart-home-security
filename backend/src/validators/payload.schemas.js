@@ -24,6 +24,7 @@ const heartbeatSchema = z.object({
   firmware_version: z.string().min(1).max(30),
   uptime_seconds: z.number().int().nonnegative(),
   wifi_rssi: z.number().int().min(-120).max(0),
+  security_armed: z.boolean().optional(),
   timestamp: isoTimestamp,
 });
 const telemetrySchema = z.object({
