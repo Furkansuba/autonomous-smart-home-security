@@ -939,6 +939,59 @@
   cursor: not-allowed;
 }
 
+/* ── Export CSV button (reused across list pages) ─────────── */
+.btn-export-csv {
+  all: unset;
+  cursor: pointer;
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f855a;
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  border-radius: 5px;
+  padding: 6px 16px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-export-csv:hover:not(:disabled) {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.btn-export-csv:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* In the devices ops toolbar the button sits in a flex action group, not pushed right. */
+.devices-ops-toolbar-actions .btn-export-csv {
+  margin-left: 0;
+}
+
+.theme-dark .btn-export-csv {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.25);
+  border-color: #047857;
+}
+
+.theme-dark .btn-export-csv:hover:not(:disabled) {
+  background: rgba(6, 78, 59, 0.45);
+  color: #a7f3d0;
+}
+
+/* Overrides logs header: keep filter + export together on the right. */
+.ovr-logs-hdr-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ovr-logs-hdr-controls .btn-export-csv {
+  margin-left: 0;
+}
+
 .refresh-msg {
   font-size: 13px;
 }

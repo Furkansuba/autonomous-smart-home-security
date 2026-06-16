@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getEvents } from '../services/eventService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
@@ -53,6 +54,19 @@ function EventsPage() {
     : null
 
   const viewLabel = severity === 'all' ? 'All events' : `${severity} filter`
+
+  function handleExportCsv() {
+    exportRowsToCsv('events', [
+      { header: 'Event ID',    value: (e) => e.event_id },
+      { header: 'Device',      value: (e) => e.device_id },
+      { header: 'Room',        value: (e) => e.room_id },
+      { header: 'Type',        value: (e) => e.event_type },
+      { header: 'Severity',    value: (e) => e.severity },
+      { header: 'Message',     value: (e) => e.message },
+      { header: 'Confirmed',   value: (e) => (e.confirmed ? 'Yes' : 'No') },
+      { header: 'Occurred At', value: (e) => formatDateTime(e.occurred_at) },
+    ], events)
+  }
 
   return (
     <div className="events-page">
@@ -147,6 +161,14 @@ function EventsPage() {
 
       <div className="events-toolbar">
         <FilterBar options={SEVERITY_FILTERS} activeValue={severity} onChange={setSeverity} />
+        <button
+          type="button"
+          className="btn-export-csv"
+          onClick={handleExportCsv}
+          disabled={loading || !!error || events.length === 0}
+        >
+          Export CSV
+        </button>
       </div>
 
       {loading && <StateMessage className="events-loading">Loading events…</StateMessage>}

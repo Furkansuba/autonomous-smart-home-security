@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getDevices, refreshDeviceStatuses } from '../services/deviceService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import Badge from '../components/ui/Badge.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
@@ -70,6 +71,23 @@ function DevicesPage() {
   }, null)
 
   const hasData = !loading && !error && devices.length > 0
+
+  // Arm/door state is device-reported and only meaningful for the main controller.
+  const armForExport  = (d) => d.device_id !== 'esp32_home_01' ? '' : d.security_armed === true ? 'Armed' : d.security_armed === false ? 'Disarmed' : ''
+  const doorForExport = (d) => d.device_id !== 'esp32_home_01' ? '' : d.door_locked === true ? 'Locked' : d.door_locked === false ? 'Unlocked' : ''
+
+  function handleExportCsv() {
+    exportRowsToCsv('devices', [
+      { header: 'Device ID',      value: (d) => d.device_id },
+      { header: 'Name',           value: (d) => d.name },
+      { header: 'Status',         value: (d) => d.status },
+      { header: 'Security (reported)', value: armForExport },
+      { header: 'Door (reported)',     value: doorForExport },
+      { header: 'Firmware',       value: (d) => d.firmware_version },
+      { header: 'Last Heartbeat', value: (d) => formatDateTime(d.last_heartbeat_at) },
+      { header: 'Active',         value: (d) => (d.is_active ? 'Yes' : 'No') },
+    ], devices)
+  }
 
   return (
     <div className="devices-page">
@@ -151,6 +169,14 @@ function DevicesPage() {
           <span className="devices-ops-toolbar-hint">Poll the backend to recalculate heartbeat status for all registered devices</span>
         </div>
         <div className="devices-ops-toolbar-actions">
+          <button
+            type="button"
+            className="btn-export-csv"
+            onClick={handleExportCsv}
+            disabled={loading || !!error || devices.length === 0}
+          >
+            Export CSV
+          </button>
           <button
             className="btn-refresh"
             onClick={handleRefresh}

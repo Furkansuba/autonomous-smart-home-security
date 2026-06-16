@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getTelemetry, getLatestTelemetry, getActiveHazards } from '../services/telemetryService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
 
@@ -88,6 +89,23 @@ function TelemetryPage() {
   const gasLabel     = (val) => val == null ? '—' : String(val)
   const gasValClass  = (val) => val == null ? '' : (val > 1000 ? 'telemetry-val--alert' : 'telemetry-val--ok')
   const gasTileClass = (val) => val == null ? '' : (val > 1000 ? 'sensor-tile--alert' : 'sensor-tile--ok')
+
+  const yesNoBlank = (v) => (v == null ? '' : (v ? 'Yes' : 'No'))
+
+  function handleExportCsv() {
+    exportRowsToCsv('telemetry', [
+      { header: 'Device',       value: (t) => t.device_id },
+      { header: 'Room',         value: (t) => t.room_id },
+      { header: 'Temp (C)',     value: (t) => (t.temperature_c != null ? t.temperature_c : '') },
+      { header: 'Humidity (%)', value: (t) => (t.humidity_percent != null ? t.humidity_percent : '') },
+      { header: 'Gas raw',      value: (t) => (t.gas_raw != null ? t.gas_raw : '') },
+      { header: 'CO raw',       value: (t) => (t.co_raw != null ? t.co_raw : '') },
+      { header: 'Flame',        value: (t) => yesNoBlank(t.flame_detected) },
+      { header: 'Motion',       value: (t) => yesNoBlank(t.motion_detected) },
+      { header: 'Reed open',    value: (t) => yesNoBlank(t.reed_open) },
+      { header: 'Recorded At',  value: (t) => formatDateTime(t.recorded_at ?? t.createdAt) },
+    ], telemetry)
+  }
 
   return (
     <div className="telemetry-page">
@@ -275,6 +293,14 @@ function TelemetryPage() {
               <div className="telemetry-records-hdr">
                 <span className="telemetry-records-title">All Records</span>
                 <span className="telemetry-records-count">{telemetry.length}</span>
+                <button
+                  type="button"
+                  className="btn-export-csv"
+                  onClick={handleExportCsv}
+                  disabled={telemetry.length === 0}
+                >
+                  Export CSV
+                </button>
               </div>
               <DataTable
                 wrapClassName="telemetry-table-wrap"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getNotificationLogs } from '../services/notificationLogService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
@@ -43,6 +44,18 @@ function NotificationLogsPage() {
   const sentCount   = logs.filter(l => l.status === 'sent').length
   const failedCount = logs.filter(l => l.status === 'failed').length
 
+  function handleExportCsv() {
+    exportRowsToCsv('notification_logs', [
+      { header: 'Notification ID', value: (l) => l.notification_id },
+      { header: 'Device',          value: (l) => l.device_id },
+      { header: 'Recipient',       value: (l) => l.recipient_user_id },
+      { header: 'Channel',         value: (l) => l.channel },
+      { header: 'Status',          value: (l) => l.status },
+      { header: 'Title',           value: (l) => l.title },
+      { header: 'Sent At',         value: (l) => (l.sent_at ? formatDateTime(l.sent_at) : '') },
+    ], logs)
+  }
+
   return (
     <div className="access-logs-page">
 
@@ -81,6 +94,14 @@ function NotificationLogsPage() {
       <div className="access-logs-toolbar" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <FilterBar options={CHANNEL_FILTERS} activeValue={channel} onChange={setChannel} />
         <FilterBar options={STATUS_FILTERS}  activeValue={status}  onChange={setStatus}  />
+        <button
+          type="button"
+          className="btn-export-csv"
+          onClick={handleExportCsv}
+          disabled={loading || !!error || logs.length === 0}
+        >
+          Export CSV
+        </button>
       </div>
 
       {loading && <StateMessage className="access-logs-loading">Loading notification logs…</StateMessage>}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAccessLogs } from '../services/accessLogService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
@@ -56,6 +57,18 @@ function AccessLogsPage() {
     : latestLog?.result === 'denied'
       ? 'denied'
       : 'neutral'
+
+  function handleExportCsv() {
+    exportRowsToCsv('access_logs', [
+      { header: 'Access ID',   value: (l) => l.access_id },
+      { header: 'Device',      value: (l) => l.device_id },
+      { header: 'Gate',        value: (l) => l.gate_id },
+      { header: 'User',        value: (l) => l.user_id },
+      { header: 'Method',      value: (l) => l.access_method },
+      { header: 'Result',      value: (l) => l.result },
+      { header: 'Occurred At', value: (l) => formatDateTime(l.occurred_at) },
+    ], logs)
+  }
 
   return (
     <div className="access-logs-page">
@@ -162,6 +175,14 @@ function AccessLogsPage() {
 
       <div className="access-logs-toolbar">
         <FilterBar options={RESULT_FILTERS} activeValue={result} onChange={setResult} />
+        <button
+          type="button"
+          className="btn-export-csv"
+          onClick={handleExportCsv}
+          disabled={loading || !!error || logs.length === 0}
+        >
+          Export CSV
+        </button>
       </div>
 
       {loading && <StateMessage className="access-logs-loading">Loading access logs…</StateMessage>}

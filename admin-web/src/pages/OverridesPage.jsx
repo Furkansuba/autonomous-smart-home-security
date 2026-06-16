@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getOverrides, createOverride } from '../services/overrideService.js'
 import { formatDateTime } from '../utils/formatters.js'
+import { exportRowsToCsv } from '../utils/csvExport.js'
 import * as authService from '../services/authService.js'
 import Badge from '../components/ui/Badge.jsx'
 import FilterBar from '../components/ui/FilterBar.jsx'
@@ -234,6 +235,21 @@ function OverridesPage() {
     } finally {
       setMrSubmitting(false)
     }
+  }
+
+  function handleExportCsv() {
+    exportRowsToCsv('overrides', [
+      { header: 'Status',        value: (o) => o.status },
+      { header: 'Action',        value: (o) => o.action },
+      { header: 'Actuator',      value: (o) => o.actuator_id },
+      { header: 'Requested By',  value: (o) => o.requested_by },
+      { header: 'Requested At',  value: (o) => formatDateTime(o.requested_at) },
+      { header: 'Result At',     value: (o) => (o.result_at ? formatDateTime(o.result_at) : '') },
+      { header: 'Result Detail', value: (o) => o.blocked_reason },
+      { header: 'Reason',        value: (o) => o.reason },
+      { header: 'Device',        value: (o) => o.device_id },
+      { header: 'Override ID',   value: (o) => o.override_id },
+    ], overrides)
   }
 
   const statsReady   = !loading && !error
@@ -524,7 +540,17 @@ function OverridesPage() {
       <div className="ovr-logs">
         <div className="ovr-logs-hdr">
           <span className="cmd-form-title">Override History</span>
-          <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
+          <div className="ovr-logs-hdr-controls">
+            <FilterBar options={OVERRIDE_STATUS_FILTERS} activeValue={statusFilter} onChange={handleFilterChange} />
+            <button
+              type="button"
+              className="btn-export-csv"
+              onClick={handleExportCsv}
+              disabled={loading || !!error || overrides.length === 0}
+            >
+              Export CSV
+            </button>
+          </div>
         </div>
 
         {loading && <StateMessage className="overrides-loading">Loading overrides…</StateMessage>}
