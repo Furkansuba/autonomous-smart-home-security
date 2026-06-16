@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -126,6 +127,8 @@ fun TelemetryScreen(
                             hazards = state.hazards,
                             lastUpdatedAt = state.lastUpdatedAt,
                             isStale = state.isStale,
+                            securityArmed = state.securityArmed,
+                            doorLocked = state.doorLocked,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -296,6 +299,8 @@ private fun SensorsContent(
     hazards: List<ActiveHazard>,
     lastUpdatedAt: String?,
     isStale: Boolean,
+    securityArmed: Boolean?,
+    doorLocked: Boolean?,
     modifier: Modifier = Modifier,
 ) {
     val expandedKeys = remember { mutableStateListOf<String>() }
@@ -330,6 +335,16 @@ private fun SensorsContent(
                 totalReadings = readings.size,
                 roomsCount = distinctRooms,
                 alertCount = alertingReadings.size,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp),
+            )
+        }
+
+        item {
+            ControllerStateCard(
+                securityArmed = securityArmed,
+                doorLocked = doorLocked,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 8.dp),
@@ -483,6 +498,85 @@ private fun SensorsSummaryCard(
                 StatusDistributionBar(alertCount = alertCount, clearCount = clearCount)
             }
         }
+    }
+}
+
+// Controller state is device-reported metadata (arm mode + last-commanded door lock),
+// NOT a sensor reading. It is shown in its own card, separate from raw sensor values.
+@Composable
+private fun ControllerStateCard(
+    securityArmed: Boolean?,
+    doorLocked: Boolean?,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Controller State",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Device-reported — not independently sensor-verified.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            ControllerStateRow(
+                label = "Security mode",
+                value = when (securityArmed) {
+                    true -> "Armed"
+                    false -> "Disarmed"
+                    null -> "Unknown"
+                },
+                valueColor = when (securityArmed) {
+                    true -> AppColors.statusOnline
+                    false -> AppColors.statusDegraded
+                    null -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ControllerStateRow(
+                label = "Door lock",
+                value = when (doorLocked) {
+                    true -> "Locked"
+                    false -> "Unlocked"
+                    null -> "Unknown"
+                },
+                valueColor = when (doorLocked) {
+                    true -> AppColors.statusOnline
+                    false -> AppColors.statusDegraded
+                    null -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ControllerStateRow(label: String, value: String, valueColor: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = valueColor,
+        )
     }
 }
 

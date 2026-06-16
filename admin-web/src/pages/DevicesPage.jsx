@@ -5,6 +5,14 @@ import Badge from '../components/ui/Badge.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
 
+// Device-reported / last-commanded controller state (arm mode + door lock).
+// Not independently sensor-verified; only meaningful for the main controller.
+function controllerStateLabel(d) {
+  const arm = d.security_armed === true ? 'Armed' : d.security_armed === false ? 'Disarmed' : 'Unknown'
+  const door = d.door_locked === true ? 'Door locked' : d.door_locked === false ? 'Door unlocked' : 'Door unknown'
+  return `${arm} · ${door}`
+}
+
 function DevicesPage() {
   const [devices,     setDevices]     = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -172,13 +180,16 @@ function DevicesPage() {
         <DataTable
           wrapClassName="devices-table-wrap"
           tableClassName="devices-table"
-          columns={['Device ID', 'Name', 'Status', 'Firmware', 'Last Heartbeat', 'Active']}
+          columns={['Device ID', 'Name', 'Status', 'Security · Door (reported)', 'Firmware', 'Last Heartbeat', 'Active']}
         >
           {devices.map((d) => (
             <tr key={d.device_id}>
               <td className="devices-col-id">{d.device_id}</td>
               <td>{d.name ?? '—'}</td>
               <td><Badge baseClass="device-status-badge" variant={d.status ?? 'offline'}>{d.status ?? 'offline'}</Badge></td>
+              <td title="Device-reported / last-commanded state — not independently sensor-verified">
+                {d.device_id === 'esp32_home_01' ? controllerStateLabel(d) : '—'}
+              </td>
               <td>{d.firmware_version ?? '—'}</td>
               <td className="devices-col-ts">{formatDateTime(d.last_heartbeat_at)}</td>
               <td>{d.is_active ? 'Yes' : 'No'}</td>

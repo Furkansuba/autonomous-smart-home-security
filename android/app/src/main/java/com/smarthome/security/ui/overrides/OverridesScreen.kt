@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -267,72 +270,89 @@ fun OverridesScreen(
                     LaunchedEffect(Unit) { onSessionExpired() }
                 }
                 is OverridesUiState.Success -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    // Single scrollable list so EVERY admin card (Admin Actions, Security Mode,
+                    // Door Controls, Threat Recovery) and the override history scroll together.
+                    // Bottom padding clears the system navigation bar so nothing is clipped.
+                    val overrides = state.overrides
+                    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 8.dp,
+                            bottom = navBottom + 24.dp,
+                        ),
+                    ) {
                         if (userRole == "admin") {
-                            AdminActionsCard(
-                                overrideActionState = overrideActionState,
-                                activeAction = activeAction,
-                                adminEmail = adminEmail,
-                                onActionClick = { action, actuatorId, label ->
-                                    pendingConfirm = Triple(action, actuatorId, label)
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp),
-                            )
-                            SecurityModeCard(
-                                overrideActionState = overrideActionState,
-                                activeAction = activeAction,
-                                adminEmail = adminEmail,
-                                onActionClick = { action ->
-                                    pendingConfirm = Triple(
-                                        action,
-                                        "esp32_home_01",
-                                        if (action == "arm") "Arm Security" else "Disarm Security",
-                                    )
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp),
-                            )
-                            DoorControlsCard(
-                                overrideActionState = overrideActionState,
-                                activeAction = activeAction,
-                                adminEmail = adminEmail,
-                                onActionClick = { action ->
-                                    pendingConfirm = Triple(
-                                        action,
-                                        "door_controller_01",
-                                        if (action == "door_lock") "Lock Door" else "Unlock Door",
-                                    )
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp),
-                            )
-                            MaintenanceResetCard(
-                                enabled = overrideActionState !is OverrideActionState.Sending &&
-                                    adminEmail.isNotBlank(),
-                                onClick = { showMaintenanceDialog = true },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp),
-                            )
+                            item {
+                                AdminActionsCard(
+                                    overrideActionState = overrideActionState,
+                                    activeAction = activeAction,
+                                    adminEmail = adminEmail,
+                                    onActionClick = { action, actuatorId, label ->
+                                        pendingConfirm = Triple(action, actuatorId, label)
+                                    },
+                                )
+                            }
+                            item {
+                                SecurityModeCard(
+                                    overrideActionState = overrideActionState,
+                                    activeAction = activeAction,
+                                    adminEmail = adminEmail,
+                                    onActionClick = { action ->
+                                        pendingConfirm = Triple(
+                                            action,
+                                            "esp32_home_01",
+                                            if (action == "arm") "Arm Security" else "Disarm Security",
+                                        )
+                                    },
+                                )
+                            }
+                            item {
+                                DoorControlsCard(
+                                    overrideActionState = overrideActionState,
+                                    activeAction = activeAction,
+                                    adminEmail = adminEmail,
+                                    onActionClick = { action ->
+                                        pendingConfirm = Triple(
+                                            action,
+                                            "door_controller_01",
+                                            if (action == "door_lock") "Lock Door" else "Unlock Door",
+                                        )
+                                    },
+                                )
+                            }
+                            item {
+                                MaintenanceResetCard(
+                                    enabled = overrideActionState !is OverrideActionState.Sending &&
+                                        adminEmail.isNotBlank(),
+                                    onClick = { showMaintenanceDialog = true },
+                                )
+                            }
                         }
-                        if (state.overrides.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                EmptyOverridesState()
+                        if (overrides.isEmpty()) {
+                            item {
+                                EmptyOverridesState(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 32.dp),
+                                )
                             }
                         } else {
-                            OverridesFeed(
-                                overrides = state.overrides,
-                                modifier = Modifier.weight(1f),
-                            )
+                            item {
+                                OverridesSummaryHeader(
+                                    total = overrides.size,
+                                    requestedCount = overrides.count { it.status == "requested" },
+                                    executedCount = overrides.count { it.status == "executed" },
+                                    failedCount = overrides.count { it.status == "failed" },
+                                    blockedCount = overrides.count { it.status == "blocked" },
+                                )
+                            }
+                            items(overrides, key = { it.overrideId }) { override ->
+                                OverrideCard(override = override)
+                            }
                         }
                     }
                 }
@@ -620,35 +640,6 @@ private fun MaintenanceResetCard(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun OverridesFeed(overrides: List<OverrideRequest>, modifier: Modifier = Modifier) {
-    val requestedCount = overrides.count { it.status == "requested" }
-    val executedCount = overrides.count { it.status == "executed" }
-    val failedCount = overrides.count { it.status == "failed" }
-    val blockedCount = overrides.count { it.status == "blocked" }
-
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 12.dp),
-    ) {
-        item {
-            OverridesSummaryHeader(
-                total = overrides.size,
-                requestedCount = requestedCount,
-                executedCount = executedCount,
-                failedCount = failedCount,
-                blockedCount = blockedCount,
-            )
-        }
-        items(overrides, key = { it.overrideId }) { override ->
-            OverrideCard(override = override)
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.data.remote.SessionExpiredException
+import com.smarthome.security.data.repository.DevicesRepository
 import com.smarthome.security.data.repository.TelemetryRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,13 +25,19 @@ sealed class TelemetryUiState {
         val hazards: List<ActiveHazard>,
         val lastUpdatedAt: String?,
         val isStale: Boolean,
+        // Device-reported controller state (not sensor-verified). null = unknown.
+        val securityArmed: Boolean? = null,
+        val doorLocked: Boolean? = null,
     ) : TelemetryUiState()
     object Empty : TelemetryUiState()
     data class Error(val message: String) : TelemetryUiState()
     object SessionExpired : TelemetryUiState()
 }
 
-class TelemetryViewModel(private val repository: TelemetryRepository) : ViewModel() {
+class TelemetryViewModel(
+    private val repository: TelemetryRepository,
+    private val devicesRepository: DevicesRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow<TelemetryUiState>(TelemetryUiState.Loading)
     val uiState: StateFlow<TelemetryUiState> = _uiState.asStateFlow()
 
@@ -77,11 +84,19 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
     private suspend fun fetchAndProcess() {
         // Derived hazards are best-effort and supplementary to the telemetry list.
         val hazards = repository.getActiveHazards()
+        // Controller state (arm/door) is best-effort device-reported metadata, not sensor data.
+        val mainController = devicesRepository.getDevices().getOrNull()
+            ?.firstOrNull { it.deviceId == "esp32_home_01" }
         val result = repository.getTelemetryList()
         _uiState.value = result.fold(
             onSuccess = { readings ->
                 if (readings.isEmpty() && hazards.isEmpty()) TelemetryUiState.Empty
-                else processReadings(readings, hazards)
+                else processReadings(
+                    readings,
+                    hazards,
+                    mainController?.securityArmed,
+                    mainController?.doorLocked,
+                )
             },
             onFailure = { error ->
                 if (error is SessionExpiredException) TelemetryUiState.SessionExpired
@@ -93,6 +108,8 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
     private fun processReadings(
         all: List<TelemetrySummary>,
         hazards: List<ActiveHazard>,
+        securityArmed: Boolean?,
+        doorLocked: Boolean?,
     ): TelemetryUiState.Success {
         val deduplicated = all
             .sortedByDescending { it.occurredAt ?: it.createdAt ?: "" }
@@ -117,12 +134,17 @@ class TelemetryViewModel(private val repository: TelemetryRepository) : ViewMode
             hazards = hazards,
             lastUpdatedAt = lastUpdatedAt,
             isStale = isStale,
+            securityArmed = securityArmed,
+            doorLocked = doorLocked,
         )
     }
 }
 
-class TelemetryViewModelFactory(private val repository: TelemetryRepository) : ViewModelProvider.Factory {
+class TelemetryViewModelFactory(
+    private val repository: TelemetryRepository,
+    private val devicesRepository: DevicesRepository,
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        TelemetryViewModel(repository) as T
+        TelemetryViewModel(repository, devicesRepository) as T
 }

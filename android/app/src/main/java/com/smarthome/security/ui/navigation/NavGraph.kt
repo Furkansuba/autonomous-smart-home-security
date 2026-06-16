@@ -246,7 +246,7 @@ fun NavGraph() {
             }
             composable(Routes.TELEMETRY) {
                 val telemetryViewModel: TelemetryViewModel = viewModel(
-                    factory = TelemetryViewModelFactory(telemetryRepository),
+                    factory = TelemetryViewModelFactory(telemetryRepository, devicesRepository),
                 )
                 TelemetryScreen(
                     viewModel = telemetryViewModel,
