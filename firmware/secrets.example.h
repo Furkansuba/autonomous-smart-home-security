@@ -19,11 +19,12 @@
 #define MQTT_PORT       1883
 
 // ── Authorized RFID card UIDs ────────────────────────────────────────
-// Format: space-separated uppercase hex bytes, matching the serial print
-// format produced by handleRFIDAccess(). These are PLACEHOLDER bytes —
-// replace with your own card UIDs in secrets.h.
-#define RFID_CARD_1     "00 00 00 01"
-#define RFID_CARD_2     "00 00 00 02"
-#define RFID_CARD_3     "00 00 00 03"
+// Format: space-separated uppercase hex bytes, matching the UID string built
+// in handleRFIDAccess() and compared by isAuthorizedUid(). These are DUMMY
+// PLACEHOLDER values — replace with your own card UIDs in secrets.h only.
+// Never commit real card UIDs.
+#define AUTHORIZED_RFID_UID_1  "DE AD BE EF"
+#define AUTHORIZED_RFID_UID_2  "11 22 33 44"
+#define AUTHORIZED_RFID_UID_3  "AA BB CC DD"
 
 #endif // SECRETS_H

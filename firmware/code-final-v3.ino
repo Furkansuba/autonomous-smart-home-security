@@ -60,6 +60,12 @@ const char* DEVICE_ID = "esp32_home_01";
 #define TOPIC_ACCESS          "home/esp32_home_01/access"
 #define TOPIC_OVERRIDE_CMD    "home/esp32_home_01/cmd/override"
 #define TOPIC_OVERRIDE_RESULT "home/esp32_home_01/override/result"
+// Reserved dedicated command topics (compatibility). v1 backend publishes actions on
+// cmd/override; these let the device also accept direct arm/disarm/reset/unlock commands.
+#define TOPIC_CMD_ARM         "home/esp32_home_01/cmd/arm"
+#define TOPIC_CMD_DISARM      "home/esp32_home_01/cmd/disarm"
+#define TOPIC_CMD_RESET       "home/esp32_home_01/cmd/reset"
+#define TOPIC_CMD_UNLOCK      "home/esp32_home_01/cmd/unlock"
 
 // Room IDs per sensor group
 const char* ROOM_GAS_MQ2    = "kitchen";
@@ -281,15 +287,27 @@ void publishAck(const char* overrideId, const char* actuatorId,
 void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload, length);
-  if (err) return;
 
-  const char* action     = doc["action"];
   const char* overrideId = doc["override_id"];
   const char* actuatorId = doc["actuator_id"];
-  if (!action) return;
 
-  String cmd = String(action);
-  if (Serial) Serial.printf("[OVERRIDE] Received: %s\n", action);
+  // Resolve the action. The shared cmd/override topic carries it in the JSON
+  // "action" field; the reserved dedicated topics (cmd/arm, cmd/disarm, cmd/reset,
+  // cmd/unlock) imply the action from the topic itself and may have an empty body.
+  String topicStr = String(topic);
+  String cmd;
+  if      (topicStr.endsWith("/cmd/arm"))    cmd = "arm";
+  else if (topicStr.endsWith("/cmd/disarm")) cmd = "disarm";
+  else if (topicStr.endsWith("/cmd/reset"))  cmd = "maintenance_reset";
+  else if (topicStr.endsWith("/cmd/unlock")) cmd = "door_unlock";
+  else {
+    if (err) return;                       // cmd/override with an unparseable body
+    const char* action = doc["action"];
+    if (!action) return;
+    cmd = String(action);
+  }
+  const char* actionStr = cmd.c_str();
+  if (Serial) Serial.printf("[OVERRIDE] topic=%s action=%s\n", topic, actionStr);
 
   // door_lock — physical door control. Blocked while a fire/gas/CO hazard is active so
   // evacuation is never trapped behind a locked door. Honest ACK: report "failed" rather
@@ -297,42 +315,48 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   if (cmd == "door_lock") {
     if (mq2Hazard || mq7Hazard || activeFlameZone != 0xFF) {
       if (Serial) Serial.println("[OVERRIDE] door_lock REJECTED — evacuation hazard active");
-      publishAck(overrideId, actuatorId, action, "failed", "door_lock_blocked_hazard");
+      publishAck(overrideId, actuatorId, actionStr, "failed", "door_lock_blocked_hazard");
       return;
     }
     lockDoor();
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
     return;
   }
   // door_unlock — allowed at all times (evacuation may require it). Does NOT change systemArmed.
   if (cmd == "door_unlock") {
     unlockDoor();
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
     return;
   }
 
-  // ARM / DISARM — security/intrusion monitoring mode ONLY. These set just the
-  // systemArmed flag and NOTHING else. They must NOT touch the physical door
-  // (door_lock / door_unlock are separate controls) and must NOT touch the buzzer
-  // or pumps: the safety-first loop is the sole owner of hazard-related actuators,
-  // so an active fire/gas/CO siren and suppression keep running regardless of mode.
+  // ARM / DISARM — security/intrusion monitoring mode ONLY. They set systemArmed (and
+  // disarm clears the SECURITY siren state). They must NOT touch the physical door
+  // (door_lock / door_unlock are separate controls) and must NOT mute an active
+  // fire/gas/CO siren: the safety-first loop owns hazard actuators, so fire/gas/CO
+  // detection and suppression continue regardless of arm/disarm.
   if (cmd == "arm") {
     systemArmed = true;
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
     return;
   }
   if (cmd == "disarm") {
     systemArmed = false;
-    publishAck(overrideId, actuatorId, action, "executed");
+    securityAlarmActive = false;             // clear intrusion/security siren state
+    // Only silence the buzzer when NO hazard is active — never mute fire/gas/CO.
+    if (!(mq2Hazard || mq7Hazard) && activeFlameZone == 0xFF) {
+      digitalWrite(BUZZER_PIN, LOW);
+    }
+    publishAck(overrideId, actuatorId, actionStr, "executed");
     return;
   }
 
-  // Confirm Threat Cleared (admin false-alarm recovery). Never clears gas/CO,
-  // and refuses to release suppression while flame is still physically present.
+  // Confirm Threat Cleared (admin false-alarm recovery). Never clears gas/CO, and
+  // refuses to release suppression while flame is still physically present. It does
+  // NOT disable future hazard monitoring — the sensor checks run every loop tick.
   if (cmd == "maintenance_reset") {
     if (mq2Hazard || mq7Hazard) {
       if (Serial) Serial.println("[OVERRIDE] maintenance_reset REJECTED — gas/CO active");
-      publishAck(overrideId, actuatorId, action, "failed", "gas_co_active");
+      publishAck(overrideId, actuatorId, actionStr, "failed", "gas_co_active");
       return;
     }
     // Read PCF8574 flame bits right now (bits 0-3, active LOW = flame present).
@@ -345,40 +369,44 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     byte flameBits = pcfData & 0x0F;
     if (flameBits < 0x0F) {
       if (Serial) Serial.println("[OVERRIDE] maintenance_reset REJECTED — flame still present");
-      publishAck(overrideId, actuatorId, action, "failed", "fire_still_present");
+      publishAck(overrideId, actuatorId, actionStr, "failed", "fire_still_present");
       return;
     }
-    // Flame verified clear: release the fire latch and force all pumps off.
+    // Flame verified clear: release the fire latch, clear manual/alarm flags, pumps off.
     flameDebounceCounter   = 0;
     activeFlameZone        = 0xFF;
     lastPublishedFlameZone = 0xFF;
     manualPumpRm1 = manualPumpRm2 = manualPumpKit = manualPumpLiv = false;
-    setAllRelays(HIGH); // relays active-LOW; HIGH = pumps OFF
+    manualAlarmActive   = false;
+    securityAlarmActive = false;
+    setAllRelays(HIGH);                      // relays active-LOW; HIGH = pumps OFF
+    digitalWrite(BUZZER_PIN, LOW);
     if (Serial) Serial.println("[OVERRIDE] maintenance_reset — fire latch cleared, pumps OFF");
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
     return;
   }
 
+  // Gas/CO lockout: never start a pump or test the buzzer while gas/CO is active.
   if (mq2Hazard || mq7Hazard) {
     if (cmd == "pump_on" || cmd == "buzzer_on") {
       if (Serial) Serial.println("[OVERRIDE] REJECTED — Gas/CO active");
-      publishAck(overrideId, actuatorId, action, "failed", "gas_co_lockout");
+      publishAck(overrideId, actuatorId, actionStr, "failed", "gas_co_lockout");
       return;
     }
   }
 
   if (cmd == "buzzer_on") {
     manualAlarmActive = true;
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
   } else if (cmd == "buzzer_off") {
     manualAlarmActive = false;
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
   } else if (cmd == "pump_on") {
     if (String(actuatorId) == "pump_rm1_01") manualPumpRm1 = true;
     else if (String(actuatorId) == "pump_rm2_01") manualPumpRm2 = true;
     else if (String(actuatorId) == "pump_kit_01") manualPumpKit = true;
     else if (String(actuatorId) == "pump_liv_01") manualPumpLiv = true;
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
   } else if (cmd == "pump_off") {
     // Honest ACK: while a fire latch owns the relay, the thermal interlock keeps
     // suppression running, so pump_off cannot actually stop the pump. Report it
@@ -386,12 +414,26 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     // release suppression after the threat is verified clear.
     if (activeFlameZone != 0xFF) {
       if (Serial) Serial.println("[OVERRIDE] pump_off REJECTED — fire suppression active");
-      publishAck(overrideId, actuatorId, action, "failed", "fire_active");
+      publishAck(overrideId, actuatorId, actionStr, "failed", "fire_active");
       return;
     }
     manualPumpRm1 = manualPumpRm2 = manualPumpKit = manualPumpLiv = false;
-    publishAck(overrideId, actuatorId, action, "executed");
+    publishAck(overrideId, actuatorId, actionStr, "executed");
+  } else {
+    // Any action the firmware does not implement (e.g. system_reset, typos).
+    if (Serial) Serial.printf("[OVERRIDE] unknown action: %s\n", actionStr);
+    publishAck(overrideId, actuatorId, actionStr, "failed", "unknown_action");
   }
+}
+
+// Subscribe to every backend-to-device command topic. Called on first connect and on
+// every reconnect so the device keeps accepting commands after a network drop.
+void subscribeCommandTopics() {
+  mqtt.subscribe(TOPIC_OVERRIDE_CMD);
+  mqtt.subscribe(TOPIC_CMD_ARM);
+  mqtt.subscribe(TOPIC_CMD_DISARM);
+  mqtt.subscribe(TOPIC_CMD_RESET);
+  mqtt.subscribe(TOPIC_CMD_UNLOCK);
 }
 
 // ---------------------------------------------------------
@@ -468,7 +510,7 @@ void ensureMqttConnected() {
     if (Serial) Serial.println("[MQTT] Link dropped — reconnecting...");
     if (mqtt.connect(DEVICE_ID)) {
       if (Serial) Serial.println("[MQTT] Reconnected!");
-      mqtt.subscribe(TOPIC_OVERRIDE_CMD);
+      subscribeCommandTopics();
 
       // Re-sync time on reconnect in case NTP failed at boot
       if (now < 60000) syncTime();
@@ -559,7 +601,7 @@ void setup() {
     syncTime();
     if (mqtt.connect(DEVICE_ID)) {
       if (Serial) Serial.println("[MQTT] Connected");
-      mqtt.subscribe(TOPIC_OVERRIDE_CMD);
+      subscribeCommandTopics();
     }
   }
 }
@@ -794,6 +836,16 @@ void handleSecuritySiren() {
   else                                                       securityAlarmActive = false;
 }
 
+// Returns true if the scanned UID matches one of the authorized cards. Authorized UIDs
+// are kept out of source control: define AUTHORIZED_RFID_UID_1..3 in secrets.h (see
+// secrets.example.h). Raw UID values are never logged or committed — only the boolean
+// match result is used downstream.
+bool isAuthorizedUid(const String& scannedUID) {
+  return scannedUID == String(AUTHORIZED_RFID_UID_1) ||
+         scannedUID == String(AUTHORIZED_RFID_UID_2) ||
+         scannedUID == String(AUTHORIZED_RFID_UID_3);
+}
+
 void handleRFIDAccess() {
   static unsigned long lastRFIDCheck = 0;
   if (millis() - lastRFIDCheck < 1000) return;
@@ -808,14 +860,9 @@ void handleRFIDAccess() {
   scannedUID.trim();
   scannedUID.toUpperCase();
 
-  // Authorized card UIDs are kept out of source control. Define RFID_CARD_1..3
-  // in secrets.h (see secrets.example.h). Format: space-separated uppercase hex
-  // bytes, e.g. "AA BB CC DD".
-  String card1 = RFID_CARD_1;
-  String card2 = RFID_CARD_2;
-  String card3 = RFID_CARD_3;
-
-  bool granted = (scannedUID == card1 || scannedUID == card2 || scannedUID == card3);
+  // Match against authorized UIDs from secrets.h (AUTHORIZED_RFID_UID_1..3).
+  // The raw scanned UID is never printed; only the access decision is logged.
+  bool granted = isAuthorizedUid(scannedUID);
 
   if (granted) {
     systemArmed = !systemArmed;
