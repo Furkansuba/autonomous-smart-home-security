@@ -43,14 +43,23 @@ bool sensorWarmupComplete = false;
 
 // ---- SENSOR THRESHOLDS ----
 const int MQ2_THRESHOLD        = 1500;
-const int MQ7_THRESHOLD        = 3000;
+const int MQ7_THRESHOLD        = 4000;
 const int FLAME_DEBOUNCE_LIMIT = 8;
+
+// ESP32 analogRead() returns 0–4095, and the backend telemetry contract also caps
+// gas_raw/co_raw at 4095. A gas/CO threshold above 4095 can NEVER be exceeded, which
+// would SILENTLY DISABLE detection (e.g. MQ7_THRESHOLD = 5000 → co_detected never
+// fires). Fail the build loudly rather than ship a dead sensor. Tuning must stay ≤ 4095.
+static_assert(MQ2_THRESHOLD >= 0 && MQ2_THRESHOLD <= 4095,
+              "MQ2_THRESHOLD must be within ESP32 ADC range 0-4095");
+static_assert(MQ7_THRESHOLD >= 0 && MQ7_THRESHOLD <= 4095,
+              "MQ7_THRESHOLD must be within ESP32 ADC range 0-4095");
 
 const unsigned long CLIMATE_INTERVAL     = 2000;
 const unsigned long TELEMETRY_PUBLISH_MS = 60000;
 const unsigned long GAS_CYCLE_ALARM      = 5000;
 const unsigned long GAS_CYCLE_SNIFF      = 2000;
-const unsigned long SECURITY_SIREN_DUR   = 8000;
+const unsigned long SECURITY_SIREN_DUR   = 5000;
 
 // ---- SMARTHOME MQTT CONSTANTS ----
 const char* DEVICE_ID = "esp32_home_01";
