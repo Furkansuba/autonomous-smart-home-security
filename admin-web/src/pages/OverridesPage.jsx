@@ -13,10 +13,49 @@ import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 const OVERRIDE_STATUS_FILTERS = ['all', 'requested', 'executed', 'failed', 'blocked']
 
 const QUICK_ACTIONS = [
-  { label: 'Silence Alarm', actuator: 'buzzer_01', action: 'buzzer_off'  },
-  { label: 'Test Buzzer',   actuator: 'buzzer_01', action: 'buzzer_on'   },
-  { label: 'Stop Pump',     actuator: 'pump_01',   action: 'pump_off'    },
+  { label: 'Silence Alarm', action: 'buzzer_off' },
+  { label: 'Test Buzzer',   action: 'buzzer_on'  },
+  { label: 'Stop Pump',     action: 'pump_off'   },
 ]
+
+// Action-aware actuator options for the manual override form. Labels are shown to the
+// user; the raw actuator_id value below is what is submitted — the MQTT/backend/firmware
+// contract is unchanged. Actuator IDs match the firmware override handlers in
+// firmware/code-final-v3.ino (pump_on checks pump_rm1_01/pump_rm2_01/pump_kit_01/pump_liv_01).
+const PUMP_OPTIONS = [
+  { value: 'pump_rm1_01', label: 'Bedroom 1 Pump' },
+  { value: 'pump_rm2_01', label: 'Bedroom 2 Pump' },
+  { value: 'pump_kit_01', label: 'Kitchen Pump' },
+  { value: 'pump_liv_01', label: 'Living Room Pump' },
+]
+const BUZZER_OPTIONS = [{ value: 'buzzer_01', label: 'Alarm Buzzer' }]
+const DOOR_OPTIONS   = [{ value: 'door_controller_01', label: 'Main Door Servo Lock' }]
+
+const ACTION_ACTUATOR_OPTIONS = {
+  buzzer_on:   BUZZER_OPTIONS,
+  buzzer_off:  BUZZER_OPTIONS,
+  door_lock:   DOOR_OPTIONS,
+  door_unlock: DOOR_OPTIONS,
+  pump_on:     PUMP_OPTIONS,
+  pump_off:    PUMP_OPTIONS,
+}
+
+// Device-level actions target the controller itself (no discrete actuator). The backend
+// and firmware ignore actuator_id for these, so we submit the device_id and keep the
+// selection automatic instead of leaving a stale/confusing actuator like buzzer_01.
+const DEVICE_LEVEL_ACTIONS = new Set(['arm', 'disarm', 'maintenance_reset', 'system_reset'])
+
+function getActuatorOptionsForAction(action, deviceId = 'esp32_home_01') {
+  if (ACTION_ACTUATOR_OPTIONS[action]) return ACTION_ACTUATOR_OPTIONS[action]
+  // Device-level (and any unmapped) actions target the controller so a stale actuator
+  // can never persist after the action changes.
+  return [{ value: deviceId, label: 'Controller (device-level command)' }]
+}
+
+function getDefaultActuatorForAction(action, deviceId = 'esp32_home_01') {
+  const opts = getActuatorOptionsForAction(action, deviceId)
+  return opts[0]?.value ?? deviceId
+}
 
 function OverridesPage() {
   const storedUser = authService.getStoredUser()
@@ -105,9 +144,25 @@ function OverridesPage() {
     }
   }
 
-  function applyQuickAction(actuator, action) {
-    setFormActuator(actuator)
+  // Changing the action re-selects a valid actuator for that action so wrong
+  // action/actuator combinations (e.g. pump_on with buzzer_01) can never be submitted.
+  function handleActionChange(action) {
     setFormAction(action)
+    setFormActuator(getDefaultActuatorForAction(action, formDevice.trim() || 'esp32_home_01'))
+  }
+
+  // For device-level actions the actuator IS the device id, so keep them in sync when
+  // the target device changes. Actuator-specific actions (buzzer/pump/door) are unaffected.
+  function handleDeviceChange(device) {
+    setFormDevice(device)
+    if (DEVICE_LEVEL_ACTIONS.has(formAction)) {
+      setFormActuator(getDefaultActuatorForAction(formAction, device.trim() || 'esp32_home_01'))
+    }
+  }
+
+  function applyQuickAction(action) {
+    setFormAction(action)
+    setFormActuator(getDefaultActuatorForAction(action, formDevice.trim() || 'esp32_home_01'))
   }
 
   // ARM/DISARM controls security/intrusion monitoring only. It is admin-only and is
@@ -220,7 +275,9 @@ function OverridesPage() {
     try {
       const res = await createOverride({
         device_id:    formDevice.trim(),
-        actuator_id:  'pump_01',
+        // maintenance_reset is a device-level command; backend/firmware ignore the
+        // actuator_id, so use the device id (not a pump) to avoid confusing history.
+        actuator_id:  formDevice.trim() || 'esp32_home_01',
         action:       'maintenance_reset',
         reason:       mrReason.trim(),
         requested_by: requestedBy,
@@ -316,21 +373,26 @@ function OverridesPage() {
                     className="override-form-input"
                     type="text"
                     value={formDevice}
-                    onChange={(e) => setFormDevice(e.target.value)}
+                    onChange={(e) => handleDeviceChange(e.target.value)}
                     disabled={submitting}
                     required
                   />
                 </div>
                 <div className="cmd-form-field">
-                  <label className="cmd-form-label">Actuator ID</label>
-                  <input
-                    className="override-form-input"
-                    type="text"
+                  <label className="cmd-form-label">Actuator</label>
+                  <select
+                    className="override-form-select"
                     value={formActuator}
                     onChange={(e) => setFormActuator(e.target.value)}
                     disabled={submitting}
                     required
-                  />
+                  >
+                    {getActuatorOptionsForAction(formAction, formDevice.trim() || 'esp32_home_01').map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} ({opt.value})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="cmd-form-grid">
@@ -339,7 +401,7 @@ function OverridesPage() {
                   <select
                     className="override-form-select"
                     value={formAction}
-                    onChange={(e) => setFormAction(e.target.value)}
+                    onChange={(e) => handleActionChange(e.target.value)}
                     disabled={submitting}
                   >
                     <optgroup label="Safe — auto-acked in demo">
@@ -406,7 +468,7 @@ function OverridesPage() {
                     key={qa.action}
                     type="button"
                     className="cmd-quick-btn"
-                    onClick={() => applyQuickAction(qa.actuator, qa.action)}
+                    onClick={() => applyQuickAction(qa.action)}
                     disabled={submitting}
                   >
                     {qa.label}

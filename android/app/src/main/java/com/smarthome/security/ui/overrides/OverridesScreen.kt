@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.HistoryToggleOff
@@ -36,11 +37,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -85,6 +89,7 @@ fun OverridesScreen(
     var pendingConfirm by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var showMaintenanceDialog by remember { mutableStateOf(false) }
     var maintenanceReason by remember { mutableStateOf("") }
+    var selectedPump by remember { mutableStateOf(PUMP_OPTIONS.first()) }
 
     LaunchedEffect(overrideActionState) {
         when (val s = overrideActionState) {
@@ -108,6 +113,9 @@ fun OverridesScreen(
             text = {
                 Text(
                     when (action) {
+                        "pump_on" ->
+                            "Start the selected pump on esp32_home_01. This is BLOCKED while a gas or " +
+                                "CO hazard is active (mandatory pump lockout). Logged in override history."
                         "pump_off" ->
                             "Send pump_off to esp32_home_01. This does NOT confirm a fire has been " +
                                 "cleared. If a fire is currently active, the system blocks this command " +
@@ -325,6 +333,18 @@ fun OverridesScreen(
                                 )
                             }
                             item {
+                                PumpControlsCard(
+                                    overrideActionState = overrideActionState,
+                                    activeAction = activeAction,
+                                    adminEmail = adminEmail,
+                                    selectedPump = selectedPump,
+                                    onPumpSelected = { selectedPump = it },
+                                    onActionClick = { action, actuatorId, label ->
+                                        pendingConfirm = Triple(action, actuatorId, label)
+                                    },
+                                )
+                            }
+                            item {
                                 MaintenanceResetCard(
                                     enabled = overrideActionState !is OverrideActionState.Sending &&
                                         adminEmail.isNotBlank(),
@@ -366,7 +386,17 @@ private data class SafeActionDef(val action: String, val actuatorId: String, val
 private val SAFE_ACTIONS = listOf(
     SafeActionDef("buzzer_off",  "buzzer_01", "Silence Alarm"),
     SafeActionDef("buzzer_on",   "buzzer_01", "Test Buzzer"),
-    SafeActionDef("pump_off",    "pump_01",   "Stop Pump"),
+)
+
+// Pump actuator options. Labels are shown to the user; the raw actuator_id is submitted
+// and matches the firmware pump handlers in firmware/code-final-v3.ino.
+private data class PumpOption(val actuatorId: String, val label: String)
+
+private val PUMP_OPTIONS = listOf(
+    PumpOption("pump_rm1_01", "Bedroom 1 Pump"),
+    PumpOption("pump_rm2_01", "Bedroom 2 Pump"),
+    PumpOption("pump_kit_01", "Kitchen Pump"),
+    PumpOption("pump_liv_01", "Living Room Pump"),
 )
 
 @Composable
@@ -396,7 +426,7 @@ private fun AdminActionsCard(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            listOf(SAFE_ACTIONS.take(2), SAFE_ACTIONS.drop(2)).forEach { rowActions ->
+            SAFE_ACTIONS.chunked(2).forEach { rowActions ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -565,6 +595,117 @@ private fun DoorControlsCard(
                     val isThisLoading = isSending && activeAction == action
                     Button(
                         onClick = { onActionClick(action) },
+                        enabled = !isSending && !emailMissing,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        if (isThisLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = MaterialTheme.colorScheme.onSecondary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PumpControlsCard(
+    overrideActionState: OverrideActionState,
+    activeAction: String?,
+    adminEmail: String,
+    selectedPump: PumpOption,
+    onPumpSelected: (PumpOption) -> Unit,
+    onActionClick: (action: String, actuatorId: String, label: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSending = overrideActionState is OverrideActionState.Sending
+    val emailMissing = adminEmail.isBlank()
+    var menuOpen by remember { mutableStateOf(false) }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Pump Controls",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Select a target pump, then start or stop it. Pump On is blocked during an " +
+                    "active gas/CO hazard (mandatory pump lockout). Pump Off may be blocked while " +
+                    "fire suppression is actively running. Logged in override history.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Target pump selector
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { menuOpen = true },
+                    enabled = !isSending && !emailMissing,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Text(
+                        text = "Target: ${selectedPump.label} (${selectedPump.actuatorId})",
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = "Select pump",
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = { menuOpen = false },
+                ) {
+                    PUMP_OPTIONS.forEach { opt ->
+                        DropdownMenuItem(
+                            text = { Text("${opt.label} (${opt.actuatorId})", fontSize = 13.sp) },
+                            onClick = {
+                                onPumpSelected(opt)
+                                menuOpen = false
+                            },
+                        )
+                    }
+                }
+            }
+            // Pump On / Pump Off
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf("pump_on" to "Pump On", "pump_off" to "Pump Off").forEach { (action, label) ->
+                    val isThisLoading = isSending && activeAction == action
+                    Button(
+                        onClick = {
+                            onActionClick(action, selectedPump.actuatorId, "$label — ${selectedPump.label}")
+                        },
                         enabled = !isSending && !emailMissing,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
@@ -926,5 +1067,12 @@ private fun statusLabel(status: String): String = when (status) {
     else -> status.replaceFirstChar { it.uppercase() }
 }
 
+// Friendly override-action labels for the history list. maintenance_reset is shown
+// explicitly as a threat-recovery action so it is never confused with system_reset.
+private val ACTION_LABELS = mapOf(
+    "maintenance_reset" to "Maintenance Reset (Threat Cleared)",
+)
+
 private fun formatAction(action: String): String =
-    action.split("_").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+    ACTION_LABELS[action]
+        ?: action.split("_").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }

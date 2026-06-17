@@ -37,7 +37,9 @@ class OverridesRepository(
     // Confirm Threat Cleared (false-alarm recovery). Admin-only, requires a reason.
     // The backend never demo-auto-acks it; the real device decides executed/failed.
     suspend fun sendMaintenanceReset(reason: String, adminEmail: String): Result<String> =
-        submitOverride("maintenance_reset", "pump_01", adminEmail, reason)
+        // maintenance_reset is a device-level command; backend/firmware ignore the
+        // actuator_id, so use the device id (not a pump) to avoid confusing history.
+        submitOverride("maintenance_reset", "esp32_home_01", adminEmail, reason)
 
     private suspend fun submitOverride(
         action: String,
