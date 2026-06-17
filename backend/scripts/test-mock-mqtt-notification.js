@@ -73,14 +73,17 @@ function makeHeartbeatPayload() {
 }
 
 const NOTIFIABLE_EVENT_TYPES = [
-  { event_type: 'fire_detected',     severity: 'critical' },
-  { event_type: 'gas_detected',      severity: 'critical' },
-  { event_type: 'co_detected',       severity: 'critical' },
-  { event_type: 'intrusion_detected',severity: 'warning'  },
+  { event_type: 'fire_detected',      severity: 'critical' },
+  { event_type: 'gas_detected',       severity: 'critical' },
+  { event_type: 'co_detected',        severity: 'critical' },
+  { event_type: 'intrusion_detected', severity: 'warning'  },
+  { event_type: 'motion_detected',    severity: 'warning'  },
+  { event_type: 'vibration_detected', severity: 'warning'  },
+  { event_type: 'reed_switch_opened', severity: 'warning'  },
 ];
 
 async function main() {
-  // Each critical event type must trigger sendEventNotification
+  // Each persisted sensor/security event type must trigger sendEventNotification
   for (const { event_type, severity } of NOTIFIABLE_EVENT_TYPES) {
     sendEventCallCount = 0;
     sendEventLastData = null;

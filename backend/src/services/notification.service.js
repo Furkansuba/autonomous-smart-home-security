@@ -2,48 +2,58 @@ const { User, NotificationLog } = require('../models');
 const { sendToToken } = require('./fcm.service');
 const { sendSmsToNumber } = require('./sms.service');
 const { env } = require('../config/env');
+const { formatEventTypeLabel } = require('../utils/eventLabels');
 
+// Every persisted sensor/security Event type from the MQTT event pipeline must push.
+// Access logs (door_access_*), device status (device_online/offline), override logs
+// (manual_override_*), heartbeat_missed, etc. are intentionally NOT notifiable.
 const NOTIFIABLE_EVENT_TYPES = [
   'fire_detected',
   'gas_detected',
   'co_detected',
   'intrusion_detected',
+  'motion_detected',
+  'vibration_detected',
+  'reed_switch_opened',
 ];
 
 function isNotifiable(eventType) {
   return NOTIFIABLE_EVENT_TYPES.includes(eventType);
 }
 
+// Titles/bodies use the friendly label (presentation-only). The raw event_type is left
+// unchanged and is carried separately in the FCM data payload + NotificationLog.
 function buildEventMessage(eventData) {
   const room = eventData.room_id || 'unknown room';
   const device = eventData.device_id || 'unknown device';
+  const title = formatEventTypeLabel(eventData.event_type);
+  let body;
   switch (eventData.event_type) {
     case 'fire_detected':
-      return {
-        title: 'Fire Detected',
-        body: 'Fire detected in ' + room + '. Immediate action required.',
-      };
+      body = 'Fire detected in ' + room + '. Immediate action required.';
+      break;
     case 'gas_detected':
-      return {
-        title: 'Gas Detected',
-        body: 'Dangerous gas level in ' + room + '. Ventilate immediately.',
-      };
+      body = 'Dangerous gas level in ' + room + '. Ventilate immediately.';
+      break;
     case 'co_detected':
-      return {
-        title: 'CO Detected',
-        body: 'Carbon monoxide in ' + room + '. Evacuate immediately.',
-      };
+      body = 'Carbon monoxide in ' + room + '. Evacuate immediately.';
+      break;
     case 'intrusion_detected':
-      return {
-        title: 'Intrusion Alert',
-        body: 'Intrusion detected in ' + room + ' on ' + device + '.',
-      };
+      body = 'Intrusion detected in ' + room + ' on ' + device + '.';
+      break;
+    case 'motion_detected':
+      body = 'Motion detected in ' + room + '.';
+      break;
+    case 'vibration_detected':
+      body = 'Impact or vibration detected in ' + room + '.';
+      break;
+    case 'reed_switch_opened':
+      body = 'A window or door was opened in ' + room + '.';
+      break;
     default:
-      return {
-        title: 'Smart Home Alert',
-        body: eventData.message || 'An alert has been triggered.',
-      };
+      body = eventData.message || (title + ' in ' + room + '.');
   }
+  return { title, body };
 }
 
 function buildOfflineMessage(deviceId) {
@@ -67,6 +77,17 @@ async function getActiveTokenHolders() {
 async function dispatchToUsers(users, title, body, context) {
   const seenTokens = new Set();
   const results = [];
+  // Raw event_type + severity travel in the FCM data payload unchanged (presentation
+  // labels live only in title/body). Android currently reads title/body; extra data keys
+  // are ignored safely and available for future tap-routing.
+  const data = {
+    device_id: context.device_id || '',
+    event_id: context.event_id || '',
+    severity: context.severity || '',
+  };
+  if (context.event_type) {
+    data.event_type = context.event_type;
+  }
   for (const user of users) {
     const token = user.fcm_token ? user.fcm_token.trim() : '';
     if (!token) {
@@ -90,7 +111,7 @@ async function dispatchToUsers(users, title, body, context) {
       continue;
     }
     seenTokens.add(token);
-    const sendResult = await sendToToken(token, title, body);
+    const sendResult = await sendToToken(token, title, body, data);
     let status;
     if (sendResult.sent) {
       status = 'sent';
@@ -130,6 +151,7 @@ async function sendEventNotification(eventData) {
     const results = await dispatchToUsers(users, title, body, {
       device_id: eventData.device_id,
       event_id: eventData.event_id,
+      event_type: eventData.event_type,
       severity: eventData.severity || 'critical',
     });
     return { dispatched: true, count: results.length, results };
