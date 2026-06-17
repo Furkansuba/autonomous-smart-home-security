@@ -11,3 +11,8 @@ export async function getDevices(params = {}) {
 export async function refreshDeviceStatuses() {
   return apiRequest('/api/devices/refresh-status', { method: 'POST' })
 }
+
+// Derived, read-only attached-component view for a single controller.
+export async function getDeviceComponents(deviceId) {
+  return apiRequest(`/api/devices/${encodeURIComponent(deviceId)}/components`)
+}

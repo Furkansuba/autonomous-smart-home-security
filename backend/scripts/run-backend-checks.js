@@ -25,6 +25,7 @@ const checks = [
   'test:device-status',
   'test:device-status-monitor',
   'test:device-api',
+  'test:device-components',
   'test:event-api',
   'test:access-log-api',
   'test:telemetry-api',

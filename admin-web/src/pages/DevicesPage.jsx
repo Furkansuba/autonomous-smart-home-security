@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getDevices, refreshDeviceStatuses } from '../services/deviceService.js'
+import { getDevices, refreshDeviceStatuses, getDeviceComponents } from '../services/deviceService.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
+import { useEventStream } from '../hooks/useEventStream.js'
 import Badge from '../components/ui/Badge.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
+import LiveIndicator from '../components/ui/LiveIndicator.jsx'
+
+const MAIN_CONTROLLER_ID = 'esp32_home_01'
+const COMPONENT_REFRESH_EVENTS = new Set(['telemetry', 'event', 'access', 'override_result', 'device_status'])
 
 // Device-reported / last-commanded controller state (arm mode + door lock).
 // Not independently sensor-verified; only meaningful for the main controller.
@@ -20,6 +25,31 @@ function DevicesPage() {
   const [error,       setError]       = useState(null)
   const [refreshing,  setRefreshing]  = useState(false)
   const [refreshMsg,  setRefreshMsg]  = useState(null)
+
+  const [components,    setComponents]    = useState([])
+  const [compLoading,   setCompLoading]   = useState(true)
+  const [compError,     setCompError]     = useState(null)
+
+  const loadComponents = useCallback(() => {
+    setCompError(null)
+    getDeviceComponents(MAIN_CONTROLLER_ID)
+      .then((data) => {
+        setComponents(Array.isArray(data?.components) ? data.components : [])
+        setCompLoading(false)
+      })
+      .catch((err) => {
+        setComponents([])
+        setCompError(err.message || 'Failed to load components.')
+        setCompLoading(false)
+      })
+  }, [])
+
+  useEffect(() => { loadComponents() }, [loadComponents])
+
+  // Real-time: refresh the attached-component view when relevant activity streams in.
+  const liveConnected = useEventStream((type) => {
+    if (COMPONENT_REFRESH_EVENTS.has(type)) loadComponents()
+  })
 
   const loadDevices = useCallback(() => {
     let cancelled = false
@@ -219,6 +249,47 @@ function DevicesPage() {
               <td>{d.firmware_version ?? '—'}</td>
               <td className="devices-col-ts">{formatDateTime(d.last_heartbeat_at)}</td>
               <td>{d.is_active ? 'Yes' : 'No'}</td>
+            </tr>
+          ))}
+        </DataTable>
+      )}
+
+      {/* Attached components — derived, read-only view of modules on the controller.
+          These are NOT separate devices and do not affect device counts. */}
+      <div className="devices-components-hdr">
+        <span className="devices-ops-toolbar-label">Attached Components — {MAIN_CONTROLLER_ID}</span>
+        <LiveIndicator connected={liveConnected} />
+      </div>
+      <p className="devices-components-hint">
+        Sensors, actuators, and buses attached to the controller. Status is derived from recent
+        telemetry / events / access / override records — these are not independent devices and do
+        not affect the device counts above.
+      </p>
+
+      {compLoading && <StateMessage className="devices-loading">Loading components…</StateMessage>}
+      {!compLoading && compError && (
+        <StateMessage className="devices-error">{compError}</StateMessage>
+      )}
+      {!compLoading && !compError && components.length === 0 && (
+        <StateMessage className="devices-empty">No components derived yet.</StateMessage>
+      )}
+      {!compLoading && !compError && components.length > 0 && (
+        <DataTable
+          wrapClassName="devices-table-wrap"
+          tableClassName="devices-table"
+          columns={['Component', 'Category', 'Status', 'Latest Value', 'Last Seen', 'Notes']}
+        >
+          {components.map((c) => (
+            <tr key={c.component_id}>
+              <td>
+                <div>{c.label}</div>
+                <div className="devices-col-id">{c.component_id}</div>
+              </td>
+              <td>{c.category}</td>
+              <td><Badge baseClass="component-status-badge" variant={c.status}>{c.status.replace(/_/g, ' ')}</Badge></td>
+              <td>{c.latest_value ?? '—'}</td>
+              <td className="devices-col-ts">{c.last_seen_at ? formatDateTime(c.last_seen_at) : '—'}</td>
+              <td className="overrides-col-reason" title={c.notes ?? ''}>{c.notes ?? '—'}</td>
             </tr>
           ))}
         </DataTable>
