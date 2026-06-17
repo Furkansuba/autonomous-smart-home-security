@@ -33,6 +33,7 @@ const checks = [
   'test:override-api',
   'test:arm-disarm',
   'test:door-control',
+  'test:hazard-staleness',
   'test:dashboard-api',
   'test:mqtt-e2e-local',
   'test:override-mqtt-e2e',

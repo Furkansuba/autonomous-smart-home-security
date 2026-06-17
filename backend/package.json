@@ -26,6 +26,7 @@
     "test:override-api": "node scripts/test-override-api-controller.js",
     "test:arm-disarm": "node scripts/test-arm-disarm.js",
     "test:door-control": "node scripts/test-door-control.js",
+    "test:hazard-staleness": "node scripts/test-hazard-staleness.js",
     "test:dashboard-api": "node scripts/test-dashboard-api-controller.js",
     "test:mqtt-client": "node scripts/test-mqtt-client-service.js",
     "test:mqtt-message-handler": "node scripts/test-mqtt-message-handler.js",

@@ -1,4 +1,4 @@
-const { OverrideRequest, Event } = require('../models');
+const { OverrideRequest } = require('../models');
 const { getDatabaseStatus } = require('../config/database');
 const { env } = require('../config/env');
 const {
@@ -12,12 +12,9 @@ const {
   buildPaginatedResponse,
 } = require('../utils/pagination');
 const { persistMappedOperation } = require('../services/persistence.service');
+const { getActiveSafetyHazards } = require('../services/hazardState.service');
 const PUMP_ACTIONS = ['pump_on'];
-const GAS_CO_HAZARD_TYPES = ['gas_detected', 'co_detected'];
-const FIRE_HAZARD_TYPES = ['fire_detected'];
-const HAZARD_WINDOW_MS = 24 * 60 * 60 * 1000;
 const DEMO_AUTO_ACK_SAFE_ACTIONS = new Set(['buzzer_off', 'buzzer_on', 'pump_off']);
-const SAFETY_HAZARD_TYPES = ['fire_detected', 'gas_detected', 'co_detected'];
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
@@ -26,44 +23,6 @@ function sendDatabaseUnavailable(res) {
     error: 'Database is not connected.',
     database: getDatabaseStatus(),
   });
-}
-// Returns a recent hazard event of the given types for the device, or null.
-async function findActiveHazard(deviceId, eventTypes) {
-  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
-  return Event.findOne({
-    device_id: deviceId,
-    event_type: { $in: eventTypes },
-    occurred_at: { $gte: hazardCutoff },
-  });
-}
-// Fire is considered active for a device when the most recent recent-window
-// fire_detected event is NEWER than the latest successful (executed)
-// maintenance_reset for the same device. A confirmed maintenance_reset clears
-// the prior fire; a new fire_detected after that reset re-activates it.
-async function isFireActive(deviceId) {
-  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
-  const latestFire = await Event.findOne({
-    device_id: deviceId,
-    event_type: { $in: FIRE_HAZARD_TYPES },
-    occurred_at: { $gte: hazardCutoff },
-  })
-    .sort({ occurred_at: -1 })
-    .lean();
-  if (!latestFire) {
-    return false;
-  }
-  const latestReset = await OverrideRequest.findOne({
-    device_id: deviceId,
-    action: 'maintenance_reset',
-    status: 'executed',
-  })
-    .sort({ result_at: -1, requested_at: -1 })
-    .lean();
-  if (!latestReset) {
-    return true;
-  }
-  const resetAt = latestReset.result_at || latestReset.requested_at;
-  return new Date(latestFire.occurred_at) > new Date(resetAt);
 }
 // Persists a blocked override and responds. No MQTT command is published and
 // the action is never auto-acked, so a blocked override can never appear as
@@ -94,16 +53,14 @@ async function createBlockedOverride(res, body, blockedReason, skipReason) {
 }
 async function autoAckDemoOverride(override, delayMs) {
   await new Promise((resolve) => setTimeout(resolve, delayMs));
-  const hazardCutoff = new Date(Date.now() - HAZARD_WINDOW_MS);
-  const activeHazard = await Event.findOne({
-    device_id: override.device_id,
-    event_type: { $in: SAFETY_HAZARD_TYPES },
-    occurred_at: { $gte: hazardCutoff },
-  }).lean();
-  if (activeHazard) {
+  // Informational only: warn if a hazard is currently active (short TTL) when a
+  // safe action auto-acks. This does not change the hazard or block the action.
+  const hazards = await getActiveSafetyHazards(override.device_id);
+  if (hazards.active) {
     console.log(
-      '[AUTO_ACK] ' + override.override_id + ': alarm silenced — SAFETY HAZARD STILL ACTIVE: ' +
-      activeHazard.event_type + ' on ' + override.device_id + '. Hazard NOT resolved by this action.'
+      '[AUTO_ACK] ' + override.override_id + ': alarm silenced — SAFETY HAZARD STILL ACTIVE on ' +
+      override.device_id + ' (fire=' + hazards.fire + ', gas/co=' + hazards.gasCo +
+      '). Hazard NOT resolved by this action.'
     );
   }
   const result = await persistMappedOperation({
@@ -230,52 +187,47 @@ async function createOverride(req, res) {
     });
   }
   try {
+    // "Active" hazard = a fire/gas/CO event within its short TTL that is newer than
+    // the latest confirmed maintenance_reset (see hazardState.service). Stale historical
+    // events (older than the TTL) never block — they remain immutable audit records.
+    // door_unlock is intentionally never blocked (evacuation may require unlocking).
+    const needsHazardCheck =
+      PUMP_ACTIONS.includes(action) || action === 'pump_off' || action === 'door_lock';
+    const hazards = needsHazardCheck
+      ? await getActiveSafetyHazards(device_id)
+      : { fire: false, gasCo: false, active: false };
+
     // Gas/CO pump lockout: never start a pump while a gas or CO hazard is active.
-    if (PUMP_ACTIONS.includes(action)) {
-      const activeHazard = await findActiveHazard(device_id, GAS_CO_HAZARD_TYPES);
-      if (activeHazard) {
-        return createBlockedOverride(
-          res,
-          req.body,
-          'Gas or CO hazard is active for this device. Pump activation is not permitted.',
-          'pump_lockout_gas_co'
-        );
-      }
+    if (PUMP_ACTIONS.includes(action) && hazards.gasCo) {
+      return createBlockedOverride(
+        res,
+        req.body,
+        'Gas or CO hazard is active for this device. Pump activation is not permitted.',
+        'pump_lockout_gas_co'
+      );
     }
-    // Fire-aware Stop Pump: never let pump_off look "executed" while a fire is
-    // active. The firmware safety loop owns the pump relay during a fire and
-    // keeps suppression running, so a normal pump_off must not be published or
-    // auto-acked. A fire that has been cleared by a successful maintenance_reset
-    // (Confirm Threat Cleared) is no longer active, so pump_off is allowed again.
-    if (action === 'pump_off') {
-      const fireActive = await isFireActive(device_id);
-      if (fireActive) {
-        return createBlockedOverride(
-          res,
-          req.body,
-          'Fire is active for this device. The pump cannot be stopped while fire suppression is engaged. Use Confirm Threat Cleared (maintenance reset) once the threat is verified clear.',
-          'pump_off_blocked_fire_active'
-        );
-      }
+    // Fire-aware Stop Pump: never let pump_off look "executed" while a fire is active.
+    // The firmware safety loop owns the pump relay during a fire and keeps suppression
+    // running, so a normal pump_off must not be published or auto-acked. A fire that is
+    // stale (past TTL) or cleared by a confirmed maintenance_reset no longer blocks.
+    if (action === 'pump_off' && hazards.fire) {
+      return createBlockedOverride(
+        res,
+        req.body,
+        'Fire is active for this device. The pump cannot be stopped while fire suppression is engaged. Use Confirm Threat Cleared (maintenance reset) once the threat is verified clear.',
+        'pump_off_blocked_fire_active'
+      );
     }
-    // Evacuation safety: never lock the door while a fire/gas/CO hazard is active.
-    // door_unlock is intentionally NOT blocked — evacuation may require unlocking,
-    // and the firmware safety loop auto-unlocks during a hazard. Fire-active respects
-    // maintenance_reset (a confirmed threat-cleared reset re-allows door_lock); gas/CO
-    // use the recent hazard-event window.
-    if (action === 'door_lock') {
-      const fireActive = await isFireActive(device_id);
-      const gasCoActive = fireActive
-        ? null
-        : await findActiveHazard(device_id, GAS_CO_HAZARD_TYPES);
-      if (fireActive || gasCoActive) {
-        return createBlockedOverride(
-          res,
-          req.body,
-          'A fire/gas/CO hazard is active for this device. The door cannot be locked while a hazard is active so evacuation is never blocked. Door lock is re-allowed once the threat is cleared.',
-          'door_lock_blocked_hazard'
-        );
-      }
+    // Evacuation safety: never lock the door while a fire/gas/CO hazard is active, so
+    // evacuation is never blocked. door_unlock is NOT blocked. Door lock is re-allowed
+    // once the hazard goes stale (past TTL) or a maintenance_reset confirms it cleared.
+    if (action === 'door_lock' && hazards.active) {
+      return createBlockedOverride(
+        res,
+        req.body,
+        'A fire/gas/CO hazard is active for this device. The door cannot be locked while a hazard is active so evacuation is never blocked. Door lock is re-allowed once the hazard clears or is confirmed cleared.',
+        'door_lock_blocked_hazard'
+      );
     }
     const override = await OverrideRequest.create({
       override_id: override_id || createOverrideId(),

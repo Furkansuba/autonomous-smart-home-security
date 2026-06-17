@@ -6,17 +6,10 @@ const {
 } = require('../utils/pagination');
 // Short TTL (seconds) for which a published hazard event is surfaced as a
 // "recent active hazard" on the Sensors/Telemetry UI, independent of the
-// periodic telemetry snapshot. This never mutates telemetry raw values and
-// never deletes Event documents — it is a read-only derived view.
-const HAZARD_TTL_SECONDS = {
-  fire_detected: 120,
-  gas_detected: 120,
-  co_detected: 120,
-  intrusion_detected: 90,
-  vibration_detected: 90,
-  reed_switch_opened: 90,
-  motion_detected: 90,
-};
+// periodic telemetry snapshot. Shared with the override safety checks so both
+// layers agree on what "currently active" means. This never mutates telemetry
+// raw values and never deletes Event documents — it is a read-only derived view.
+const { HAZARD_TTL_SECONDS } = require('../config/hazard');
 function isDatabaseConnected() {
   return getDatabaseStatus().readyState === 1;
 }
