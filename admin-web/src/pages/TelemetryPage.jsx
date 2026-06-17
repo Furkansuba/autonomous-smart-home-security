@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react'
 import { getTelemetry, getLatestTelemetry, getActiveHazards } from '../services/telemetryService.js'
-import { formatDateTime } from '../utils/formatters.js'
+import { formatDateTime, formatEventTypeLabel } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
 import { useEventStream } from '../hooks/useEventStream.js'
 import DataTable from '../components/ui/DataTable.jsx'
 import StateMessage from '../components/ui/StateMessage.jsx'
 import LiveIndicator from '../components/ui/LiveIndicator.jsx'
 
-const HAZARD_LABELS = {
-  fire_detected: 'Fire',
-  gas_detected: 'Gas',
-  co_detected: 'CO',
-  intrusion_detected: 'Intrusion',
-  vibration_detected: 'Impact',
-  reed_switch_opened: 'Reed / Window',
-  motion_detected: 'Motion',
-}
-const hazardLabel = (type) => HAZARD_LABELS[type] ?? type
+// Friendly hazard labels reuse the shared event-type label map (UI-only).
+const hazardLabel = (type) => formatEventTypeLabel(type)
 
 const IconThermometer = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">

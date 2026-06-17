@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.ActiveHazard
 import com.smarthome.security.data.model.TelemetrySummary
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.EventLabels
 import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -234,16 +235,8 @@ private fun SensorsStaleWarning(modifier: Modifier = Modifier) {
     }
 }
 
-private fun hazardLabel(type: String): String = when (type) {
-    "fire_detected" -> "Fire"
-    "gas_detected" -> "Gas"
-    "co_detected" -> "CO"
-    "intrusion_detected" -> "Intrusion"
-    "vibration_detected" -> "Impact"
-    "reed_switch_opened" -> "Reed / Window"
-    "motion_detected" -> "Motion"
-    else -> type
-}
+// Friendly hazard labels reuse the shared event-type label map (UI-only).
+private fun hazardLabel(type: String): String = EventLabels.format(type)
 
 @Composable
 private fun RecentHazardsBanner(hazards: List<ActiveHazard>, modifier: Modifier = Modifier) {

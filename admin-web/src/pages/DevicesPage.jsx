@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getDevices, refreshDeviceStatuses, getDeviceComponents } from '../services/deviceService.js'
-import { formatDateTime } from '../utils/formatters.js'
+import { formatDateTime, formatEventTypeLabel } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
 import { useEventStream } from '../hooks/useEventStream.js'
 import Badge from '../components/ui/Badge.jsx'
@@ -287,7 +287,7 @@ function DevicesPage() {
               </td>
               <td>{c.category}</td>
               <td><Badge baseClass="component-status-badge" variant={c.status}>{c.status.replace(/_/g, ' ')}</Badge></td>
-              <td>{c.latest_value ?? '—'}</td>
+              <td>{formatEventTypeLabel(c.latest_value)}</td>
               <td className="devices-col-ts">{c.last_seen_at ? formatDateTime(c.last_seen_at) : '—'}</td>
               <td className="overrides-col-reason" title={c.notes ?? ''}>{c.notes ?? '—'}</td>
             </tr>

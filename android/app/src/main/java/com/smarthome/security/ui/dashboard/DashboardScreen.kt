@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.DashboardSummary
 import com.smarthome.security.data.model.Event
 import com.smarthome.security.ui.theme.AppColors
+import com.smarthome.security.util.EventLabels
 import com.smarthome.security.util.TimeFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -867,8 +868,7 @@ private fun recentEventTypeIcon(eventType: String): ImageVector {
     }
 }
 
-private fun recentEventFormatType(raw: String): String =
-    raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
+private fun recentEventFormatType(raw: String): String = EventLabels.format(raw)
 
 private fun timeOfDayGreeting(): String {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)

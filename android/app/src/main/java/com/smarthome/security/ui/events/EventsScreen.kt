@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smarthome.security.data.model.Event
+import com.smarthome.security.util.EventLabels
 import com.smarthome.security.util.TimeFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -461,8 +462,7 @@ private fun eventTypeIcon(eventType: String): ImageVector {
     }
 }
 
-private fun formatEventType(raw: String): String =
-    raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
+private fun formatEventType(raw: String): String = EventLabels.format(raw)
 
 private fun formatRoomId(raw: String): String =
     raw.replace('_', ' ').replaceFirstChar { it.uppercase() }

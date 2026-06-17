@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getEvents } from '../services/eventService.js'
-import { formatDateTime } from '../utils/formatters.js'
+import { formatDateTime, formatEventTypeLabel } from '../utils/formatters.js'
 import { exportRowsToCsv } from '../utils/csvExport.js'
 import { useEventStream } from '../hooks/useEventStream.js'
 import Badge from '../components/ui/Badge.jsx'
@@ -146,7 +146,7 @@ function EventsPage() {
               <div className="events-incident-fields">
                 <div className="events-incident-field">
                   <span className="events-incident-field-label">Type</span>
-                  <span className="events-incident-field-value">{topEvent.event_type ?? '—'}</span>
+                  <span className="events-incident-field-value">{formatEventTypeLabel(topEvent.event_type)}</span>
                 </div>
                 <div className="events-incident-field">
                   <span className="events-incident-field-label">Room</span>
@@ -201,7 +201,7 @@ function EventsPage() {
               <td className="events-col-id">{e.event_id ?? '—'}</td>
               <td>{e.device_id ?? '—'}</td>
               <td>{e.room_id ?? '—'}</td>
-              <td>{e.event_type ?? '—'}</td>
+              <td>{formatEventTypeLabel(e.event_type)}</td>
               <td><Badge baseClass="severity-badge" variant={e.severity ?? 'info'}>{e.severity ?? '—'}</Badge></td>
               <td className="events-col-msg" title={e.message ?? '—'}>{e.message ?? '—'}</td>
               <td>{e.confirmed ? 'Yes' : 'No'}</td>
